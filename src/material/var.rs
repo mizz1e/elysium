@@ -50,7 +50,7 @@ impl MaterialVar {
     }
 
     pub fn set_tint(&self, r: f32, g: f32, b: f32) {
-        type Fn = unsafe extern "C" fn(this: *const handle::MaterialVar, r: f32, g: f32, b: f32);
+        type Fn = unsafe extern "thiscall" fn(this: *const handle::MaterialVar, r: f32, g: f32, b: f32);
 
         unsafe {
             self.virtual_entry::<Fn>(12)(self.as_ptr(), r, g, b);

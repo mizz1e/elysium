@@ -52,7 +52,7 @@ impl EntityList {
 
     // `GetClientNetworkable(index)->GetIClientEntity()`
     pub unsafe fn get_unchecked(&self, index: i32) -> *mut handle::Entity {
-        type Fn = unsafe extern "C" fn(
+        type Fn = unsafe extern "thiscall" fn(
             this: *const handle::EntityList,
             index: i32,
         ) -> *mut handle::Entity;
@@ -62,13 +62,13 @@ impl EntityList {
 
     pub fn get(&self, index: i32) -> Option<Entity> {
         type Fn =
-            unsafe extern "C" fn(this: *const handle::EntityList, index: i32) -> Option<Entity>;
+            unsafe extern "thiscall" fn(this: *const handle::EntityList, index: i32) -> Option<Entity>;
 
         unsafe { self.virtual_entry::<Fn>(3)(self.as_ptr(), index) }
     }
 
     pub fn from_handle(&self, handle: *const ()) -> Option<Entity> {
-        type Fn = unsafe extern "C" fn(
+        type Fn = unsafe extern "thiscall" fn(
             this: *const handle::EntityList,
             handle: *const (),
         ) -> Option<Entity>;
@@ -77,7 +77,7 @@ impl EntityList {
     }
 
     pub fn highest_entity_index(&self) -> i32 {
-        type Fn = unsafe extern "C" fn(this: *const handle::EntityList) -> i32;
+        type Fn = unsafe extern "thiscall" fn(this: *const handle::EntityList) -> i32;
 
         unsafe { self.virtual_entry::<Fn>(6)(self.as_ptr()) }
     }

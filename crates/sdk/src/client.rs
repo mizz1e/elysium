@@ -16,15 +16,15 @@ mod table;
 #[repr(C)]
 struct VTable {
     _pad0: vtable::Pad<8>,
-    get_all_classes: unsafe extern "C" fn(this: *const Client) -> *mut Class,
+    get_all_classes: unsafe extern "thiscall" fn(this: *const Client) -> *mut Class,
     _pad1: vtable::Pad<1>,
-    hud_process_input: unsafe extern "C" fn(),
-    hud_update: unsafe extern "C" fn(),
+    hud_process_input: unsafe extern "thiscall" fn(),
+    hud_update: unsafe extern "thiscall" fn(),
     _pad2: vtable::Pad<4>,
-    activate_mouse: unsafe extern "C" fn(),
+    activate_mouse: unsafe extern "thiscall" fn(),
     _pad3: vtable::Pad<20>,
-    frame_stage_notify: unsafe extern "C" fn(this: *const (), frame: i32) -> bool,
-    dispatch_user_message: unsafe extern "C" fn(
+    frame_stage_notify: unsafe extern "thiscall" fn(this: *const (), frame: i32) -> bool,
+    dispatch_user_message: unsafe extern "thiscall" fn(
         this: *const Client,
         message_kind: i32,
         passthrough_flags: i32,

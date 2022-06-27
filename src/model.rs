@@ -236,21 +236,21 @@ impl ModelInfo {
     }
 
     pub fn index_of(&self, filename: *const i8) -> i32 {
-        type Fn = unsafe extern "C" fn(this: *const handle::ModelInfo, filename: *const i8) -> i32;
+        type Fn = unsafe extern "thiscall" fn(this: *const handle::ModelInfo, filename: *const i8) -> i32;
 
         unsafe { self.virtual_entry::<Fn>(3)(self.as_ptr(), filename) }
     }
 
     pub fn name_of<'a>(&'a self, model: *const Model) -> *const u8 {
         type Fn =
-            unsafe extern "C" fn(this: *const handle::ModelInfo, model: *const Model) -> *const u8;
+            unsafe extern "thiscall" fn(this: *const handle::ModelInfo, model: *const Model) -> *const u8;
 
         unsafe { self.virtual_entry::<Fn>(4)(self.as_ptr(), model) }
     }
 
     pub fn studio_model_of(&self, model: *const Model) -> *const Hdr {
         type Fn =
-            unsafe extern "C" fn(this: *const handle::ModelInfo, model: *const Model) -> *const Hdr;
+            unsafe extern "thiscall" fn(this: *const handle::ModelInfo, model: *const Model) -> *const Hdr;
 
         unsafe { self.virtual_entry::<Fn>(31)(self.as_ptr(), model) }
     }
