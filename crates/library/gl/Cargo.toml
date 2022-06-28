@@ -7,4 +7,4 @@ version = "0.0.0"
 path = "../dl"
 
 [dependencies.frosting]
-git = "https://github.com/elysian6969/frosting.git"
+git = "https://github.com/elysian6969/frosting"

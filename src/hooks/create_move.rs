@@ -197,7 +197,7 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     //command.view_angle.x = pitch;
     //command.view_angle.y += yaw_base - desync + (jitter_yaw * side);
     //command.view_angle.z += roll_base + jitter_roll * side;
-    
+
     command.view_angle.y -= desync;
 
     if *send_packet {

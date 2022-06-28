@@ -3,8 +3,8 @@
 pub use create_move::create_move;
 pub use frame_stage_notify::frame_stage_notify;
 pub use override_view::override_view;
-pub use poll_event::poll_event;
-pub use swap_window::swap_window;
+pub use poll_event::{poll_event, POLL_EVENT};
+pub use swap_window::{swap_window, SWAP_WINDOW};
 pub use write_user_command_delta_to_buffer::write_user_command_delta_to_buffer;
 
 #[allow(dead_code, unused_imports)]

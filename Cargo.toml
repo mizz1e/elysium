@@ -53,7 +53,7 @@ version = "0.10"
 
 [dependencies.frosting]
 default-features = false
-git = "https://github.com/elysian6969/frosting.git"
+git = "https://github.com/elysian6969/frosting"
 
 [dependencies.iced_elysium-gl]
 default-features = false

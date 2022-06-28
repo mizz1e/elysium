@@ -1,4 +1,4 @@
-mod compatibility;
+//mod compatibility;
 mod core;
 
 use crate::program;
@@ -9,7 +9,7 @@ use iced_native::Rectangle;
 #[derive(Debug)]
 pub enum Pipeline {
     Core(core::Pipeline),
-    Compatibility(compatibility::Pipeline),
+    //Compatibility(compatibility::Pipeline),
 }
 
 impl Pipeline {
@@ -29,10 +29,9 @@ impl Pipeline {
         match self {
             Pipeline::Core(pipeline) => {
                 pipeline.draw(gl, target_height, instances, transformation, scale, bounds);
-            }
-            Pipeline::Compatibility(pipeline) => {
-                pipeline.draw(gl, target_height, instances, transformation, scale, bounds);
-            }
+            } /*(Pipeline::Compatibility(pipeline) => {
+                  pipeline.draw(gl, target_height, instances, transformation, scale, bounds);
+              }*/
         }
     }
 }

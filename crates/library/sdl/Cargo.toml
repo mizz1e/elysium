@@ -10,4 +10,4 @@ path = "../dl"
 path = "../../mem"
 
 [dependencies.frosting]
-git = "https://github.com/elysian6969/frosting.git"
+git = "https://github.com/elysian6969/frosting"
