@@ -2,16 +2,16 @@
 
     #[repr(C)]
     struct VTable {
-        drop: unsafe extern "C" fn(this: *const Networkable),
-        release: unsafe extern "C" fn(this: *const Networkable),
-        get_client_class: unsafe extern "C" fn(this: *const Networkable) -> *const u8,
+        drop: unsafe extern "thiscall" fn(this: *const Networkable),
+        release: unsafe extern "thiscall" fn(this: *const Networkable),
+        get_client_class: unsafe extern "thiscall" fn(this: *const Networkable) -> *const u8,
         _pad1: vtable::Pad<3>,
-        pre_data_update: unsafe extern "C" fn(this: *const Networkable, update_kind: UpdateKind),
+        pre_data_update: unsafe extern "thiscall" fn(this: *const Networkable, update_kind: UpdateKind),
         _pad2: vtable::Pad<2>,
-        get_dormant: unsafe extern "C" fn(this: *const Networkable) -> bool,
-        get_index: unsafe extern "C" fn(this: *const Networkable) -> i32,
+        get_dormant: unsafe extern "thiscall" fn(this: *const Networkable) -> bool,
+        get_index: unsafe extern "thiscall" fn(this: *const Networkable) -> i32,
         _pad3: vtable::Pad<2>,
-        set_destroyed_on_recreate_entities: unsafe extern "C" fn(this: *const Networkable),
+        set_destroyed_on_recreate_entities: unsafe extern "thiscall" fn(this: *const Networkable),
     }
 
     vtable_validate! {

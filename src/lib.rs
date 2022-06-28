@@ -5,6 +5,7 @@
 #![feature(ptr_const_cast)]
 // src/entity.rs
 #![feature(const_ptr_offset_from)]
+#![feature(abi_thiscall)]
 
 use elysium_dl::Library;
 use elysium_sdk::convar::Vars;

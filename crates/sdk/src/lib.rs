@@ -14,6 +14,7 @@
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
 #![feature(ptr_const_cast)]
+#![feature(abi_thiscall)]
 
 pub use animation_layer::AnimationLayer;
 pub use animation_state::AnimationState;

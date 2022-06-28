@@ -8,11 +8,11 @@ use frosting::ffi::vtable;
 #[repr(C)]
 struct VTable {
     _pad0: vtable::Pad<12>,
-    origin: unsafe extern "C" fn(this: *const Entity) -> *const Vec3,
+    origin: unsafe extern "thiscall" fn(this: *const Entity) -> *const Vec3,
     _pad1: vtable::Pad<144>,
-    is_player: unsafe extern "C" fn(this: *const Entity) -> bool,
+    is_player: unsafe extern "thiscall" fn(this: *const Entity) -> bool,
     _pad2: vtable::Pad<199>,
-    observer_mode: unsafe extern "C" fn(this: *const Entity) -> ObserverMode,
+    observer_mode: unsafe extern "thiscall" fn(this: *const Entity) -> ObserverMode,
 }
 
 vtable_validate! {

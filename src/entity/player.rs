@@ -190,7 +190,7 @@ impl Player {
     }
 
     pub fn eye_origin(&self) -> Vec3 {
-        type Fn = unsafe extern "C" fn(this: *const handle::Entity) -> Vec3;
+        type Fn = unsafe extern "thiscall" fn(this: *const handle::Entity) -> Vec3;
 
         unsafe { self.virtual_entry::<Fn>(348)(self.as_ptr()) }
     }

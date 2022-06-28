@@ -89,13 +89,13 @@ impl Weapon {
     }
 
     fn actual_spread(&self) -> f32 {
-        type Fn = unsafe extern "C" fn(this: *const handle::Entity) -> f32;
+        type Fn = unsafe extern "thiscall" fn(this: *const handle::Entity) -> f32;
 
         unsafe { self.virtual_entry::<Fn>(521)(self.as_ptr()) }
     }
 
     fn actual_inaccuracy(&self) -> f32 {
-        type Fn = unsafe extern "C" fn(this: *const handle::Entity) -> f32;
+        type Fn = unsafe extern "thiscall" fn(this: *const handle::Entity) -> f32;
 
         unsafe { self.virtual_entry::<Fn>(521)(self.as_ptr()) }
     }
@@ -123,7 +123,7 @@ impl Weapon {
 
     /// Get's the weapon's information.
     fn info(&self) -> Option<WeaponInfo> {
-        type Fn = unsafe extern "C" fn(this: *const handle::Entity) -> *mut handle::Entity;
+        type Fn = unsafe extern "thiscall" fn(this: *const handle::Entity) -> *mut handle::Entity;
 
         unsafe {
             let ptr = self.virtual_entry::<Fn>(529)(self.as_ptr());
