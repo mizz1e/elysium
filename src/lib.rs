@@ -213,7 +213,7 @@ fn main() {
             elysium_mem::protect(address, protection);
         }
 
-        elysium_mem::hook(swap_window.byte_add(1), hooks::SWAP_WINDOW);
+        elysium_mem::rewrite_code(swap_window.as_mut(), hooks::SWAP_WINDOW);
         println!("elysium | hooked \x1b[38;5;2mSDL_GL_SwapWindow\x1b[m");
 
         //elysium_mem::hook(poll_event.byte_add(1), hooks::POLL_EVENT);
