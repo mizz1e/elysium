@@ -111,7 +111,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                 }
 
                 let players = &mut *state::players();
-                println!("local player = {local:?}");
 
                 let networkable = &*(local as *const Entity)
                     .byte_add(16)

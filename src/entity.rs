@@ -4,7 +4,6 @@ use elysium_sdk::entity::{Networkable, ObserverMode, Renderable};
 use elysium_sdk::{object_validate, vtable_validate};
 use frosting::ffi::vtable;
 
-#[derive(Debug)]
 #[repr(C)]
 struct VTable {
     _pad0: vtable::Pad<12>,
@@ -21,7 +20,6 @@ vtable_validate! {
     observer_mode => 357,
 }
 
-#[derive(Debug)]
 #[repr(C)]
 pub struct Entity {
     vtable: &'static VTable,

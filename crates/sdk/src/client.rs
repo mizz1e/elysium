@@ -114,7 +114,7 @@ impl Client {
     #[inline]
     pub fn frame_stage_notify_address(&self) -> *const u8 {
         let frame_stage_notify = &self.vtable.frame_stage_notify
-            as *const unsafe extern "C" fn(this: *const (), frame: i32) -> bool;
+            as *const unsafe extern "thiscall" fn(this: *const (), frame: i32) -> bool;
 
         frame_stage_notify.cast()
     }
