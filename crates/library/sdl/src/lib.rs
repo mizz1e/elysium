@@ -25,18 +25,23 @@ impl Sdl {
 
     #[inline]
     pub unsafe fn swap_window(&self) -> *const u8 {
-        match self.library.symbol(SWAP_WINDOW) {
+        let address = match self.library.symbol(SWAP_WINDOW) {
             Some(symbol) => symbol.as_ptr().cast(),
-            None => ptr::null(),
-        }
+            None => return ptr::null(),
+        };
+
+        elysium_mem::next_abs_addr(address)
     }
 
+    /// 
     #[inline]
     pub unsafe fn poll_event(&self) -> *const u8 {
-        match self.library.symbol(POLL_EVENT) {
+        let address = match self.library.symbol(POLL_EVENT) {
             Some(symbol) => symbol.as_ptr().cast(),
-            None => ptr::null(),
-        }
+            None => return ptr::null(),
+        };
+
+        elysium_mem::next_abs_addr(address)
     }
 }
 

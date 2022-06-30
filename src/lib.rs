@@ -213,10 +213,26 @@ fn main() {
             elysium_mem::protect(address, protection);
         }
 
-        elysium_mem::rewrite_code(swap_window.as_mut(), hooks::SWAP_WINDOW);
+        let swap_window = elysium_mem::next_abs_addr(swap_window.as_mut());
+
+        state::hooks::set_swap_window(
+            swap_window
+                .as_mut()
+                .cast::<state::hooks::SwapWindow>()
+                .replace(hooks::SWAP_WINDOW),
+        );
+
         println!("elysium | hooked \x1b[38;5;2mSDL_GL_SwapWindow\x1b[m");
 
-        //elysium_mem::hook(poll_event.byte_add(1), hooks::POLL_EVENT);
-        //println!("elysium | hooked \x1b[38;5;2mSDL_PollEvent\x1b[m");
+        let swap_window = elysium_mem::next_abs_addr(poll_event.as_mut());
+
+        state::hooks::set_poll_event(
+            poll_event
+                .as_mut()
+                .cast::<state::hooks::PollEvent>()
+                .replace(hooks::POLL_EVENT),
+        );
+
+        println!("elysium | hooked \x1b[38;5;2mSDL_PollEvent\x1b[m");
     }
 }
