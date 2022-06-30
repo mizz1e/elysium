@@ -23,6 +23,7 @@ impl Sdl {
         Some(Self { library })
     }
 
+    /// Returns the absolute address of `SDL_GL_SwapWindow`.
     #[inline]
     pub unsafe fn swap_window(&self) -> *const u8 {
         let address = match self.library.symbol(SWAP_WINDOW) {
@@ -33,7 +34,7 @@ impl Sdl {
         elysium_mem::next_abs_addr(address)
     }
 
-    /// 
+    /// Returns the absolute address of `SDL_PollEvent`.
     #[inline]
     pub unsafe fn poll_event(&self) -> *const u8 {
         let address = match self.library.symbol(POLL_EVENT) {

@@ -213,8 +213,6 @@ fn main() {
             elysium_mem::protect(address, protection);
         }
 
-        let swap_window = elysium_mem::next_abs_addr(swap_window.as_mut());
-
         state::hooks::set_swap_window(
             swap_window
                 .as_mut()
@@ -223,8 +221,6 @@ fn main() {
         );
 
         println!("elysium | hooked \x1b[38;5;2mSDL_GL_SwapWindow\x1b[m");
-
-        let swap_window = elysium_mem::next_abs_addr(poll_event.as_mut());
 
         state::hooks::set_poll_event(
             poll_event
