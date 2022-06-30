@@ -3,7 +3,11 @@
 //! Convenience wrapper around `elysium_dl::Library` for SDL methods.
 
 use elysium_dl::Library;
-use std::fmt;
+use std::{fmt, ptr};
+
+const LIBRARY: &str = "libSDL2-2.0.so.0\0";
+const SWAP_WINDOW: &str = "SDL_GL_SwapWindow\0";
+const POLL_EVENT: &str = "SDL_PollEvent\0";
 
 /// The SDL library.
 pub struct Sdl {
@@ -14,41 +18,31 @@ impl Sdl {
     /// Load SDL, specifically `libSDL2-2.0.so.0`.
     #[inline]
     pub fn open() -> Option<Self> {
-        let library = Library::open("libSDL2-2.0.so.0\0")?;
+        let library = Library::open(LIBRARY)?;
 
         Some(Self { library })
     }
 
-    /// Obtains the absolute address from `JMP /4` located at the `SDL_GL_SwapWindow` symbol.
-    ///
-    /// ```asm
-    /// 0000000000037a60 <SDL_GL_SwapWindow>:
-    ///    37a60: ff 25 ca fc 32 00     jmp    *0x32fcca(%rip)
-    /// ```
+    /// Returns the absolute address of `SDL_GL_SwapWindow`.
     #[inline]
-    pub unsafe fn swap_window(&self) -> Option<*const ()> {
-        let symbol = self.library.symbol("SDL_GL_SwapWindow\0")?;
-        let base = symbol.as_ptr();
-        let relative = base.byte_add(2).cast::<i32>().read() as isize;
-        let address = elysium_mem::to_absolute(base, relative, 6);
+    pub unsafe fn swap_window(&self) -> *const u8 {
+        let address = match self.library.symbol(SWAP_WINDOW) {
+            Some(symbol) => symbol.as_ptr().cast(),
+            None => return ptr::null(),
+        };
 
-        Some(address)
+        elysium_mem::next_abs_addr(address)
     }
 
-    /// Obtains the absolute address from the `JMP /4` located at the `SDL_PollEvent` symbol.
-    ///
-    /// ```asm
-    /// 0000000000035eb0 <SDL_PollEvent>:
-    ///     35eb0: ff 25 b2 0a 33 00     jmp    *0x330ab2(%rip)
-    /// ```
+    /// Returns the absolute address of `SDL_PollEvent`.
     #[inline]
-    pub unsafe fn poll_event(&self) -> Option<*const ()> {
-        let symbol = self.library.symbol("SDL_PollEvent\0")?;
-        let base = symbol.as_ptr();
-        let relative = base.byte_add(2).cast::<i32>().read() as isize;
-        let address = elysium_mem::to_absolute(base, relative, 6);
+    pub unsafe fn poll_event(&self) -> *const u8 {
+        let address = match self.library.symbol(POLL_EVENT) {
+            Some(symbol) => symbol.as_ptr().cast(),
+            None => return ptr::null(),
+        };
 
-        Some(address)
+        elysium_mem::next_abs_addr(address)
     }
 }
 

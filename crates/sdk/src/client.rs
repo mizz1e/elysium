@@ -86,7 +86,7 @@ impl Client {
 
             let hud_process_input = self.vtable.hud_process_input as *const u8;
             let call_client_mode = hud_process_input.byte_add(11);
-            let client_mode = elysium_mem::to_absolute_with_offset(call_client_mode, 1, 5);
+            let client_mode = elysium_mem::next_abs_addr(call_client_mode);
             let client_mode: ClientModeFn = mem::transmute(client_mode);
 
             client_mode()
@@ -124,7 +124,7 @@ impl Client {
         unsafe {
             let hud_update = self.vtable.hud_update as *const u8;
             let address = hud_update.byte_add(13);
-            let globals = elysium_mem::to_absolute_with_offset(address, 3, 7)
+            let globals = elysium_mem::next_abs_addr(address)
                 .cast::<*const u8>()
                 .read();
 
@@ -136,7 +136,7 @@ impl Client {
     pub fn input(&self) -> *const u8 {
         unsafe {
             let activate_mouse = self.vtable.activate_mouse as *const u8;
-            let input = elysium_mem::to_absolute_with_offset(activate_mouse, 3, 7)
+            let input = elysium_mem::next_abs_addr(activate_mouse)
                 .cast::<*const *const u8>()
                 .read()
                 .read();

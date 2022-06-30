@@ -102,6 +102,7 @@ fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
     Vec3::from_xyz(x, y, z)
 }
 
+#[allow(unused_variables)]
 #[inline]
 unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mut bool) {
     // can you dont when on ladder or in noclip
@@ -193,12 +194,14 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     // note: remember, desync isnt static, nor can it always be 58.0;
     let desync = 58.0;
 
-    command.view_angle.x = pitch;
-    command.view_angle.y += yaw_base - desync + (jitter_yaw * side);
-    command.view_angle.z += roll_base + jitter_roll * side;
+    //command.view_angle.x = pitch;
+    //command.view_angle.y += yaw_base - desync + (jitter_yaw * side);
+    //command.view_angle.z += roll_base + jitter_roll * side;
+
+    command.view_angle.y -= desync;
 
     if *send_packet {
-        command.view_angle.y += 58.0;
+        command.view_angle.y += desync;
     } else {
         command.view_angle.y += 120.0;
     }
@@ -208,12 +211,10 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     }
 
     command.view_angle = command.view_angle.sanitize_angle();
-
-    fix_movement(command, *state::view_angle());
-
     command.state |= IN_BULLRUSH;
 
     let entity_list = &*state::entity_list().cast::<EntityList>();
+    let players = &mut *state::players();
 
     for i in 1..=64 {
         let entity = entity_list.get(i);
@@ -223,9 +224,14 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
             continue;
         }
 
-        //println!("{entity:?}");
+        let bones = &mut players[i - 1 as usize].bones;
+        let eye_origin = local.eye_origin();
+        let bone_origin = bones.get_origin(8).unwrap_unchecked();
+
+        //command.view_angle = calculate_angle(eye_origin, bone_origin);
     }
 
+    fix_movement(command, *state::view_angle());
     leg_animation_walk(command);
 }
 

@@ -1,7 +1,16 @@
+//! Memory related functions.
+
 #![feature(pointer_byte_offsets)]
+#![feature(ptr_const_cast)]
 #![feature(strict_provenance)]
 
-//! Memory related functions.
+use core::{mem, ptr};
+use dismal::{Inst, InstIter};
+use frosting::ffi::CSignature;
+
+pub use shared::Shared;
+
+mod shared;
 
 /// The size of a page.
 pub const PAGE_SIZE: usize = 4096;
@@ -11,24 +20,26 @@ pub const PAGE_MASK: usize = !(PAGE_SIZE - 1);
 
 const UNPROTECTED: i32 = libc::PROT_READ | libc::PROT_WRITE | libc::PROT_EXEC;
 
-/// Creates a new pointer with the given address and size.
+/// Searches `ptr` for the next instruction that makes use of a relative address, then resolves and
+/// returns the absolute address.
 #[inline]
-pub unsafe fn to_absolute<T>(base: *const T, addr: isize, size: usize) -> *const T {
-    base.map_addr(|base| (base as isize + addr) as usize)
-        .byte_add(size)
-}
+pub unsafe fn next_abs_addr<T>(base: *const T) -> *const T {
+    let insts = InstIter::from_bytes(base.addr(), &*base.cast::<[u8; 15]>());
 
-unsafe fn offset_of<T>(base: *const T) -> isize {
-    base.cast::<i32>().read() as isize
-}
+    for inst in insts {
+        println!(
+            "elysium | {:0x?} {:0x?} {:02X?}",
+            inst.ip(),
+            *inst,
+            inst.to_bytes()
+        );
 
-/// magic
-#[inline]
-pub unsafe fn to_absolute_with_offset<T>(base: *const T, offset: usize, len: usize) -> *const T {
-    let offset_address = base.byte_add(offset);
-    let offset = offset_of(offset_address);
+        if let Some(addr) = inst.abs_addr() {
+            return ptr::from_exposed_addr(addr);
+        }
+    }
 
-    base.byte_offset(offset).byte_add(len)
+    ptr::null()
 }
 
 /// Set protection for the page of the given pointer.
@@ -49,20 +60,85 @@ pub unsafe fn unprotect<T>(ptr: *const T) -> i32 {
     libc::PROT_READ | libc::PROT_EXEC
 }
 
-#[cfg(test)]
-mod tests {
-    const CODE: [u8; 6] = [0xFF, 0x25, 0xCA, 0xFC, 0x32, 0x00];
-    const ADDRESS: isize = i32::from_le_bytes([0xCA, 0xFC, 0x32, 0x00]) as isize;
+/// Obtain the address of an `extern "C"` function pointer.
+#[inline]
+pub unsafe fn fn_addr<F>(f: F) -> usize
+where
+    F: CSignature,
+{
+    mem::transmute_copy(&f)
+}
 
-    #[test]
-    fn to_absolute() {
-        unsafe {
-            let code = CODE.as_ptr();
-            let rip = std::ptr::invalid::<u8>(0);
-            let addr = code.byte_add(2).cast::<i32>().read() as isize;
-            let dest = super::to_absolute(rip, addr, 6);
+/// Calculate a relative offset for `f` based on the given `ip`.
+#[inline]
+pub unsafe fn relative_of<T, F>(ip: *const T, f: F) -> i32
+where
+    F: CSignature,
+{
+    let addr = fn_addr(f) as *const T;
+    let rel = addr.byte_offset_from(ip);
 
-            assert_eq!(dest, rip.byte_offset(ADDRESS).byte_add(6));
+    if !((i32::MIN as isize)..=(i32::MAX as isize)).contains(&rel) {
+        panic!("outside i32 range");
+    }
+
+    rel as i32
+}
+
+/// Rewrite code at `ptr` to `call`/`jmp`/`lea` to `hook`, rather than whatever is there by default
+#[inline]
+pub unsafe fn rewrite_code<T, F>(ptr: *mut T, hook: F)
+where
+    F: CSignature + Copy,
+{
+    let mut code = Vec::new();
+    let insts = InstIter::from_bytes(ptr.addr(), &*ptr.cast::<[u8; 15]>());
+
+    println!("elysium | original code");
+
+    for inst in insts {
+        println!(
+            "elysium | {:0x?} {:0x?} {:02X?}",
+            inst.ip(),
+            *inst,
+            inst.to_bytes()
+        );
+
+        match *inst {
+            Inst::Call(_) => {
+                // relative addresses are resolved via the rip address after the current
+                // instruction.
+                let ip = inst.next_ip();
+                let new_rel = relative_of(ip as *const u8, hook);
+                let inst = Inst::Call(new_rel);
+
+                code.extend_from_slice(&inst.to_bytes());
+            }
+            Inst::Ret => {
+                code.extend_from_slice(&Inst::Ret.to_bytes());
+
+                break;
+            }
+            inst => code.extend_from_slice(&inst.to_bytes()),
         }
     }
+
+    println!("elysium | new code");
+
+    let insts = InstIter::from_bytes(ptr.addr(), code.as_slice());
+
+    for inst in insts {
+        println!(
+            "elysium | {:0x?} {:0x?} {:02X?}",
+            inst.ip(),
+            *inst,
+            inst.to_bytes()
+        );
+    }
+
+    println!("about to write");
+    protect(ptr, libc::PROT_READ | libc::PROT_WRITE);
+
+    ptr::copy_nonoverlapping(code.as_ptr(), ptr.cast::<u8>(), code.len());
+    println!("written");
 }
