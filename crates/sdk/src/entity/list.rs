@@ -89,6 +89,6 @@ impl EntityList {
 
     #[inline]
     pub fn non_player_range(&self) -> RangeInclusive<i32> {
-        64..=self.highest_entity_index()
+        65..=self.highest_entity_index()
     }
 }
