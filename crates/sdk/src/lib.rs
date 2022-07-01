@@ -3,6 +3,7 @@
 #![allow(incomplete_features)]
 #![feature(const_convert)]
 #![feature(const_maybe_uninit_uninit_array)]
+#![feature(array_methods)]
 #![feature(const_mut_refs)]
 #![feature(const_option_ext)]
 #![feature(const_ptr_offset_from)]
@@ -35,7 +36,7 @@ pub use input::{Command, Input};
 pub use input_system::InputSystem;
 pub use interfaces::{InterfaceKind, Interfaces, LibraryKind};
 pub use item_kind::ItemKind;
-pub use material::MaterialKind;
+pub use materials::MaterialKind;
 pub use network::{Flow, NetworkChannel};
 pub use pad::Pad;
 pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
@@ -66,9 +67,10 @@ mod input_system;
 mod interfaces;
 mod item_kind;
 mod macros;
-mod material;
+mod materials;
 mod pad;
 mod panorama;
+mod physics;
 mod render;
 mod sound;
 mod steam;
