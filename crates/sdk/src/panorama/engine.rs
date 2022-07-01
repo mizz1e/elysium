@@ -3,7 +3,7 @@ use frosting::ffi::vtable;
 #[repr(C)]
 struct VTable {
     _pad: vtable::Pad<53>,
-    dispatch_event: unsafe extern "C" fn(this: *const UIEngine, event: *const ()),
+    dispatch_event: unsafe extern "thiscall" fn(this: *const UIEngine, event: *const ()),
 }
 
 /// Panorama UI Engine.

@@ -1,4 +1,5 @@
 use crate::{Pad, UtlVec};
+use core::fmt;
 use core::marker::PhantomData;
 use frosting::ffi::vtable;
 
@@ -54,32 +55,41 @@ impl Kind for f32 {}
 impl Kind for i32 {}
 impl Kind for bool {}
 
-#[derive(Debug)]
 #[repr(C)]
 struct VTable<T> {
     _pad0: vtable::Pad<15>,
-    read_f32: unsafe extern "C" fn(this: *const Var<T>) -> f32,
-    write_f32: unsafe extern "C" fn(this: *const Var<T>, value: f32),
+    read_f32: unsafe extern "thiscall" fn(this: *const Var<T>) -> f32,
+    write_f32: unsafe extern "thiscall" fn(this: *const Var<T>, value: f32),
     _pad1: vtable::Pad<1>,
-    read_i32: unsafe extern "C" fn(this: *const Var<T>) -> i32,
-    write_i32: unsafe extern "C" fn(this: *const Var<T>, value: i32),
+    read_i32: unsafe extern "thiscall" fn(this: *const Var<T>) -> i32,
+    write_i32: unsafe extern "thiscall" fn(this: *const Var<T>, value: i32),
 }
 
 /// config variable
-#[derive(Debug)]
 #[repr(C)]
 pub struct Var<T> {
     /// blah blah static
     vtable: *const VTable<T>,
     _pad0: Pad<40>,
-    pub change_callback: Option<unsafe extern "C" fn()>,
+    pub change_callback: Option<unsafe extern "thiscall" fn()>,
     pub parent: *const Var<()>,
     pub default_value: *const u8,
     pub string: *const u8,
     _pad1: Pad<28>,
-    pub on_change_callbacks: UtlVec<unsafe extern "C" fn()>,
+    pub on_change_callbacks: UtlVec<unsafe extern "thiscall" fn()>,
     // we do be owning T, tho
     _phantom: PhantomData<T>,
+}
+
+impl<T> fmt::Debug for Var<T> {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Var")
+            .field("parent", &self.parent)
+            .field("default_value", &self.default_value)
+            .field("string", &self.string)
+            .finish()
+    }
 }
 
 impl<T> Var<T> {

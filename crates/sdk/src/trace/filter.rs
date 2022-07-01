@@ -39,6 +39,7 @@ where
     }
 }
 
+// error[E0570]: `"thiscall"` is not a supported ABI for the current target
 unsafe extern "C" fn should_hit_entity<F>(
     this: *const Filter<F>,
     entity: *const (),
@@ -50,6 +51,7 @@ where
     (*this).filter.should_hit_entity(entity, mask)
 }
 
+// error[E0570]: `"thiscall"` is not a supported ABI for the current target
 unsafe extern "C" fn get_trace_kind<F>(this: *const Filter<F>) -> TraceKind
 where
     F: super::Filter,

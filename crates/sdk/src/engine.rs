@@ -23,39 +23,48 @@ pub struct PlayerInfo {
 #[repr(C)]
 struct VTable {
     _unknown0: vtable::Pad<5>,
-    get_screen_size: unsafe extern "C" fn(this: *const Engine, width: *mut f32, height: *mut f32),
+    get_screen_size:
+        unsafe extern "thiscall" fn(this: *const Engine, width: *mut f32, height: *mut f32),
     _unknown1: vtable::Pad<2>,
-    get_player_info:
-        unsafe extern "C" fn(this: *const Engine, index: i32, player_info: *mut PlayerInfo) -> bool,
-    get_player_for_user_id: unsafe extern "C" fn(this: *const Engine, user_id: SteamId) -> i32,
+    get_player_info: unsafe extern "thiscall" fn(
+        this: *const Engine,
+        index: i32,
+        player_info: *mut PlayerInfo,
+    ) -> bool,
+    get_player_for_user_id:
+        unsafe extern "thiscall" fn(this: *const Engine, user_id: SteamId) -> i32,
     _unknown2: vtable::Pad<2>,
-    local_player_index: unsafe extern "C" fn(this: *const Engine) -> i32,
+    local_player_index: unsafe extern "thiscall" fn(this: *const Engine) -> i32,
     _unknown3: vtable::Pad<5>,
-    view_angle: unsafe extern "C" fn(this: *const Engine, angle: *mut Vec3),
-    set_view_angle: unsafe extern "C" fn(this: *const Engine, angle: *const Vec3),
-    get_max_clients: unsafe extern "C" fn(this: *const Engine) -> i32,
+    view_angle: unsafe extern "thiscall" fn(this: *const Engine, angle: *mut Vec3),
+    set_view_angle: unsafe extern "thiscall" fn(this: *const Engine, angle: *const Vec3),
+    get_max_clients: unsafe extern "thiscall" fn(this: *const Engine) -> i32,
     _unknown4: vtable::Pad<5>,
-    is_in_game: unsafe extern "C" fn(this: *const Engine) -> bool,
-    is_connected: unsafe extern "C" fn(this: *const Engine) -> bool,
+    is_in_game: unsafe extern "thiscall" fn(this: *const Engine) -> bool,
+    is_connected: unsafe extern "thiscall" fn(this: *const Engine) -> bool,
     _unknown5: vtable::Pad<6>,
-    set_cull_box:
-        unsafe extern "C" fn(this: *const Engine, min: *const Vec3, max: *const Vec3) -> bool,
+    set_cull_box: unsafe extern "thiscall" fn(
+        this: *const Engine,
+        min: *const Vec3,
+        max: *const Vec3,
+    ) -> bool,
     _unknown6: vtable::Pad<2>,
-    world_to_screen_matrix: unsafe extern "C" fn(this: *const Engine) -> *const Matrix3x4,
+    world_to_screen_matrix: unsafe extern "thiscall" fn(this: *const Engine) -> *const Matrix3x4,
     _unknown7: vtable::Pad<5>,
-    get_bsp_tree_query: unsafe extern "C" fn(this: *const Engine) -> *const (),
+    get_bsp_tree_query: unsafe extern "thiscall" fn(this: *const Engine) -> *const (),
     _unknown8: vtable::Pad<9>,
-    get_level_name: unsafe extern "C" fn(this: *const Engine) -> *const u8,
+    get_level_name: unsafe extern "thiscall" fn(this: *const Engine) -> *const u8,
     _unknown9: vtable::Pad<24>,
-    get_network_channel: unsafe extern "C" fn(this: *const Engine) -> *const NetworkChannel,
+    get_network_channel: unsafe extern "thiscall" fn(this: *const Engine) -> *const NetworkChannel,
     _unknown10: vtable::Pad<34>,
-    command: unsafe extern "C" fn(
+    command: unsafe extern "thiscall" fn(
         this: *const Engine,
         command: *const u8,
         from_console_or_keybind: bool,
     ),
     _unknown11: vtable::Pad<72>,
-    get_steam_api_context: unsafe extern "C" fn(this: *const Engine) -> *const SteamAPIContext,
+    get_steam_api_context:
+        unsafe extern "thiscall" fn(this: *const Engine) -> *const SteamAPIContext,
 }
 
 vtable_validate! {

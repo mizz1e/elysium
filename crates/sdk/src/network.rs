@@ -6,55 +6,65 @@ use core::mem::MaybeUninit;
 
 #[repr(C)]
 struct VTable {
-    get_address: unsafe extern "C" fn(this: *const NetworkChannel) -> *const u8,
-    get_time: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
-    get_time_connected: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
-    get_buffer_len: unsafe extern "C" fn(this: *const NetworkChannel) -> i32,
-    get_data_rate: unsafe extern "C" fn(this: *const NetworkChannel) -> i32,
-    is_loopback: unsafe extern "C" fn(this: *const NetworkChannel) -> bool,
-    is_timing_out: unsafe extern "C" fn(this: *const NetworkChannel) -> bool,
-    is_playback: unsafe extern "C" fn(this: *const NetworkChannel) -> bool,
-    get_latency: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_latency: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_loss: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_choke: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_data: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_packets: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_total_data: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> i32,
-    get_sequence_number: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> i32,
-    is_valid_packet:
-        unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow, frame_number: i32) -> bool,
-    get_packet_time:
-        unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow, frame_number: i32) -> f32,
-    get_packet_bytes: unsafe extern "C" fn(
+    get_address: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const u8,
+    get_time: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    get_time_connected: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    get_buffer_len: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
+    get_data_rate: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
+    is_loopback: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
+    is_timing_out: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
+    is_playback: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
+    get_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    get_avg_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    get_avg_loss: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    get_avg_choke: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    get_avg_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    get_avg_packets: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    get_total_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
+    get_sequence_number:
+        unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
+    is_valid_packet: unsafe extern "thiscall" fn(
+        this: *const NetworkChannel,
+        flow: Flow,
+        frame_number: i32,
+    ) -> bool,
+    get_packet_time: unsafe extern "thiscall" fn(
+        this: *const NetworkChannel,
+        flow: Flow,
+        frame_number: i32,
+    ) -> f32,
+    get_packet_bytes: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
         group: i32,
     ) -> i32,
-    get_stream_progress: unsafe extern "C" fn(
+    get_stream_progress: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         recieved: *mut i32,
         total: *mut i32,
     ) -> bool,
-    get_time_since_last_received: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
-    get_command_interpolation_amount:
-        unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow, frame_number: i32) -> f32,
-    get_packet_response_latency: unsafe extern "C" fn(
+    get_time_since_last_received: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    get_command_interpolation_amount: unsafe extern "thiscall" fn(
+        this: *const NetworkChannel,
+        flow: Flow,
+        frame_number: i32,
+    ) -> f32,
+    get_packet_response_latency: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
         latency: *mut i32,
         choke: *mut i32,
     ),
-    get_remote_frame_rate: unsafe extern "C" fn(
+    get_remote_frame_rate: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         frame_time: *mut f32,
         frame_time_standard_deviation: *mut f32,
     ),
-    get_timeout_seconds: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
-    get_name: unsafe extern "C" fn(this: *const NetworkChannel) -> *const u8,
+    get_timeout_seconds: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    get_name: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const u8,
 }
 
 vtable_validate! {

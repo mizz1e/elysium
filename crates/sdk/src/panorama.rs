@@ -13,8 +13,8 @@ mod panorama_engine;
 pub struct PanoramaEventRegistration {
     pub args_len: i32,
     _pad0: Pad<4>,
-    pub make_event: unsafe extern "C" fn(this: *const ()) -> *const (),
-    pub create_event_from_string: unsafe extern "C" fn(
+    pub make_event: unsafe extern "thiscall" fn(this: *const ()) -> *const (),
+    pub create_event_from_string: unsafe extern "thiscall" fn(
         this: *const (),
         args: *const u8,
         result: *const *const u8,

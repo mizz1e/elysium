@@ -35,21 +35,21 @@ pub trait Filter {
 
 #[repr(C)]
 struct VTable {
-    point_contents: unsafe extern "C" fn(
+    point_contents: unsafe extern "thiscall" fn(
         this: *const Trace,
         position: *const Vec3,
         contents: u32,
         entities: *const *const (),
     ) -> u32,
     _pad0: vtable::Pad<3>,
-    clip_to_entity: unsafe extern "C" fn(
+    clip_to_entity: unsafe extern "thiscall" fn(
         this: *const Trace,
         ray: *const Ray,
         contents: u32,
         filter: *const (),
         entities: *const (),
     ),
-    trace: unsafe extern "C" fn(
+    trace: unsafe extern "thiscall" fn(
         this: *const Trace,
         ray: *const Ray,
         contents: u32,

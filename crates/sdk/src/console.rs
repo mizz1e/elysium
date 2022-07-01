@@ -5,9 +5,9 @@ use std::ffi::OsStr;
 #[repr(C)]
 pub struct VTable {
     _pad0: vtable::Pad<15>,
-    var: unsafe extern "C" fn(this: *const Console, var: *const u8) -> *const (),
+    var: unsafe extern "thiscall" fn(this: *const Console, var: *const u8) -> *const (),
     _pad1: vtable::Pad<11>,
-    write: unsafe extern "C" fn(this: *const Console, fmt: *const u8, txt: *const u8),
+    write: unsafe extern "thiscall" fn(this: *const Console, fmt: *const u8, txt: *const u8),
 }
 
 #[repr(C)]

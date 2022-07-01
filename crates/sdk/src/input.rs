@@ -96,15 +96,13 @@ impl Command {
     }
 }
 
-#[derive(Debug)]
 #[repr(C)]
 struct VTable {
     _pad0: vtable::Pad<8>,
     get_user_command:
-        unsafe extern "C" fn(this: *const Input, slot: i32, sequence: i32) -> *const Command,
+        unsafe extern "thiscall" fn(this: *const Input, slot: i32, sequence: i32) -> *const Command,
 }
 
-#[derive(Debug)]
 #[repr(C)]
 pub struct Input {
     vtable: &'static VTable,

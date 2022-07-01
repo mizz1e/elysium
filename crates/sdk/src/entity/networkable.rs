@@ -14,7 +14,8 @@ struct VTable {
     release: unsafe extern "thiscall" fn(this: *const Networkable),
     client_class: unsafe extern "thiscall" fn(this: *const Networkable) -> *const u8,
     _pad1: vtable::Pad<3>,
-    pre_data_update: unsafe extern "thiscall" fn(this: *const Networkable, update_kind: DataUpdateKind),
+    pre_data_update:
+        unsafe extern "thiscall" fn(this: *const Networkable, update_kind: DataUpdateKind),
     _pad2: vtable::Pad<2>,
     is_dormant: unsafe extern "thiscall" fn(this: *const Networkable) -> bool,
     index: unsafe extern "thiscall" fn(this: *const Networkable) -> i32,
