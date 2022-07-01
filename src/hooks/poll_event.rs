@@ -9,8 +9,6 @@ pub const POLL_EVENT: unsafe extern "C" fn(sdl_event: *mut sdl2_sys::SDL_Event) 
 
 /// `SDL_PollEvent` hook.
 pub unsafe extern "C" fn poll_event(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 {
-    frosting::println!();
-
     let result = state::hooks::poll_event(sdl_event);
 
     if !state::is_menu_none() {

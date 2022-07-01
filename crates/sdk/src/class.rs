@@ -48,6 +48,6 @@ classes! {
     Fog => "DT_FogController",
     Item => "DT_BaseAttributableItem",
     Player => "DT_CSPlayer",
-    Tomemap => "DT_EnvTonemapController",
+    Tonemap => "DT_EnvTonemapController",
     Weapon => "DT_WeaponCSBase"
 }

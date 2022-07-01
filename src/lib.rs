@@ -162,6 +162,7 @@ fn main() {
         state::set_vars(mem::transmute(vars));
 
         state::set_engine(interfaces.engine);
+        state::set_input_system(interfaces.input_system);
         state::set_entity_list(interfaces.entity_list);
         state::set_globals(globals);
         state::set_input(input);

@@ -5,7 +5,7 @@ use elysium_math::Vec3;
 use elysium_sdk::client::Class;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::{Engine, EntityList, Frame, Globals, Input};
+use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, InputSystem};
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
@@ -73,6 +73,24 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     // phsyics
     vars.physics_timescale.write(0.5);
 
+    let input_system = &*state::input_system().cast::<InputSystem>();
+    let is_menu_open = state::is_menu_open();
+
+    if is_menu_open && !engine.is_in_game() {
+        input_system.reset_input_state();
+    }
+
+    match frame {
+        Frame::RenderStart => {
+            input_system.enable_input(is_menu_open);
+            input_system.cursor_visible(is_menu_open);
+        }
+        _ => {
+            input_system.enable_input(!is_menu_open);
+            input_system.cursor_visible(!is_menu_open);
+        }
+    }
+
     if entity.is_null() {
         state::local::set_aim_punch_angle(Vec3::zero());
         state::local::set_player_none();
@@ -111,18 +129,10 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                 }
 
                 let players = &mut *state::players();
-
-                let networkable = &*(local as *const Entity)
-                    .byte_add(16)
-                    .cast::<elysium_sdk::entity::Networkable>();
-
-                let local_index = networkable.index() as usize;
-                println!("local player index = {local_index:?}");
                 let local_index = local.index() as usize;
 
                 for index in 1..=64 {
                     if index == local_index {
-                        println!("entity {index} is the local player");
                         continue;
                     }
 
@@ -130,7 +140,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                     let entity = entity_list.get(index);
 
                     if entity.is_null() {
-                        println!("entity {index} is null");
                         *bones = providence_model::Bones::zero();
                         continue;
                     }
@@ -138,13 +147,11 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                     let entity = &*entity.cast::<Entity>();
 
                     if entity.is_dormant() {
-                        println!("entity {index} is dormant");
                         *bones = providence_model::Bones::zero();
                         continue;
                     }
 
                     entity.setup_bones(&mut bones[0..128], 0x00000100, globals.current_time);
-
                     entity.setup_bones(&mut bones[0..128], 0x000FFF00, globals.current_time);
                 }
 
@@ -167,13 +174,24 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
                     let class = &*class.cast::<Class>();
 
-                    if class.entity_id == EntityId::CFogController {
-                        *entity.is_enabled() = true;
-                        *entity.start_distance() = 1.0;
-                        *entity.end_distance() = 10000.0;
-                        *entity.far_z() = 10000.0;
-                        *entity.density() = 1.0;
-                        *entity.color_primary() = 0xFF0000FF;
+                    match class.entity_id {
+                        EntityId::CFogController => {
+                            *entity.is_enabled() = true;
+                            *entity.start_distance() = 1.0;
+                            *entity.end_distance() = 10000.0;
+                            *entity.far_z() = 10000.0;
+                            *entity.density() = 1.0;
+                            *entity.color_primary() = 0xFF0000FF;
+                        }
+                        EntityId::CEnvTonemapController => {
+                            *entity.enable_bloom_scale() = true;
+                            *entity.enable_min_exposure() = true;
+                            *entity.enable_max_exposure() = true;
+                            *entity.min_exposure() = 0.5;
+                            *entity.max_exposure() = 0.5;
+                            *entity.bloom_scale() = 1.5;
+                        }
+                        _ => {}
                     }
                 }
             }

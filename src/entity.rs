@@ -158,6 +158,27 @@ impl Entity {
         *self.networked(|networked| networked.base_player.view_offset)
     }
 
+    /// only for base players
+    #[inline]
+    pub fn eye_origin(&self) -> Vec3 {
+        let origin = self.origin();
+        let view_offset = self.view_offset();
+
+        let z = if self.flags() & (1 << 1) != 0 {
+            46.0
+        } else {
+            64.0
+        };
+
+        let view_offset = if view_offset == Vec3::zero() {
+            Vec3::from_xyz(0.0, 0.0, z)
+        } else {
+            view_offset
+        };
+
+        origin + view_offset
+    }
+
     /// only for fog
     #[inline]
     pub fn is_enabled(&self) -> &mut bool {
@@ -194,24 +215,39 @@ impl Entity {
         self.networked(|networked| networked.fog.color_primary)
     }
 
-    /// only for base players
+    /// only for tonemap
     #[inline]
-    pub fn eye_origin(&self) -> Vec3 {
-        let origin = self.origin();
-        let view_offset = self.view_offset();
+    pub fn enable_min_exposure(&self) -> &mut bool {
+        self.networked(|networked| networked.tonemap.enable_min_exposure)
+    }
 
-        let z = if self.flags() & (1 << 1) != 0 {
-            46.0
-        } else {
-            64.0
-        };
+    /// only for tonemap
+    #[inline]
+    pub fn enable_max_exposure(&self) -> &mut bool {
+        self.networked(|networked| networked.tonemap.enable_max_exposure)
+    }
 
-        let view_offset = if view_offset == Vec3::zero() {
-            Vec3::from_xyz(0.0, 0.0, z)
-        } else {
-            view_offset
-        };
+    /// only for tonemap
+    #[inline]
+    pub fn enable_bloom_scale(&self) -> &mut bool {
+        self.networked(|networked| networked.tonemap.enable_bloom_scale)
+    }
 
-        origin + view_offset
+    /// only for tonemap
+    #[inline]
+    pub fn min_exposure(&self) -> &mut f32 {
+        self.networked(|networked| networked.tonemap.min_exposure)
+    }
+
+    /// only for tonemap
+    #[inline]
+    pub fn max_exposure(&self) -> &mut f32 {
+        self.networked(|networked| networked.tonemap.max_exposure)
+    }
+
+    /// only for tonemap
+    #[inline]
+    pub fn bloom_scale(&self) -> &mut f32 {
+        self.networked(|networked| networked.tonemap.bloom_scale)
     }
 }

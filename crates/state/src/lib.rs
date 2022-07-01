@@ -48,7 +48,7 @@ struct State {
 
     materials: Materials,
 
-    networked: Shared<[u8; 248]>,
+    networked: Shared<[u8; 296]>,
 
     vars: Shared<[u8; 392]>,
 
@@ -59,6 +59,9 @@ struct State {
     send_packet: Shared<*mut bool>,
     tick_count: Shared<i32>,
     view_angle: Shared<Vec3>,
+
+    /// type-erased reference to your mother
+    input_system: SharedOption<NonNull<u8>>,
 
     /// type-erased reference to the game engine interface
     engine: SharedOption<NonNull<u8>>,
@@ -95,7 +98,7 @@ static STATE: ManuallyDrop<State> = ManuallyDrop::new(State {
 
     materials: Materials::new(),
 
-    networked: Shared::new([0; 248]),
+    networked: Shared::new([0; 296]),
 
     vars: Shared::new([0; 392]),
 
@@ -107,6 +110,7 @@ static STATE: ManuallyDrop<State> = ManuallyDrop::new(State {
     tick_count: Shared::new(0),
     view_angle: Shared::new(Vec3::splat(0.0)),
 
+    input_system: SharedOption::none(),
     engine: SharedOption::none(),
     entity_list: SharedOption::none(),
     globals: SharedOption::none(),
@@ -266,6 +270,18 @@ pub fn view_angle() -> &'static mut Vec3 {
 }
 
 #[inline]
+pub unsafe fn input_system() -> *const u8 {
+    STATE.input_system.as_mut().as_ptr()
+}
+
+#[inline]
+pub unsafe fn set_input_system(engine: *const u8) {
+    STATE
+        .input_system
+        .write(NonNull::new_unchecked(engine.as_mut()));
+}
+
+#[inline]
 pub unsafe fn engine() -> *const u8 {
     STATE.engine.as_mut().as_ptr()
 }
@@ -332,12 +348,12 @@ pub unsafe fn set_trace(trace: *const u8) {
 }
 
 #[inline]
-pub unsafe fn networked() -> *const [u8; 248] {
+pub unsafe fn networked() -> *const [u8; 296] {
     STATE.networked.as_mut()
 }
 
 #[inline]
-pub unsafe fn set_networked(networked: [u8; 248]) {
+pub unsafe fn set_networked(networked: [u8; 296]) {
     STATE.networked.write(networked);
 }
 

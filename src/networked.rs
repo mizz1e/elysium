@@ -65,6 +65,16 @@ pub struct Weapon {
     pub revolver_cock_time: usize,
 }
 
+#[derive(Debug)]
+pub struct Tonemap {
+    pub bloom_scale: usize,
+    pub enable_bloom_scale: usize,
+    pub enable_min_exposure: usize,
+    pub enable_max_exposure: usize,
+    pub min_exposure: usize,
+    pub max_exposure: usize,
+}
+
 /// Networked variable manager.
 #[derive(Debug)]
 pub struct Networked {
@@ -76,6 +86,7 @@ pub struct Networked {
     pub item: Item,
     pub player: Player,
     pub weapon: Weapon,
+    pub tonemap: Tonemap,
 }
 
 impl Networked {
@@ -155,6 +166,14 @@ fn insert_entry(this: &mut Networked, class: Class, entry: Entry, offset: usize)
 
         // weapon
         (Class::Weapon, Entry::RevolverCockTime) => this.weapon.revolver_cock_time = offset,
+
+        // tonemap
+        (Class::Tonemap, Entry::BloomScale) => this.tonemap.bloom_scale = offset,
+        (Class::Tonemap, Entry::EnableBloomScale) => this.tonemap.enable_bloom_scale = offset,
+        (Class::Tonemap, Entry::EnableMaxExposure) => this.tonemap.enable_max_exposure = offset,
+        (Class::Tonemap, Entry::EnableMinExposure) => this.tonemap.enable_min_exposure = offset,
+        (Class::Tonemap, Entry::MaxExposure) => this.tonemap.max_exposure = offset,
+        (Class::Tonemap, Entry::MinExposure) => this.tonemap.min_exposure = offset,
         _ => {}
     }
 }

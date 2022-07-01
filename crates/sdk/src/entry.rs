@@ -52,10 +52,9 @@ entries! {
     Cycle => "m_flCycle",
 
     EnableBloomScale => "m_bUseCustomBloomScale",
-    EnableExposureMax => "m_bUseCustomAutoExposureMax",
-    EnableExposureMin => "m_bUseCustomAutoExposureMin",
-    ExposureMax => "m_flCustomAutoExposureMax",
-    ExposureMin => "m_flCustomAutoExposureMin",
+    EnableMaxExposure => "m_bUseCustomAutoExposureMax",
+    EnableMinExposure => "m_bUseCustomAutoExposureMin",
+
     EyeAngle => "m_angEyeAngles[0]",
 
     Flags => "m_fFlags",
@@ -83,7 +82,9 @@ entries! {
     LowerBodyYaw => "m_flLowerBodyYawTarget",
 
     Magazine => "m_iClip1",
+    MaxExposure => "m_flCustomAutoExposureMax",
     MaxFlashAlpha => "m_flFlashMaxAlpha",
+    MinExposure => "m_flCustomAutoExposureMin",
     Money => "m_iAccount",
 
     NextAttackAvailableAfter => "m_flNextPrimaryAttack",

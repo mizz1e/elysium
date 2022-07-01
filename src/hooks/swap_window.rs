@@ -7,8 +7,6 @@ pub const SWAP_WINDOW: unsafe extern "C" fn(sdl_window: *mut sdl2_sys::SDL_Windo
 
 /// `SDL_GL_SwapWindow` hook.
 pub unsafe extern "C" fn swap_window(sdl_window: *mut sdl2_sys::SDL_Window) {
-    frosting::println!();
-
     let mut width = MaybeUninit::uninit();
     let mut height = MaybeUninit::uninit();
 
