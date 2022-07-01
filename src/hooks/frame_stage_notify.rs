@@ -7,20 +7,7 @@ use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::EntityId;
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, InputSystem};
 
-/// `FrameStageNotify` hook.
-pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
-    let engine = &*state::engine().cast::<Engine>();
-    let entity_list = &*state::entity_list().cast::<EntityList>();
-    let globals = &*state::globals().cast::<Globals>();
-    let input = &mut *state::input().as_mut().cast::<Input>();
-    let vars = &*state::vars().cast::<Vars>();
-
-    *state::view_angle() = engine.view_angle();
-
-    let frame: Frame = mem::transmute(frame);
-    let index = engine.local_player_index();
-    let entity = entity_list.get(index);
-
+fn update_vars(vars: &Vars) {
     // misc
     vars.allow_developer.write(true);
     vars.cheats.write(true);
@@ -72,33 +59,73 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
     // phsyics
     vars.physics_timescale.write(0.5);
+}
 
+fn update_fog(entity: &Entity) {
+    *entity.is_enabled() = true;
+    *entity.start_distance() = 150.0;
+    *entity.end_distance() = 350.0;
+    *entity.far_z() = 10000.0;
+    *entity.density() = 0.1;
+    *entity.color_primary() = 0x0000FF;
+    *entity.color_secondary() = 0xFFFF00;
+    *entity.direction() = Vec3::from_xyz(1.0, 0.0, 0.0);
+}
+
+fn update_tonemap(entity: &Entity) {
+    *entity.enable_bloom_scale() = true;
+    *entity.enable_min_exposure() = true;
+    *entity.enable_max_exposure() = true;
+    *entity.min_exposure() = 0.5;
+    *entity.max_exposure() = 0.5;
+    *entity.bloom_scale() = 3.5;
+}
+
+/// `FrameStageNotify` hook.
+pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
+    // used interfaces
+    let engine = &*state::engine().cast::<Engine>();
+    let entity_list = &*state::entity_list().cast::<EntityList>();
+    let globals = &*state::globals().cast::<Globals>();
+    let input = &mut *state::input().as_mut().cast::<Input>();
     let input_system = &*state::input_system().cast::<InputSystem>();
+    let vars = &*state::vars().cast::<Vars>();
+
+    // is menu open !
     let is_menu_open = state::is_menu_open();
 
-    if is_menu_open && !engine.is_in_game() {
-        input_system.reset_input_state();
+    *state::view_angle() = engine.view_angle();
+
+    // TODO: Frame::from_i32(frame);
+    let frame: Frame = mem::transmute(frame);
+    let index = engine.local_player_index();
+    let local = entity_list.entity(index as i32);
+
+    // force vars
+    update_vars(&vars);
+
+    if engine.is_in_game() {
+        input_system.enable_input(is_menu_open);
+        input_system.cursor_visible(is_menu_open);
+
+        if is_menu_open {
+            input_system.reset_input_state();
+        }
+    } else {
+        // apparently needs to be enabled as you're enterting a map
+        input_system.enable_input(true);
+        input_system.cursor_visible(true);
     }
 
-    match frame {
-        Frame::RenderStart => {
-            input_system.enable_input(is_menu_open);
-            input_system.cursor_visible(is_menu_open);
-        }
-        _ => {
-            input_system.enable_input(!is_menu_open);
-            input_system.cursor_visible(!is_menu_open);
-        }
-    }
-
-    if entity.is_null() {
+    // TODO: refactor state, probably do like state::local::reset();
+    if local.is_null() {
         state::local::set_aim_punch_angle(Vec3::zero());
         state::local::set_player_none();
         state::local::set_view_punch_angle(Vec3::zero());
     } else {
-        state::local::set_player(NonNull::new_unchecked(entity.as_mut()));
+        state::local::set_player(NonNull::new_unchecked(local.as_mut()));
 
-        let local = &*entity.cast::<Entity>();
+        let local = &*local.cast::<Entity>();
 
         if local.observer_mode().breaks_thirdperson() {
             input.thirdperson = false;
@@ -128,37 +155,8 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                     local.view_angle().z = -35.0;
                 }
 
-                let players = &mut *state::players();
-                /*let local_index = local.index() as usize;
-
-                for index in 1..=64 {
-                    if index == local_index {
-                        continue;
-                    }
-
-                    let bones = &mut players[index - 1].bones;
-                    let entity = entity_list.get(index);
-
-                    if entity.is_null() {
-                        *bones = providence_model::Bones::zero();
-                        continue;
-                    }
-
-                    let entity = &*entity.cast::<Entity>();
-
-                    if entity.is_dormant() {
-                        *bones = providence_model::Bones::zero();
-                        continue;
-                    }
-
-                    entity.setup_bones(&mut bones[0..128], 0x00000100, globals.current_time);
-                    entity.setup_bones(&mut bones[0..128], 0x000FFF00, globals.current_time);
-                }*/
-
-                let highest_entity_index = entity_list.len();
-
-                for index in 64..=highest_entity_index {
-                    let entity = entity_list.get(index);
+                for index in entity_list.non_player_range() {
+                    let entity = entity_list.entity(index);
 
                     if entity.is_null() {
                         continue;
@@ -175,23 +173,8 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                     let class = &*class.cast::<Class>();
 
                     match class.entity_id {
-                        EntityId::CFogController => {
-                            *entity.is_enabled() = true;
-                            *entity.start_distance() = 1.0;
-                            *entity.end_distance() = 10000.0;
-                            *entity.far_z() = 10000.0;
-                            *entity.density() = 1.0;
-                            *entity.color_primary() = 0xFF0000;
-                            *entity.color_secondary() = 0x0000FF;
-                        }
-                        EntityId::CEnvTonemapController => {
-                            *entity.enable_bloom_scale() = true;
-                            *entity.enable_min_exposure() = true;
-                            *entity.enable_max_exposure() = true;
-                            *entity.min_exposure() = 0.5;
-                            *entity.max_exposure() = 0.5;
-                            *entity.bloom_scale() = 1.5;
-                        }
+                        EntityId::CFogController => update_fog(entity),
+                        EntityId::CEnvTonemapController => update_tonemap(entity),
                         _ => {}
                     }
                 }

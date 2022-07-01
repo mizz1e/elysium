@@ -88,6 +88,8 @@ fn scale_damage(
 
 #[allow(dead_code)]
 fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
+    println!("src = {src:?}, dst = {dst:?}");
+
     let delta = src - dst;
     let hypot = (delta.x * delta.x + delta.y * delta.y).sqrt();
 
@@ -213,23 +215,49 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     command.view_angle = command.view_angle.sanitize_angle();
     command.state |= IN_BULLRUSH;
 
+    use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, InputSystem};
+
+    let engine = &*state::engine().cast::<Engine>();
     let entity_list = &*state::entity_list().cast::<EntityList>();
+    let globals = &*state::globals().cast::<Globals>();
+    let input = &mut *state::input().as_mut().cast::<Input>();
+    let vars = &*state::vars().cast::<Vars>();
+
     let players = &mut *state::players();
+    /*let local_index = local.index();
 
-    for i in 1..=64 {
-        let entity = entity_list.get(i);
-
-        // skip invalid
-        if entity.is_null() {
+    // iterate player list
+    for index in entity_list.player_range() {
+        // skip local
+        if index == local_index {
             continue;
         }
 
-        let bones = &mut players[i - 1 as usize].bones;
+        let bones = &mut players[index as usize - 1].bones;
+        let entity = entity_list.entity(index);
+
+        // skip nonexistent
+        if entity.is_null() {
+            *bones = providence_model::Bones::zero();
+            continue;
+        }
+
+        let entity = &*entity.cast::<Entity>();
+
+        // skip dormant
+        if entity.is_dormant() {
+            *bones = providence_model::Bones::zero();
+            continue;
+        }
+
+        entity.setup_bones(&mut bones[0..128], 0x00000100, globals.current_time);
+        entity.setup_bones(&mut bones[0..128], 0x000FFF00, globals.current_time);
+
         let eye_origin = local.eye_origin();
         let bone_origin = bones.get_origin(8).unwrap_unchecked();
 
-        //command.view_angle = calculate_angle(eye_origin, bone_origin);
-    }
+        command.view_angle = calculate_angle(eye_origin, bone_origin);
+    }*/
 
     fix_movement(command, *state::view_angle());
     leg_animation_walk(command);

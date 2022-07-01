@@ -23,8 +23,8 @@ vtable_validate! {
 #[repr(C)]
 pub struct Entity {
     vtable: &'static VTable,
-    renderable: Renderable,
-    networkable: Networkable,
+    pub renderable: Renderable,
+    pub networkable: Networkable,
 }
 
 object_validate! {
@@ -35,40 +35,52 @@ object_validate! {
 }
 
 impl Entity {
+    /// for whatever reason, things get optimized weirdly, and result in segmentation faults
+    #[inline(never)]
+    pub fn renderable<'a>(entity: *const Entity) -> &'a Renderable {
+        unsafe { &*entity.byte_add(8).cast::<Renderable>() }
+    }
+
+    /// for whatever reason, things get optimized weirdly, and result in segmentation faults
+    #[inline(never)]
+    pub fn networkable<'a>(entity: *const Entity) -> &'a Networkable {
+        unsafe { &*entity.byte_add(16).cast::<Networkable>() }
+    }
+
     /// the entity's class
     #[inline]
     pub fn client_class(&self) -> *const u8 {
-        self.networkable.client_class()
+        Self::networkable(self).client_class()
     }
 
     /// is the entity dormant
     #[inline]
     pub fn is_dormant(&self) -> bool {
-        self.networkable.is_dormant()
+        Self::networkable(self).is_dormant()
     }
 
     /// the entity's index
     #[inline]
     pub fn index(&self) -> i32 {
-        self.networkable.index()
+        Self::networkable(self).index()
     }
 
     /// the entity's model
     #[inline]
     pub fn model(&self) -> *const u8 {
-        self.renderable.model()
+        Self::renderable(self).model()
     }
 
     /// setup bones
     #[inline]
     pub fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool {
-        self.renderable.setup_bones(bones, mask, time)
+        Self::renderable(self).setup_bones(bones, mask, time)
     }
 
     /// should draw?
     #[inline]
     pub fn should_draw(&self) -> bool {
-        self.renderable.should_draw()
+        Self::renderable(self).should_draw()
     }
 
     #[inline]
@@ -207,6 +219,12 @@ impl Entity {
     #[inline]
     pub fn density(&self) -> &mut f32 {
         self.networked(|networked| networked.fog.density)
+    }
+
+    /// only for fog
+    #[inline]
+    pub fn direction(&self) -> &mut Vec3 {
+        self.networked(|networked| networked.fog.direction)
     }
 
     /// only for fog

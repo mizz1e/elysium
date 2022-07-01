@@ -61,6 +61,7 @@ entries! {
     FogColorPrimary => "m_fog.colorPrimary",
     FogColorSecondary => "m_fog.colorSecondary",
     FogDensity => "m_fog.maxdensity",
+    FogDirection => "m_fog.dirPrimary",
     FogEnd => "m_fog.end",
     FogFarZ => "m_fog.farz",
     FogIsEnabled => "m_fog.enable",

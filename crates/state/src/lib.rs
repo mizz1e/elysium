@@ -48,7 +48,7 @@ struct State {
 
     materials: Materials,
 
-    networked: Shared<[u8; 312]>,
+    networked: Shared<[u8; 320]>,
 
     vars: Shared<[u8; 392]>,
 
@@ -98,7 +98,7 @@ static STATE: ManuallyDrop<State> = ManuallyDrop::new(State {
 
     materials: Materials::new(),
 
-    networked: Shared::new([0; 312]),
+    networked: Shared::new([0; 320]),
 
     vars: Shared::new([0; 392]),
 
@@ -348,12 +348,12 @@ pub unsafe fn set_trace(trace: *const u8) {
 }
 
 #[inline]
-pub unsafe fn networked() -> *const [u8; 312] {
+pub unsafe fn networked() -> *const [u8; 320] {
     STATE.networked.as_mut()
 }
 
 #[inline]
-pub unsafe fn set_networked(networked: [u8; 312]) {
+pub unsafe fn set_networked(networked: [u8; 320]) {
     STATE.networked.write(networked);
 }
 
