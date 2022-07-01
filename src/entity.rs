@@ -211,8 +211,20 @@ impl Entity {
 
     /// only for fog
     #[inline]
-    pub fn color_primary(&self) -> &mut u32 {
+    pub fn color_primary(&self) -> &mut i32 {
         self.networked(|networked| networked.fog.color_primary)
+    }
+
+    /// only for fog
+    #[inline]
+    pub fn color_secondary(&self) -> &mut i32 {
+        self.networked(|networked| networked.fog.color_secondary)
+    }
+
+    /// only for fog
+    #[inline]
+    pub fn hdr_scale(&self) -> &mut f32 {
+        self.networked(|networked| networked.fog.hdr_scale)
     }
 
     /// only for tonemap

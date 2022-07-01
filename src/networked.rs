@@ -33,10 +33,12 @@ pub struct BaseWeapon {
 #[derive(Debug)]
 pub struct Fog {
     pub color_primary: usize,
+    pub color_secondary: usize,
     pub density: usize,
     pub end: usize,
     pub far_z: usize,
     pub is_enabled: usize,
+    pub hdr_scale: usize,
     pub start: usize,
 }
 
@@ -142,10 +144,12 @@ fn insert_entry(this: &mut Networked, class: Class, entry: Entry, offset: usize)
 
         // fog
         (Class::Fog, Entry::FogColorPrimary) => this.fog.color_primary = offset,
+        (Class::Fog, Entry::FogColorSecondary) => this.fog.color_secondary = offset,
         (Class::Fog, Entry::FogDensity) => this.fog.density = offset,
         (Class::Fog, Entry::FogEnd) => this.fog.end = offset,
         (Class::Fog, Entry::FogFarZ) => this.fog.far_z = offset,
         (Class::Fog, Entry::FogIsEnabled) => this.fog.is_enabled = offset,
+        (Class::Fog, Entry::FogHDRScale) => this.fog.hdr_scale = offset,
         (Class::Fog, Entry::FogStart) => this.fog.start = offset,
 
         // item
@@ -176,6 +180,8 @@ fn insert_entry(this: &mut Networked, class: Class, entry: Entry, offset: usize)
         (Class::Tonemap, Entry::MinExposure) => this.tonemap.min_exposure = offset,
         _ => {}
     }
+
+    println!("{this:?}");
 }
 
 /// Iterate the networked tables.

@@ -48,7 +48,7 @@ struct State {
 
     materials: Materials,
 
-    networked: Shared<[u8; 296]>,
+    networked: Shared<[u8; 312]>,
 
     vars: Shared<[u8; 392]>,
 
@@ -89,7 +89,7 @@ static STATE: ManuallyDrop<State> = ManuallyDrop::new(State {
     gl_context: Shared::new(elysium_gl::Context::NONE),
 
     menu: SharedBox::none(),
-    menu_open: Shared::new(true),
+    menu_open: Shared::new(false),
     menu_open_lock: Shared::new(false),
     cursor_position: Shared::new(Point::new(0.0, 0.0)),
     window_size: Shared::new(Size::new(0, 0)),
@@ -98,7 +98,7 @@ static STATE: ManuallyDrop<State> = ManuallyDrop::new(State {
 
     materials: Materials::new(),
 
-    networked: Shared::new([0; 296]),
+    networked: Shared::new([0; 312]),
 
     vars: Shared::new([0; 392]),
 
@@ -348,12 +348,12 @@ pub unsafe fn set_trace(trace: *const u8) {
 }
 
 #[inline]
-pub unsafe fn networked() -> *const [u8; 296] {
+pub unsafe fn networked() -> *const [u8; 312] {
     STATE.networked.as_mut()
 }
 
 #[inline]
-pub unsafe fn set_networked(networked: [u8; 296]) {
+pub unsafe fn set_networked(networked: [u8; 312]) {
     STATE.networked.write(networked);
 }
 

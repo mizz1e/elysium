@@ -40,10 +40,10 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     vars.panorama_blur.write(true);
 
     // p100
-    vars.hud.write(false);
+    //vars.hud.write(false);
 
     // shadows
-    vars.csm.write(false);
+    //vars.csm.write(false);
     vars.csm_shadows.write(false);
     vars.feet_shadows.write(false);
     vars.prop_shadows.write(false);
@@ -68,7 +68,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     vars.human_blood.write(false);
     vars.decals.write(false);
     vars.jiggle_bones.write(false);
-    vars.rain.write(false);
+    //vars.rain.write(false);
 
     // phsyics
     vars.physics_timescale.write(0.5);
@@ -129,7 +129,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                 }
 
                 let players = &mut *state::players();
-                let local_index = local.index() as usize;
+                /*let local_index = local.index() as usize;
 
                 for index in 1..=64 {
                     if index == local_index {
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
                     entity.setup_bones(&mut bones[0..128], 0x00000100, globals.current_time);
                     entity.setup_bones(&mut bones[0..128], 0x000FFF00, globals.current_time);
-                }
+                }*/
 
                 let highest_entity_index = entity_list.len();
 
@@ -181,7 +181,8 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                             *entity.end_distance() = 10000.0;
                             *entity.far_z() = 10000.0;
                             *entity.density() = 1.0;
-                            *entity.color_primary() = 0xFF0000FF;
+                            *entity.color_primary() = 0xFF0000;
+                            *entity.color_secondary() = 0x0000FF;
                         }
                         EntityId::CEnvTonemapController => {
                             *entity.enable_bloom_scale() = true;
