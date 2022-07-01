@@ -112,8 +112,8 @@ impl Engine {
 
     /// returns the local player's index
     #[inline]
-    pub fn local_player_index(&self) -> usize {
-        unsafe { (self.vtable.local_player_index)(self) as usize }
+    pub fn local_player_index(&self) -> i32 {
+        unsafe { (self.vtable.local_player_index)(self) }
     }
 
     /// returns the screen size

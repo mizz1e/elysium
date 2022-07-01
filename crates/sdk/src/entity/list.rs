@@ -1,4 +1,4 @@
-use crate::vtable_validate;
+use crate::{vtable_validate, Engine};
 use core::ops::RangeInclusive;
 
 #[repr(C)]
@@ -80,6 +80,11 @@ impl EntityList {
     #[inline]
     pub fn max_entities(&self) -> i32 {
         unsafe { (self.vtable.max_entities)(self) }
+    }
+
+    #[inline]
+    pub fn local_player(&self, engine: &Engine) -> *const u8 {
+        self.entity(engine.local_player_index())
     }
 
     #[inline]

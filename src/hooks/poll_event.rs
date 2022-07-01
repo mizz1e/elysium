@@ -9,6 +9,7 @@ pub const POLL_EVENT: unsafe extern "C" fn(sdl_event: *mut sdl2_sys::SDL_Event) 
 
 /// `SDL_PollEvent` hook.
 pub unsafe extern "C" fn poll_event(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 {
+    let local_vars = state::Local::get();
     let result = state::hooks::poll_event(sdl_event);
 
     if !state::is_menu_none() {
@@ -22,7 +23,7 @@ pub unsafe extern "C" fn poll_event(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 
                 }) => state::toggle_menu(),
 
                 // thirdperson
-                Event::Mouse(ButtonPressed(Other(4))) => state::local::toggle_thirdperson(),
+                Event::Mouse(ButtonPressed(Other(4))) => local_vars.toggle_thirdperson(),
 
                 // p100 duplicate input fixes
                 // insert
@@ -31,9 +32,7 @@ pub unsafe extern "C" fn poll_event(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 
                 }) => state::release_toggle_menu(),
 
                 // thirdperson
-                Event::Mouse(ButtonReleased(Other(4))) => {
-                    state::local::release_toggle_thirdperson()
-                }
+                Event::Mouse(ButtonReleased(Other(4))) => local_vars.release_thirdperson_lock(),
 
                 // move cursor
                 Event::Mouse(mouse::Event::CursorMoved { position }) => {

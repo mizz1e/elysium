@@ -20,11 +20,10 @@ pub use entity::Entity;
 pub use networked::Networked;
 
 mod entity;
-pub mod networked;
-//mod simulation;
 
 pub mod hooks;
 pub mod library;
+pub mod networked;
 pub mod pattern;
 
 // this is called by glibc after the library is loaded into a process

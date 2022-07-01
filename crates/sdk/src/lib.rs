@@ -1,8 +1,10 @@
 #![deny(warnings)]
+#![feature(abi_thiscall)]
 #![allow(incomplete_features)]
 #![feature(const_convert)]
 #![feature(const_maybe_uninit_uninit_array)]
 #![feature(const_mut_refs)]
+#![feature(const_option_ext)]
 #![feature(const_ptr_offset_from)]
 #![feature(const_refs_to_cell)]
 #![feature(const_slice_from_raw_parts)]
@@ -14,7 +16,6 @@
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
 #![feature(ptr_const_cast)]
-#![feature(abi_thiscall)]
 
 pub use animation_layer::AnimationLayer;
 pub use animation_state::AnimationState;

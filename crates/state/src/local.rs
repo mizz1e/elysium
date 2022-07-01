@@ -1,88 +1,104 @@
 //! Local player-related values.
 
-use super::{Shared, SharedOption, STATE};
-use core::ptr::NonNull;
+use core::cell::SyncUnsafeCell;
+use core::ptr;
 use elysium_math::Vec3;
 use providence_model::Bones;
 
-macro_rules! local {
-    ($(($get:ident, $set:ident): $shared:ident<$ty:ty> = $expr:expr;)*) => {
-        pub(crate) struct Local {
-            $($get: $shared<$ty>,)*
-        }
+#[repr(transparent)]
+struct LocalWrapper(Local);
 
-        impl Local {
-            #[inline]
-            pub const fn new() -> Self {
-                Self {
-                    $($get: $expr,)*
-                }
-            }
-        }
+unsafe impl Sync for LocalWrapper {}
 
-        $(
-            #[inline]
-            pub unsafe fn $get() -> $ty {
-                *STATE.local.$get.as_mut()
-            }
+static LOCAL: SyncUnsafeCell<LocalWrapper> = SyncUnsafeCell::new(LocalWrapper(Local::new()));
 
-            #[inline]
-            pub fn $set(value: $ty) {
-                unsafe {
-                    STATE.local.$get.write(value);
-                }
-            }
-        )*
+/// Local player-related values.
+pub struct Local {
+    /// Local player's aim punch angle.
+    pub aim_punch_angle: Vec3,
+    /// Local player's bones.
+    pub bones: Bones,
+    /// Local player's current health.
+    pub health: i32,
+    /// Local player's current magazine ammo.
+    pub magazine_ammo: i32,
+    /// Local player's old yaw.
+    pub old_yaw: f32,
+    /// Reference to the local player.
+    pub player: *const u8,
+    /// Local player's shot angle (used for ragebot).
+    pub shot_view_angle: Vec3,
+    /// Whether the local player is in thirdperson or not.
+    pub thirdperson: bool,
+    /// Prevent SDL_PollEvent key duplication (thus "breaking" toggling).
+    pub thirdperson_lock: bool,
+    /// Total ammo the local player has.
+    pub total_ammo: i32,
+    /// Local player's view angle.
+    pub view_angle: Vec3,
+    /// Local player's view punch angle.
+    pub view_punch_angle: Vec3,
+    /// Whether to visualise the shot angle (used for ragebot).
+    pub visualize_shot: f32,
+    /// Local player's current weapon.
+    pub weapon: *const u8,
+    /// If the local player was attacking last tick.
+    pub was_attacking: bool,
+    /// If the local player was on the ground last tick.
+    pub was_on_ground: bool,
+}
+
+impl Local {
+    const INIT: Self = Self {
+        aim_punch_angle: Vec3::zero(),
+        bones: Bones::zero(),
+        health: 0,
+        magazine_ammo: 0,
+        old_yaw: 0.0,
+        player: ptr::null(),
+        shot_view_angle: Vec3::zero(),
+        thirdperson: false,
+        thirdperson_lock: false,
+        total_ammo: 0,
+        view_angle: Vec3::zero(),
+        view_punch_angle: Vec3::zero(),
+        visualize_shot: 0.0,
+        weapon: ptr::null(),
+        was_attacking: false,
+        was_on_ground: false,
     };
-}
 
-local! {
-    (aim_punch_angle, set_aim_punch_angle): Shared<Vec3> = Shared::new(Vec3::zero());
-    (bones, set_bones): Shared<Bones> = Shared::new(Bones::zero());
-    (health, set_health): Shared<i32> = Shared::new(0);
-    (magazine_ammo, set_magazine_ammo): Shared<i32> = Shared::new(0);
-    (old_yaw, set_old_yaw): Shared<f32> = Shared::new(0.0);
-    (was_attacking, set_was_attacking): Shared<bool> = Shared::new(false);
-    (was_on_ground, set_was_on_ground): Shared<bool> = Shared::new(false);
-    (player, set_player): SharedOption<NonNull<u8>> = SharedOption::none();
-    (shot_view_angle, set_shot_view_angle): Shared<Vec3> = Shared::new(Vec3::zero());
-    (thirdperson, set_thirdperson): Shared<bool> = Shared::new(false);
-    (thirdperson_lock, set_thirdperson_lock): Shared<bool> = Shared::new(false);
-    (total_ammo, set_total_ammo): Shared<i32> = Shared::new(0);
-    (use_shot_view_angle, set_use_shot_view_angle): Shared<f32> = Shared::new(0.0);
-    (view_angle, set_view_angle): Shared<Vec3> = Shared::new(Vec3::zero());
-    (view_punch_angle, set_view_punch_angle): Shared<Vec3> = Shared::new(Vec3::zero());
-    (weapon, set_weapon): SharedOption<NonNull<u8>> = SharedOption::none();
-}
-
-/// Is the local player uninitialized.
-#[inline]
-pub fn is_player_none() -> bool {
-    STATE.local.player.is_none()
-}
-
-/// Reset local player
-#[inline]
-pub fn set_player_none() {
-    unsafe {
-        STATE.local.player.take();
+    /// Initailize local structurr.
+    #[inline]
+    pub(crate) const fn new() -> Self {
+        Self::INIT
     }
-}
 
-/// Toggle thirdperson
-#[inline]
-pub fn toggle_thirdperson() {
-    unsafe {
-        if !*STATE.local.thirdperson_lock.as_mut() {
-            *STATE.local.thirdperson_lock.as_mut() = true;
-            *STATE.local.thirdperson.as_mut() ^= true;
+    /// Obtain a mutable reference to shared local player-related variables.
+    #[inline]
+    pub fn get() -> &'static mut Self {
+        // SAFETY: LocalWrapper is repr(transparent)
+        unsafe { &mut *SyncUnsafeCell::raw_get(&LOCAL).cast() }
+    }
+
+    /// Reset local player values.
+    #[inline]
+    pub fn reset(&mut self) {
+        *self = Self::INIT;
+    }
+
+    /// Toggle thirdperson.
+    #[inline]
+    pub fn toggle_thirdperson(&mut self) {
+        if !self.thirdperson_lock {
+            self.thirdperson ^= true;
+            self.thirdperson_lock = true;
         }
     }
-}
 
-#[inline]
-pub fn release_toggle_thirdperson() {
-    unsafe {
-        *STATE.local.thirdperson_lock.as_mut() = false;
+    /// Release thirdperson lock.
+    #[inline]
+    pub fn release_thirdperson_lock(&mut self) {
+        self.thirdperson_lock = false;
     }
 }

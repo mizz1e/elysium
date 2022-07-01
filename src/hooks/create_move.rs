@@ -1,7 +1,7 @@
 use crate::{state, Entity};
 use elysium_math::Vec3;
 use elysium_sdk::convar::Vars;
-use elysium_sdk::entity::ObserverMode;
+use elysium_sdk::entity::{Networkable, ObserverMode, Renderable};
 use elysium_sdk::{Command, EntityList, HitGroup};
 
 const IN_FORWARD: i32 = 1 << 3;
@@ -107,12 +107,15 @@ fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
 #[allow(unused_variables)]
 #[inline]
 unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mut bool) {
+    let vars = &*state::vars().cast::<Vars>();
+    let local_vars = state::Local::get();
+
     // can you dont when on ladder or in noclip
     if matches!(local.move_kind(), 8 | 9) {
         return;
     }
 
-    if state::local::was_attacking() {
+    if local_vars.was_attacking {
         command.state &= !IN_ATTACK;
     }
 
@@ -120,11 +123,11 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     let do_jump = (command.state & IN_JUMP) != 0;
     let on_ground = (local.flags() & ON_GROUND) != 0;
 
-    state::local::set_was_attacking(do_attack);
-    state::local::set_was_on_ground(on_ground);
+    local_vars.was_attacking = do_attack;
+    local_vars.was_on_ground = on_ground;
 
     if do_jump {
-        if !on_ground && !state::local::was_on_ground() {
+        if !on_ground && !local_vars.was_on_ground {
             command.state &= !IN_JUMP;
         }
     }
@@ -142,12 +145,11 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
         wish_angle.y -= strafe_dir_yaw_offset;
 
         let mut wish_angle = wish_angle.sanitize_angle();
-        let yaw_delta = libm::remainderf(wish_angle.y - state::local::old_yaw(), 360.0);
+        let yaw_delta = libm::remainderf(wish_angle.y - local_vars.old_yaw, 360.0);
         let abs_yaw_delta = yaw_delta.abs();
 
-        state::local::set_old_yaw(wish_angle.y);
+        local_vars.old_yaw = wish_angle.y;
 
-        let vars = &*state::vars().cast::<Vars>();
         let horizontal_speed = vars.horizontal_speed.read();
 
         if abs_yaw_delta <= ideal_strafe || abs_yaw_delta >= 30.0 {
@@ -221,17 +223,18 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     let entity_list = &*state::entity_list().cast::<EntityList>();
     let globals = &*state::globals().cast::<Globals>();
     let input = &mut *state::input().as_mut().cast::<Input>();
-    let vars = &*state::vars().cast::<Vars>();
 
-    let players = &mut *state::players();
-    //let local_index = local.index();
+    /*let players = &mut *state::players();
+    let renderable = &*<*const Entity>::byte_add(local, 8).cast::<Renderable>();
+    let networkable = &*<*const Entity>::byte_add(local, 16).cast::<Networkable>();
+    let local_index = networkable.index();
 
     // iterate player list
     for index in entity_list.player_range() {
-        /*// skip local
+        // skip local
         if index == local_index {
             continue;
-        }*/
+        }
 
         let bones = &mut players[index as usize - 1].bones;
         let entity = entity_list.entity(index);
@@ -242,22 +245,25 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
             continue;
         }
 
+        let renderable = &*<*const Entity>::byte_add(local, 8).cast::<Renderable>();
+        let networkable = &*<*const Entity>::byte_add(local, 16).cast::<Networkable>();
+
         let entity = &*entity.cast::<Entity>();
 
         // skip dormant
-        if Entity::networkable(entity).is_dormant() {
+        if networkable.is_dormant() {
             *bones = providence_model::Bones::zero();
             continue;
         }
 
-        Entity::renderable(entity).setup_bones(&mut bones[0..128], 0x00000100, globals.current_time);
-        Entity::renderable(entity).setup_bones(&mut bones[0..128], 0x000FFF00, globals.current_time);
+        renderable.setup_bones(&mut bones[0..128], 0x00000100, globals.current_time);
+        renderable.setup_bones(&mut bones[0..128], 0x000FFF00, globals.current_time);
 
         /*let eye_origin = local.eye_origin();
         let bone_origin = bones.get_origin(8).unwrap_unchecked();
 
         command.view_angle = calculate_angle(eye_origin, bone_origin);*/
-    }
+    }*/
 
     fix_movement(command, *state::view_angle());
     leg_animation_walk(command);
@@ -272,12 +278,13 @@ pub unsafe extern "C" fn create_move(
     state::hooks::create_move(this, input_sample_time, command);
 
     let command = &mut *command.cast::<Command>();
+    let local_vars = state::Local::get();
 
-    if command.tick_count == 0 || state::local::is_player_none() {
+    if command.tick_count == 0 || local_vars.player.is_null() {
         return false;
     }
 
-    let local = &*state::local::player().as_ptr().cast::<Entity>();
+    let local = &*local_vars.player.cast::<Entity>();
 
     // can you dont when spectatng
     if local.observer_mode() != ObserverMode::None {
@@ -295,7 +302,7 @@ pub unsafe extern "C" fn create_move(
     do_create_move(command, local, send_packet);
 
     if *send_packet {
-        state::local::set_view_angle(command.view_angle);
+        local_vars.view_angle = command.view_angle;
     }
 
     false

@@ -6,6 +6,7 @@
 #![feature(const_ptr_write)]
 #![feature(const_mut_refs)]
 #![feature(ptr_const_cast)]
+#![feature(sync_unsafe_cell)]
 
 use cache::Players;
 use core::mem::ManuallyDrop;
@@ -16,9 +17,9 @@ use elysium_menu::Menu;
 use hooks::Hooks;
 use iced_elysium_gl::Viewport;
 use iced_native::{Point, Size};
-use local::Local;
 use material::Materials;
 
+pub use local::Local;
 pub use shared::Shared;
 pub use shared_box::SharedBox;
 pub use shared_option::SharedOption;
@@ -51,8 +52,6 @@ struct State {
     networked: Shared<[u8; 320]>,
 
     vars: Shared<[u8; 392]>,
-
-    local: Local,
 
     players: Shared<Players>,
     prediction_time: Shared<f32>,
@@ -101,8 +100,6 @@ static STATE: ManuallyDrop<State> = ManuallyDrop::new(State {
     networked: Shared::new([0; 320]),
 
     vars: Shared::new([0; 392]),
-
-    local: Local::new(),
 
     players: Shared::new(Players::new()),
     prediction_time: Shared::new(0.0),

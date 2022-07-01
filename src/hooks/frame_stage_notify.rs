@@ -1,11 +1,10 @@
 use crate::{state, Entity};
-use core::mem;
-use core::ptr::NonNull;
 use elysium_math::Vec3;
 use elysium_sdk::client::Class;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::EntityId;
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, InputSystem};
+use state::Local;
 
 fn update_vars(vars: &Vars) {
     // misc
@@ -81,6 +80,54 @@ fn update_tonemap(entity: &Entity) {
     *entity.bloom_scale() = 3.5;
 }
 
+fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, local: &Entity) {
+    if input.thirdperson {
+        // fix the local player's view_angle when in thirdperson
+        *local.view_angle() = local_vars.view_angle;
+        // other players can't see roll, so why should we?
+        local.view_angle().z = 0.0;
+    } else {
+        // in cooperation with override_view, this will change the view model's position.
+        if local_vars.visualize_shot != 0.0 {
+            if local_vars.visualize_shot > globals.current_time {
+                *local.view_angle() = local_vars.shot_view_angle;
+            } else {
+                *local.view_angle() = *state::view_angle();
+                local_vars.visualize_shot = 0.0;
+            }
+        }
+
+        // rotate view model
+        local.view_angle().z = -35.0;
+    }
+}
+
+unsafe fn update_entities(entity_list: &EntityList) {
+    for index in entity_list.non_player_range() {
+        let entity = entity_list.entity(index);
+
+        if entity.is_null() {
+            continue;
+        }
+
+        let entity = &*entity.cast::<Entity>();
+
+        let class = entity.client_class();
+
+        if class.is_null() {
+            continue;
+        }
+
+        let class = &*class.cast::<Class>();
+
+        match class.entity_id {
+            EntityId::CFogController => update_fog(entity),
+            EntityId::CEnvTonemapController => update_tonemap(entity),
+            _ => {}
+        }
+    }
+}
+
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     // used interfaces
@@ -90,16 +137,11 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     let input = &mut *state::input().as_mut().cast::<Input>();
     let input_system = &*state::input_system().cast::<InputSystem>();
     let vars = &*state::vars().cast::<Vars>();
-
-    // is menu open !
+    let local_vars = state::Local::get();
     let is_menu_open = state::is_menu_open();
+    let frame = Frame::from_raw_unchecked(frame);
 
     *state::view_angle() = engine.view_angle();
-
-    // TODO: Frame::from_i32(frame);
-    let frame: Frame = mem::transmute(frame);
-    let index = engine.local_player_index();
-    let local = entity_list.entity(index as i32);
 
     // force vars
     update_vars(&vars);
@@ -117,76 +159,23 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         input_system.cursor_visible(true);
     }
 
-    // TODO: refactor state, probably do like state::local::reset();
-    if local.is_null() {
-        state::local::set_aim_punch_angle(Vec3::zero());
-        state::local::set_player_none();
-        state::local::set_view_punch_angle(Vec3::zero());
+    local_vars.player = entity_list.local_player(engine);
+
+    if local_vars.player.is_null() {
+        local_vars.reset();
     } else {
-        state::local::set_player(NonNull::new_unchecked(local.as_mut()));
+        let local = &*local_vars.player.cast::<Entity>();
 
-        let local = &*local.cast::<Entity>();
-
-        if local.observer_mode().breaks_thirdperson() {
-            input.thirdperson = false;
-        } else {
-            input.thirdperson = state::local::thirdperson();
-        }
+        input.thirdperson = !local.observer_mode().breaks_thirdperson() && local_vars.thirdperson;
 
         match frame {
             Frame::RenderStart => {
-                if input.thirdperson {
-                    // fix the local player's view_angle when in thirdperson
-                    *local.view_angle() = state::local::view_angle();
-                    // other players can't see roll, so why should we?
-                    local.view_angle().z = 0.0;
-                } else {
-                    // in cooperation with override_view, this will change the view model's position.
-                    if state::local::use_shot_view_angle() != 0.0 {
-                        if state::local::use_shot_view_angle() > globals.current_time {
-                            *local.view_angle() = state::local::shot_view_angle();
-                        } else {
-                            *local.view_angle() = *state::view_angle();
-                            state::local::set_use_shot_view_angle(0.0);
-                        }
-                    }
-
-                    // rotate view model
-                    local.view_angle().z = -35.0;
-                }
-
-                for index in entity_list.non_player_range() {
-                    let entity = entity_list.entity(index);
-
-                    if entity.is_null() {
-                        continue;
-                    }
-
-                    let entity = &*entity.cast::<Entity>();
-
-                    let class = entity.client_class();
-
-                    if class.is_null() {
-                        continue;
-                    }
-
-                    let class = &*class.cast::<Class>();
-
-                    match class.entity_id {
-                        EntityId::CFogController => update_fog(entity),
-                        EntityId::CEnvTonemapController => update_tonemap(entity),
-                        _ => {}
-                    }
-                }
+                update_thirdperson(globals, input, local_vars, local);
+                update_entities(entity_list);
             }
-            _ => {
-                if input.thirdperson {
-                    // restore to the expected value
-                    *local.view_angle() = *state::view_angle();
-                }
-            }
+            _ => {}
         }
     }
 
-    state::hooks::frame_stage_notify(this, frame as i32);
+    state::hooks::frame_stage_notify(this, frame.into_raw());
 }
