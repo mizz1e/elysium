@@ -1,26 +1,25 @@
 use crate::vtable_validate;
 use frosting::ffi::vtable;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(i32)]
 pub enum DataUpdateKind {
     Created = 0,
     Changed = 1,
 }
 
-#[derive(Debug)]
 #[repr(C)]
 struct VTable {
-    drop: unsafe extern "C" fn(this: *const Networkable),
-    release: unsafe extern "C" fn(this: *const Networkable),
-    client_class: unsafe extern "C" fn(this: *const Networkable) -> *const u8,
+    drop: unsafe extern "thiscall" fn(this: *const Networkable),
+    release: unsafe extern "thiscall" fn(this: *const Networkable),
+    client_class: unsafe extern "thiscall" fn(this: *const Networkable) -> *const u8,
     _pad1: vtable::Pad<3>,
-    pre_data_update: unsafe extern "C" fn(this: *const Networkable, update_kind: DataUpdateKind),
+    pre_data_update: unsafe extern "thiscall" fn(this: *const Networkable, update_kind: DataUpdateKind),
     _pad2: vtable::Pad<2>,
-    is_dormant: unsafe extern "C" fn(this: *const Networkable) -> bool,
-    index: unsafe extern "C" fn(this: *const Networkable) -> i32,
+    is_dormant: unsafe extern "thiscall" fn(this: *const Networkable) -> bool,
+    index: unsafe extern "thiscall" fn(this: *const Networkable) -> i32,
     _pad3: vtable::Pad<2>,
-    set_destroyed_on_recreate_entities: unsafe extern "C" fn(this: *const Networkable),
+    set_destroyed_on_recreate_entities: unsafe extern "thiscall" fn(this: *const Networkable),
 }
 
 vtable_validate! {
@@ -33,7 +32,6 @@ vtable_validate! {
     set_destroyed_on_recreate_entities => 13,
 }
 
-#[derive(Debug)]
 #[repr(C)]
 pub struct Networkable {
     vtable: &'static VTable,

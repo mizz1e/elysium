@@ -2,15 +2,14 @@ use crate::vtable_validate;
 use elysium_math::Matrix3x4;
 use frosting::ffi::vtable;
 
-#[derive(Debug)]
 #[repr(C)]
 struct VTable {
     _pad0: vtable::Pad<5>,
-    should_draw: unsafe extern "C" fn(this: *const Renderable) -> bool,
+    should_draw: unsafe extern "thiscall" fn(this: *const Renderable) -> bool,
     _pad1: vtable::Pad<2>,
-    get_model: unsafe extern "C" fn(this: *const Renderable) -> *const u8,
+    get_model: unsafe extern "thiscall" fn(this: *const Renderable) -> *const u8,
     _pad2: vtable::Pad<4>,
-    setup_bones: unsafe extern "C" fn(
+    setup_bones: unsafe extern "thiscall" fn(
         this: *const Renderable,
         bones: *mut Matrix3x4,
         len: i32,
@@ -25,7 +24,6 @@ vtable_validate! {
     setup_bones => 13,
 }
 
-#[derive(Debug)]
 #[repr(C)]
 pub struct Renderable {
     vtable: &'static VTable,
