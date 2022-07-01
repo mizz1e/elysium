@@ -60,6 +60,7 @@ fn update_vars(vars: &Vars) {
     vars.physics_timescale.write(0.5);
 }
 
+/// Override fog controller properties.
 fn update_fog(entity: &Entity) {
     *entity.is_enabled() = true;
     *entity.start_distance() = 150.0;
@@ -71,6 +72,7 @@ fn update_fog(entity: &Entity) {
     *entity.direction() = Vec3::from_xyz(1.0, 0.0, 0.0);
 }
 
+/// Override tonemap controller properties.
 fn update_tonemap(entity: &Entity) {
     *entity.enable_bloom_scale() = true;
     *entity.enable_min_exposure() = true;
@@ -80,6 +82,7 @@ fn update_tonemap(entity: &Entity) {
     *entity.bloom_scale() = 3.5;
 }
 
+/// Thirdperson handling.
 fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, local: &Entity) {
     if input.thirdperson {
         // fix the local player's view_angle when in thirdperson
@@ -102,6 +105,8 @@ fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, 
     }
 }
 
+/// Iterate entities and update entity specific things.
+#[inline]
 unsafe fn update_entities(entity_list: &EntityList) {
     for index in entity_list.non_player_range() {
         let entity = entity_list.entity(index);
@@ -111,7 +116,6 @@ unsafe fn update_entities(entity_list: &EntityList) {
         }
 
         let entity = &*entity.cast::<Entity>();
-
         let class = entity.client_class();
 
         if class.is_null() {
