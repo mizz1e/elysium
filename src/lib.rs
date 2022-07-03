@@ -9,8 +9,8 @@
 
 use elysium_dl::Library;
 use elysium_sdk::convar::Vars;
-use elysium_sdk::{Client, Console};
 use elysium_sdk::model::ModelRender;
+use elysium_sdk::{Client, Console};
 use std::path::Path;
 use std::time::Duration;
 use std::{mem, thread};
@@ -77,7 +77,9 @@ fn main() {
     println!("elysium | \x1b[38;5;2m`serverbrowser_client.so`\x1b[m loaded, continuing...");
 
     let interfaces = library::load_interfaces();
-    unsafe { state::set_interfaces(mem::transmute_copy(&interfaces)); }
+    unsafe {
+        state::set_interfaces(mem::transmute_copy(&interfaces));
+    }
     let console: &'static Console = unsafe { &*interfaces.convar.cast() };
     let client: &'static Client = unsafe { &*interfaces.client.cast() };
     let model_render: &'static ModelRender = unsafe { &*interfaces.model_render.cast() };
@@ -151,6 +153,30 @@ fn main() {
 
         cl_move
     };
+
+    unsafe {
+        let addr = patterns
+            .address_of("client_client.so", &pattern::VDF_INIT, "vdf_from_bytes")
+            .unwrap();
+
+        let vdf_init: state::hooks::VdfInit = mem::transmute(addr);
+
+        state::hooks::set_vdf_init(vdf_init);
+    }
+
+    unsafe {
+        let addr = patterns
+            .address_of(
+                "client_client.so",
+                &pattern::VDF_FROM_BYTES,
+                "vdf_from_bytes",
+            )
+            .unwrap();
+
+        let vdf_from_bytes: state::hooks::VdfFromBytes = mem::transmute(addr);
+
+        state::hooks::set_vdf_from_bytes(vdf_from_bytes);
+    }
 
     unsafe {
         let gl_context = elysium_gl::Context::new(|symbol| gl.get_proc_address(symbol).cast());

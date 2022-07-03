@@ -1,6 +1,6 @@
 #![deny(warnings)]
-#![feature(abi_thiscall)]
 #![allow(incomplete_features)]
+#![feature(abi_thiscall)]
 #![feature(const_convert)]
 #![feature(const_maybe_uninit_uninit_array)]
 #![feature(array_methods)]
@@ -49,6 +49,7 @@ pub use utl_mem::UtlMem;
 pub use utl_string::UtlString;
 pub use utl_vec::UtlVec;
 pub use var::{VarEntry, VarMap};
+pub use vdf::{Vdf, VdfValue};
 pub use view::View;
 pub use weapon::{WeaponInfo, WeaponKind};
 
@@ -78,6 +79,7 @@ mod utl_mem;
 mod utl_string;
 mod utl_vec;
 mod var;
+mod vdf;
 mod view;
 mod weapon;
 

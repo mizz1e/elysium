@@ -43,6 +43,11 @@ pub const WRITE_USER_COMMAND: Pattern<68> =
 pub const WRITE_USER_COMMAND_DELTA_TO_BUFFER: Pattern<72> =
     Pattern::new("55 48 8D 05 38 BC 68 01 41 89 F2 48 89 E5 41 57");
 
+pub const VDF_INIT: Pattern<64> = Pattern::new("81 27 00 00 00 FF 55 45 31 C0 48 89 E5 5D");
+
+pub const VDF_FROM_BYTES: Pattern<96> =
+    Pattern::new("55 48 89 E5 41 57 41 56 41 55 41 54 49 89 D4 53 48 81 EC ?? ?? ?? ?? 48 85");
+
 /// non-owning range over some memory
 #[derive(Clone, Copy, Debug)]
 pub struct Range {

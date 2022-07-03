@@ -56,5 +56,7 @@ hooks! {
     (override_view, set_override_view, OverrideView)(this: *const u8, view: *mut u8) -> (),
     (write_user_command, set_write_user_command, WriteUserCommand)(buffer: *mut u8, from: *const u8, to: *const u8) -> bool,
     (swap_window, set_swap_window, SwapWindow)(sdl_window: *mut sdl2_sys::SDL_Window) -> (),
-    (poll_event, set_poll_event, PollEvent)(sdl_event: *mut sdl2_sys::SDL_Event) -> i32
+    (poll_event, set_poll_event, PollEvent)(sdl_event: *mut sdl2_sys::SDL_Event) -> i32,
+    (vdf_init, set_vdf_init, VdfInit)(vdf: *const u8, name: *const u8, unk1: i32, unk2: i32) -> (),
+    (vdf_from_bytes, set_vdf_from_bytes, VdfFromBytes)(vdf: *const u8, name: *const u8, unk1: *const u8, unk2: *const u8, unk3: *const u8, unk4: *const u8) -> ()
 }

@@ -160,20 +160,20 @@ materials! {
         $phongfresnelranges [.7 .8 1]
         $phongtint [.8 .9 1]
     \0")),
-    Gold => ("gold\0", "VertexLitGeneric\0", Some("
-        $basetexture white
-        $bumpmap effects/flat_normal
-        $color2 [.18 .15 .06]
-        $envmap editor/cube_vertigo
-        $envmapfresnel .6
-        $envtintmap [.6 .5 .2]
-        $phong 1
-        $phongboost 6
-        $phongdisablehalflambert 1
-        $phongexponent 128
-        $phongfresnelranges [.7 .8 1]
-        $phongtint [.6 .5 .2]
-    \0")),
+    Gold => ("gold\0", "VertexLitGeneric\0", Some("\"VertexLitGeneric\" {
+        \"$basetexture\" \"white\"
+        \"$bumpmap\" \"effects/flat_normal\"
+        \"$color2\" \"[.18 .15 .06]\"
+        \"$envmap\" \"editor/cube_vertigo\"
+        \"$envmapfresnel\" \".6\"
+        \"$envtintmap\" \"[.6 .5 .2]\"
+        \"$phong\" \"1\"
+        \"$phongboost\" \"6\"
+        \"$phongdisablehalflambert\" \"1\"
+        \"$phongexponent\" \"128\"
+        \"$phongfresnelranges\" \"[.7 .8 1]\"
+        \"$phongtint\" \"[.6 .5 .2]\"
+    }\0")),
     Plastic => ("plastic\0", "VertexLitGeneric\0", Some("
         $additive 1
         $basetexture black

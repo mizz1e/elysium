@@ -182,8 +182,6 @@ fn insert_entry(this: &mut Networked, class: Class, entry: Entry, offset: usize)
         (Class::Tonemap, Entry::MinExposure) => this.tonemap.min_exposure = offset,
         _ => {}
     }
-
-    println!("{this:?}");
 }
 
 /// Iterate the networked tables.
