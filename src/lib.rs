@@ -10,6 +10,7 @@
 use elysium_dl::Library;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::{Client, Console};
+use elysium_sdk::model::ModelRender;
 use std::path::Path;
 use std::time::Duration;
 use std::{mem, thread};
@@ -76,8 +77,10 @@ fn main() {
     println!("elysium | \x1b[38;5;2m`serverbrowser_client.so`\x1b[m loaded, continuing...");
 
     let interfaces = library::load_interfaces();
+    unsafe { state::set_interfaces(mem::transmute_copy(&interfaces)); }
     let console: &'static Console = unsafe { &*interfaces.convar.cast() };
     let client: &'static Client = unsafe { &*interfaces.client.cast() };
+    let model_render: &'static ModelRender = unsafe { &*interfaces.model_render.cast() };
     let globals = client.globals();
     let input = client.input();
 
@@ -177,6 +180,22 @@ fn main() {
 
             state::hooks::set_create_move(address.replace(hooks::create_move));
             println!("elysium | hooked \x1b[38;5;2mCreateMove\x1b[m");
+
+            // restore protection
+            elysium_mem::protect(address, protection);
+        }
+
+        {
+            let address = model_render
+                .draw_model_address()
+                .as_mut()
+                .cast::<state::hooks::DrawModel>();
+
+            // remove protection
+            let protection = elysium_mem::unprotect(address);
+
+            state::hooks::set_draw_model(address.replace(hooks::draw_model));
+            println!("elysium | hooked \x1b[38;5;2mDrawModelExecute\x1b[m");
 
             // restore protection
             elysium_mem::protect(address, protection);

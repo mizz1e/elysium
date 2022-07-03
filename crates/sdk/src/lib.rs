@@ -14,6 +14,7 @@
 #![feature(const_trait_impl)]
 #![feature(const_try)]
 #![feature(generic_const_exprs)]
+#![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
 #![feature(ptr_const_cast)]
@@ -36,7 +37,6 @@ pub use input::{Command, Input};
 pub use input_system::InputSystem;
 pub use interfaces::{InterfaceKind, Interfaces, LibraryKind};
 pub use item_kind::ItemKind;
-pub use materials::MaterialKind;
 pub use network::{Flow, NetworkChannel};
 pub use pad::Pad;
 pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
@@ -67,7 +67,6 @@ mod input_system;
 mod interfaces;
 mod item_kind;
 mod macros;
-mod materials;
 mod pad;
 mod panorama;
 mod physics;
@@ -88,6 +87,8 @@ pub mod entity;
 pub mod ffi;
 pub mod id;
 pub mod input;
+pub mod materials;
+pub mod model;
 pub mod network;
 pub mod player_model;
 pub mod trace;

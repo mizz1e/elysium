@@ -53,6 +53,8 @@ struct State {
 
     vars: Shared<[u8; 392]>,
 
+    interfaces: Shared<[u8; 192]>,
+
     players: Shared<Players>,
     prediction_time: Shared<f32>,
     send_packet: Shared<*mut bool>,
@@ -100,6 +102,8 @@ static STATE: ManuallyDrop<State> = ManuallyDrop::new(State {
     networked: Shared::new([0; 320]),
 
     vars: Shared::new([0; 392]),
+
+    interfaces: Shared::new([0; 192]),
 
     players: Shared::new(Players::new()),
     prediction_time: Shared::new(0.0),
@@ -342,6 +346,16 @@ pub unsafe fn trace() -> *const u8 {
 #[inline]
 pub unsafe fn set_trace(trace: *const u8) {
     STATE.trace.write(NonNull::new_unchecked(trace.as_mut()));
+}
+
+#[inline]
+pub unsafe fn interfaces() -> *const [u8; 192] {
+    STATE.interfaces.as_mut()
+}
+
+#[inline]
+pub unsafe fn set_interfaces(networked: [u8; 192]) {
+    STATE.interfaces.write(networked);
 }
 
 #[inline]

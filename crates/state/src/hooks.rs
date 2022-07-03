@@ -50,6 +50,7 @@ macro_rules! hooks {
 hooks! {
     (create_move, set_create_move, CreateMove)(this: *const u8, sample_time: f32, command: *mut u8) -> bool,
     (cl_move, set_cl_move, ClMove)(accumulated_extra_samples: f32, final_tick: bool) -> (),
+    (draw_model, set_draw_model, DrawModel)(this: *const u8, context: *const u8, state: *const u8, info: *const u8, bone_to_world: *const u8) -> (),
     (cl_send_move, set_cl_send_move, ClSendMove)() -> (),
     (frame_stage_notify, set_frame_stage_notify, FrameStageNotify)(this: *const u8, frame: i32) -> (),
     (override_view, set_override_view, OverrideView)(this: *const u8, view: *mut u8) -> (),
