@@ -3,11 +3,11 @@ edition = "2021"
 name = "elysium-sdl"
 version = "0.0.0"
 
-[dependencies.elysium-dl]
-path = "../dl"
-
 [dependencies.elysium-mem]
 path = "../../mem"
 
 [dependencies.frosting]
 git = "https://github.com/elysian6969/frosting"
+
+[dependencies.link]
+git = "https://github.com/elysian6969/link"

@@ -7,12 +7,10 @@
 #![feature(const_ptr_offset_from)]
 #![feature(abi_thiscall)]
 
-use elysium_dl::Library;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::model::ModelRender;
-use elysium_sdk::{Client, Console};
+use elysium_sdk::{Client, Console, LibraryKind};
 use std::path::Path;
-use std::time::Duration;
 use std::{mem, thread};
 
 pub use elysium_state as state;
@@ -63,23 +61,14 @@ unsafe extern "C" fn bootstrap() {
 
 #[inline]
 fn main() {
-    // wait for serverbrowser.so to load as it is the last to load.
-    println!("elysium | waiting for \x1b[38;5;2m`serverbrowser_client.so`\x1b[m to load");
-
-    loop {
-        if Library::exists("./bin/linux64/serverbrowser_client.so") {
-            break;
-        }
-
-        thread::sleep(Duration::from_millis(500));
-    }
-
-    println!("elysium | \x1b[38;5;2m`serverbrowser_client.so`\x1b[m loaded, continuing...");
+    library::wait_for_serverbrowser();
 
     let interfaces = library::load_interfaces();
+
     unsafe {
         state::set_interfaces(mem::transmute_copy(&interfaces));
     }
+
     let console: &'static Console = unsafe { &*interfaces.convar.cast() };
     let client: &'static Client = unsafe { &*interfaces.client.cast() };
     let model_render: &'static ModelRender = unsafe { &*interfaces.model_render.cast() };
@@ -109,73 +98,48 @@ fn main() {
 
     let sdl = elysium_sdl::Sdl::open().expect("libSDL");
 
-    println!(
+    /*println!(
         "elysium | loaded \x1b[38;5;2mlibSDL\x1b[m at \x1b[38;5;3m{:?}\x1b[m",
         sdl
-    );
+    );*/
 
     let swap_window = unsafe { sdl.swap_window() };
     let poll_event = unsafe { sdl.poll_event() };
 
-    let patterns = pattern::Libraries::new();
     let _animation_layers = unsafe {
-        let address = patterns
-            .address_of(
-                "client_client.so",
-                &pattern::ANIMATION_LAYERS,
-                "animation_layers",
-            )
-            .expect("animation layers");
+        let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_LAYERS).unwrap();
 
-        address.byte_add(35).cast::<u32>().read()
+        bytes.as_ptr().byte_add(35).cast::<u32>().read()
     };
 
     let _animation_state = unsafe {
-        let address = patterns
-            .address_of(
-                "client_client.so",
-                &pattern::ANIMATION_STATE,
-                "animation_state",
-            )
-            .expect("animation state");
+        let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_STATE).unwrap();
 
-        address.byte_add(52).cast::<u32>().read()
-    };
-
-    let _cl_move = unsafe {
-        let cl_move = patterns
-            .address_of("engine_client.so", &pattern::CL_MOVE, "cl_move")
-            .expect("cl move");
-
-        let cl_move: state::hooks::ClMove = mem::transmute(cl_move);
-
-        state::hooks::set_cl_move(cl_move);
-
-        cl_move
+        bytes.as_ptr().byte_add(52).cast::<u32>().read()
     };
 
     unsafe {
-        let addr = patterns
-            .address_of("client_client.so", &pattern::VDF_INIT, "vdf_from_bytes")
-            .unwrap();
+        let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
+        // convert to function pointer
+        let fun = mem::transmute(bytes.as_ptr());
 
-        let vdf_init: state::hooks::VdfInit = mem::transmute(addr);
-
-        state::hooks::set_vdf_init(vdf_init);
+        state::hooks::set_cl_move(fun);
     }
 
     unsafe {
-        let addr = patterns
-            .address_of(
-                "client_client.so",
-                &pattern::VDF_FROM_BYTES,
-                "vdf_from_bytes",
-            )
-            .unwrap();
+        let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_INIT).unwrap();
+        // convert to function pointer
+        let fun = mem::transmute(bytes.as_ptr());
 
-        let vdf_from_bytes: state::hooks::VdfFromBytes = mem::transmute(addr);
+        state::hooks::set_vdf_init(fun);
+    }
 
-        state::hooks::set_vdf_from_bytes(vdf_from_bytes);
+    unsafe {
+        let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
+        // convert to function pointer
+        let fun = mem::transmute(bytes.as_ptr());
+
+        state::hooks::set_vdf_from_bytes(fun);
     }
 
     unsafe {

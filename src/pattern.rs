@@ -1,10 +1,6 @@
-use core::slice;
-use findshlibs::{Segment, SharedLibrary, TargetSharedLibrary};
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use elysium_sdk::LibraryKind;
+use link::Library;
 use providence_pattern::Pattern;
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
 
 pub const ANIMATION_LAYERS: Pattern<80> =
     Pattern::new("55 48 89 E5 41 56 41 55 41 89 F5 41 54 53 48 89 FB 8B");
@@ -48,157 +44,13 @@ pub const VDF_INIT: Pattern<64> = Pattern::new("81 27 00 00 00 FF 55 45 31 C0 48
 pub const VDF_FROM_BYTES: Pattern<96> =
     Pattern::new("55 48 89 E5 41 57 41 56 41 55 41 54 49 89 D4 53 48 81 EC ?? ?? ?? ?? 48 85");
 
-/// non-owning range over some memory
-#[derive(Clone, Copy, Debug)]
-pub struct Range {
-    base_address: *const u8,
-    len: usize,
-}
+#[inline]
+pub fn get<const N: usize>(library: LibraryKind, pattern: &Pattern<N>) -> Option<&'static [u8]> {
+    let library = unsafe { Library::load(library.as_nul_str()).ok()? };
+    let bytes = unsafe { library.bytes() };
 
-impl Range {
-    pub const fn new(base_address: *const u8, len: usize) -> Self {
-        Self { base_address, len }
-    }
-
-    pub unsafe fn as_slice(&self) -> &[u8] {
-        slice::from_raw_parts(self.base_address, self.len)
-    }
-
-    pub unsafe fn offset_of<const N: usize>(&self, pattern: &Pattern<N>) -> Option<usize> {
-        match pattern.regex().find(self.as_slice()) {
-            Some(r#match) => Some(r#match.start()),
-            None => None,
-        }
-    }
-
-    pub unsafe fn address_of<const N: usize>(&self, pattern: &Pattern<N>) -> Option<*const u8> {
-        match self.offset_of(pattern) {
-            Some(offset) => Some(self.base_address.add(offset)),
-            None => None,
-        }
-    }
-}
-
-pub struct Ranges {
-    ranges: HashMap<Box<str>, Range>,
-}
-
-impl Ranges {
-    pub fn new() -> Self {
-        Self {
-            ranges: HashMap::new(),
-        }
-    }
-
-    pub fn insert(&mut self, library_name: &str, base_address: *const u8, len: usize) {
-        let range = Range::new(base_address, len);
-
-        self.ranges.insert(library_name.into(), range);
-    }
-
-    pub fn get(&self, library_name: &str) -> Option<Range> {
-        match self.ranges.get(library_name) {
-            Some(range) => Some(*range),
-            None => None,
-        }
-    }
-
-    pub unsafe fn offset_of<const N: usize>(
-        &self,
-        library_name: &str,
-        pattern: &Pattern<N>,
-    ) -> Option<usize> {
-        match self.get(library_name) {
-            Some(range) => range.offset_of(pattern),
-            None => None,
-        }
-    }
-
-    pub unsafe fn address_of<const N: usize>(
-        &self,
-        library_name: &str,
-        pattern: &Pattern<N>,
-    ) -> Option<*const u8> {
-        match self.get(library_name) {
-            Some(range) => range.address_of(pattern),
-            None => None,
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Libraries(pub Arc<RwLock<Ranges>>);
-
-impl Libraries {
-    pub fn new() -> Self {
-        let this = Self(Arc::new(RwLock::new(Ranges::new())));
-        let this2 = this.clone();
-
-        TargetSharedLibrary::each(move |library| {
-            // skip libraries without a program header
-            let program_header = match library.segments().next() {
-                Some(program_header) => program_header,
-                None => return,
-            };
-
-            let library_name = library.name().to_string_lossy();
-
-            // skip libraries that dont belong to csgo
-            if !library_name.contains("Counter-Strike Global Offensive") {
-                return;
-            }
-
-            // we're only interested in the library names themselves
-            let library_name = Path::new(library_name.as_ref());
-
-            let library_name = match library_name.file_name() {
-                Some(library_name) => library_name,
-                None => return,
-            };
-
-            let library_name = library_name.to_string_lossy().into_owned().into_boxed_str();
-
-            // library's base address and length
-            let base_address =
-                library.virtual_memory_bias().0 + program_header.stated_virtual_memory_address().0;
-            let len = program_header.len();
-
-            this2.insert(&library_name, base_address as *const u8, len);
-        });
-
-        this
-    }
-
-    fn read(&self) -> RwLockReadGuard<'_, Ranges> {
-        self.0.read()
-    }
-
-    fn write(&self) -> RwLockWriteGuard<'_, Ranges> {
-        self.0.write()
-    }
-
-    fn insert(&self, library_name: &str, base_address: *const u8, len: usize) {
-        self.write().insert(library_name, base_address, len);
-    }
-
-    pub unsafe fn offset_of<const N: usize>(
-        &self,
-        library_name: &str,
-        pattern: &Pattern<N>,
-    ) -> Option<usize> {
-        self.read().offset_of(library_name, pattern)
-    }
-
-    pub unsafe fn address_of<const N: usize>(
-        &self,
-        library_name: &str,
-        pattern: &Pattern<N>,
-        name: &str,
-    ) -> Option<*const u8> {
-        self.read().address_of(library_name, pattern).map(|address| {
-            println!("elysium | found pattern \x1b[38;5;2m{pattern:?}\x1b[m (\x1b[38;5;2m{name}\x1b[m) within \x1b[38;5;2m{library_name}\x1b[m at \x1b[38;5;3m{address:?}\x1b[m");
-
-            address
-        })
-    }
+    pattern
+        .regex()
+        .find(bytes)
+        .map(|found| &bytes[found.start()..])
 }

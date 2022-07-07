@@ -2,7 +2,7 @@
 
 //! Convenience wrapper around `elysium_dl::Library` for SDL methods.
 
-use elysium_dl::Library;
+use link::Library;
 use std::{fmt, ptr};
 
 const LIBRARY: &str = "libSDL2-2.0.so.0\0";
@@ -18,7 +18,7 @@ impl Sdl {
     /// Load SDL, specifically `libSDL2-2.0.so.0`.
     #[inline]
     pub fn open() -> Option<Self> {
-        let library = Library::open(LIBRARY)?;
+        let library = unsafe { Library::load(LIBRARY).ok()? };
 
         Some(Self { library })
     }
@@ -26,8 +26,8 @@ impl Sdl {
     /// Returns the absolute address of `SDL_GL_SwapWindow`.
     #[inline]
     pub unsafe fn swap_window(&self) -> *const u8 {
-        let address = match self.library.symbol(SWAP_WINDOW) {
-            Some(symbol) => symbol.as_ptr().cast(),
+        let address: *const u8 = match self.library.symbol(SWAP_WINDOW) {
+            Some(symbol) => symbol,
             None => return ptr::null(),
         };
 
@@ -37,8 +37,8 @@ impl Sdl {
     /// Returns the absolute address of `SDL_PollEvent`.
     #[inline]
     pub unsafe fn poll_event(&self) -> *const u8 {
-        let address = match self.library.symbol(POLL_EVENT) {
-            Some(symbol) => symbol.as_ptr().cast(),
+        let address: *const u8 = match self.library.symbol(POLL_EVENT) {
+            Some(symbol) => symbol,
             None => return ptr::null(),
         };
 
@@ -46,9 +46,9 @@ impl Sdl {
     }
 }
 
-impl fmt::Debug for Sdl {
+/*impl fmt::Debug for Sdl {
     #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(&self.library, fmt)
     }
-}
+}*/

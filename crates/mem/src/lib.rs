@@ -8,10 +8,6 @@ use core::{mem, ptr};
 use dismal::{Inst, InstIter};
 use frosting::ffi::CSignature;
 
-pub use shared::Shared;
-
-mod shared;
-
 /// The size of a page.
 pub const PAGE_SIZE: usize = 4096;
 

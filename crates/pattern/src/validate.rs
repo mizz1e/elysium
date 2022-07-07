@@ -6,6 +6,7 @@ pub enum Kind {
     Wildcard,
 }
 
+#[inline]
 pub const fn kind_of(byte: u8) -> Kind {
     match byte {
         b'A'..=b'F' | b'0'..=b'9' => Kind::Digit,
@@ -15,10 +16,12 @@ pub const fn kind_of(byte: u8) -> Kind {
     }
 }
 
+#[inline]
 pub const fn kind_of_pair(a: u8, b: u8) -> (Kind, Kind) {
     (kind_of(a), kind_of(b))
 }
 
+#[inline]
 const fn validate_two(a: u8, b: u8) {
     use Kind::{Digit, Space, Wildcard};
 
@@ -31,6 +34,7 @@ const fn validate_two(a: u8, b: u8) {
     }
 }
 
+#[inline]
 const fn validate_three(a: u8, b: u8, c: u8) {
     validate_two(a, b);
 
@@ -40,6 +44,7 @@ const fn validate_three(a: u8, b: u8, c: u8) {
     }
 }
 
+#[inline]
 pub const fn validate_pattern(pattern: &'static str) {
     let data_address = pattern.as_ptr();
     let len = pattern.len();

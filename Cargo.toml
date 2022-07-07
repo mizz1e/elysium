@@ -47,10 +47,6 @@ path = "crates/state"
 default-features = false
 path = "crates/theme"
 
-[dependencies.findshlibs]
-default-features = false
-version = "0.10"
-
 [dependencies.frosting]
 default-features = false
 git = "https://github.com/elysian6969/frosting"
@@ -66,6 +62,10 @@ git = "https://github.com/iced-rs/iced"
 [dependencies.libm]
 default-features = false
 git = "https://github.com/elysian6969/libm"
+
+[dependencies.link]
+default-features = false
+git = "https://github.com/elysian6969/link"
 
 [dependencies.parking_lot]
 default-features = false

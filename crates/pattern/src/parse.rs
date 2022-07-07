@@ -1,12 +1,14 @@
 use crate::{panic, validate};
 use core::ptr;
 
+#[inline]
 const fn enough_for(j: usize, n: usize) {
     if j > n {
         panic::increase_size();
     }
 }
 
+#[inline]
 const fn reduce(j: usize, n: usize) {
     if j < n {
         panic::decrease_size();
@@ -17,6 +19,7 @@ const fn reduce(j: usize, n: usize) {
 
 const PREFIX: [u8; 8] = *b"(?msx-u)";
 
+#[inline]
 pub const fn parse_pattern<const N: usize>(pattern: &'static str) -> [u8; N] {
     use validate::Kind::{Digit, Wildcard};
 
