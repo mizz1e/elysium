@@ -46,11 +46,19 @@ pub const VDF_FROM_BYTES: Pattern<96> =
 
 #[inline]
 pub fn get<const N: usize>(library: LibraryKind, pattern: &Pattern<N>) -> Option<&'static [u8]> {
+    let name = library.as_str();
+
+    println!("elysium | find pattern {pattern:?} in {name}");
+
     let library = unsafe { Library::load(library.as_nul_str()).ok()? };
     let bytes = unsafe { library.bytes() };
+
+    println!("bytes = {:?}", bytes.len());
 
     pattern
         .regex()
         .find(bytes)
-        .map(|found| &bytes[found.start()..])
+        .map(|found| {
+            &bytes[found.start()..]
+        })
 }

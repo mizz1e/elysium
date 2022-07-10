@@ -1,26 +1,29 @@
-use crate::state;
+use crate::State;
 use iced_native::keyboard::Event::{KeyPressed, KeyReleased};
 use iced_native::keyboard::KeyCode::Insert;
 use iced_native::mouse::Button::Other;
 use iced_native::mouse::Event::{ButtonPressed, ButtonReleased};
 use iced_native::{mouse, Event};
 
-pub const POLL_EVENT: unsafe extern "C" fn(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 = poll_event;
-
 /// `SDL_PollEvent` hook.
-pub unsafe extern "C" fn poll_event(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 {
-    let local_vars = state::Local::get();
-    let result = state::hooks::poll_event(sdl_event);
+pub unsafe extern "C" fn poll_event(event: *mut sdl2_sys::SDL_Event) -> i32 {
+    frosting::println!();
 
-    if !state::is_menu_none() {
-        let menu = state::menu_unchecked();
+    let state = State::get();
+    let local_vars = &mut state.local;
+    let hooks = state.hooks.as_ref().unwrap_unchecked();
+    let result = (hooks.poll_event)(event);
+    let menu = state.menu.as_mut();
 
-        elysium_input::map_event(*sdl_event, |event| {
+    if let Some(menu) = menu {
+        elysium_input::map_event(*event, |event| {
+            let state = State::get();
+
             match &event {
                 // insert
                 Event::Keyboard(KeyPressed {
                     key_code: Insert, ..
-                }) => state::toggle_menu(),
+                }) => state.toggle_menu(),
 
                 // thirdperson
                 Event::Mouse(ButtonPressed(Other(4))) => local_vars.toggle_thirdperson(),
@@ -29,14 +32,14 @@ pub unsafe extern "C" fn poll_event(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 
                 // insert
                 Event::Keyboard(KeyReleased {
                     key_code: Insert, ..
-                }) => state::release_toggle_menu(),
+                }) => state.release_menu_toggle(),
 
                 // thirdperson
-                Event::Mouse(ButtonReleased(Other(4))) => local_vars.release_thirdperson_lock(),
+                Event::Mouse(ButtonReleased(Other(4))) => local_vars.release_thirdperson_toggle(),
 
                 // move cursor
                 Event::Mouse(mouse::Event::CursorMoved { position }) => {
-                    state::update_cursor_position(*position)
+                    state.cursor_position = *position;
                 }
                 _ => {}
             };
@@ -46,8 +49,8 @@ pub unsafe extern "C" fn poll_event(sdl_event: *mut sdl2_sys::SDL_Event) -> i32 
     }
 
     // block input to the game when the menu is open
-    if state::is_menu_open() {
-        (*sdl_event).type_ = 0;
+    if state.menu_open.0 {
+        (*event).type_ = 0;
     }
 
     result

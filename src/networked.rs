@@ -92,10 +92,16 @@ pub struct Networked {
     pub tonemap: Tonemap,
 }
 
+const NEW: Networked = unsafe { MaybeUninit::zeroed().assume_init() };
+
 impl Networked {
     #[inline]
-    pub fn new(client: &Client) -> Self {
-        let mut this: Self = unsafe { MaybeUninit::zeroed().assume_init() };
+    pub const fn new() -> Self {
+        NEW
+    }
+
+    #[inline]
+    pub fn update(&mut self, client: &Client) {
         let top_level = client.get_all_classes();
 
         // Iterate classes.
@@ -103,12 +109,10 @@ impl Networked {
             if let Some(table) = class.table {
                 // Skip classes we are not interested in.
                 if let Some(class) = Class::from_str(table.name()) {
-                    iterate_table(&mut this, table, class, 0);
+                    iterate_table(self, table, class, 0);
                 }
             }
         }
-
-        this
     }
 }
 

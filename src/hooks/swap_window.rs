@@ -1,47 +1,73 @@
-use crate::state;
+use crate::State;
 use core::mem::MaybeUninit;
-use iced_elysium_gl::Viewport;
+use elysium_menu::Menu;
+use glow::HasContext;
+use iced_glow::{glow, Viewport};
 use iced_native::Size;
+use sdl2_sys::{SDL_GetWindowSize, SDL_Window};
 
-pub const SWAP_WINDOW: unsafe extern "C" fn(sdl_window: *mut sdl2_sys::SDL_Window) = swap_window;
-
-/// `SDL_GL_SwapWindow` hook.
-pub unsafe extern "C" fn swap_window(sdl_window: *mut sdl2_sys::SDL_Window) {
+#[inline]
+unsafe fn window_size(window: *mut SDL_Window) -> Size<u32> {
     let mut width = MaybeUninit::uninit();
     let mut height = MaybeUninit::uninit();
 
-    sdl2_sys::SDL_GetWindowSize(sdl_window, width.as_mut_ptr(), height.as_mut_ptr());
+    SDL_GetWindowSize(window, width.as_mut_ptr(), height.as_mut_ptr());
 
     let width = width.assume_init();
     let height = height.assume_init();
     let size = Size::new(width as u32, height as u32);
 
-    state::update_window_size(size);
+    size
+}
 
-    let context = state::gl_context();
+/// `SDL_GL_SwapWindow` hook.
+pub unsafe extern "C" fn swap_window(window: *mut sdl2_sys::SDL_Window) {
+    frosting::println!();
+
+    let state = State::get();
+    let hooks = state.hooks.as_mut().unwrap_unchecked();
+
+    state.window_size = window_size(window);
+
+    let context = state.context.get_or_insert_with(|| {
+        let context = glow::Context::from_loader_function(|symbol| {
+            let get_proc_address = state.get_proc_address.unwrap_unchecked();
+
+            (get_proc_address)(symbol.as_ptr()) as _
+        });
+
+        context
+    });
 
     // enable auto-conversion from/to sRGB
-    context.enable(elysium_gl::FRAMEBUFFER_SRGB);
+    context.enable(glow::FRAMEBUFFER_SRGB);
 
     // enable alpha blending to not break our fonts
-    context.enable(elysium_gl::BLEND);
-    context.blend_func(elysium_gl::SRC_ALPHA, elysium_gl::ONE_MINUS_SRC_ALPHA);
+    context.enable(glow::BLEND);
+    context.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
 
-    let viewport = Viewport::with_physical_size(size, 1.0);
-    let menu = state::menu(context, viewport.clone());
+    let viewport = Viewport::with_physical_size(state.window_size, 1.0);
+    let menu = state
+        .menu
+        .get_or_insert_with(|| Menu::new(context, viewport.clone()));
 
-    if state::is_menu_open() {
-        context.viewport(0, 0, size.width as i32, size.height as i32);
+    if state.menu_open.0 {
+        context.viewport(
+            0,
+            0,
+            state.window_size.width as i32,
+            state.window_size.height as i32,
+        );
 
-        menu.update(viewport.clone(), state::cursor_position());
+        menu.update(viewport.clone(), state.cursor_position);
         menu.draw(context, viewport);
     }
 
     // disable auto-conversion from/to sRGB
-    context.disable(elysium_gl::FRAMEBUFFER_SRGB);
+    context.disable(glow::FRAMEBUFFER_SRGB);
 
     // disable alpha blending to not break vgui fonts
-    context.disable(elysium_gl::BLEND);
+    context.disable(glow::BLEND);
 
-    state::hooks::swap_window(sdl_window);
+    (hooks.swap_window)(window);
 }

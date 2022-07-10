@@ -17,12 +17,12 @@ mod var;
 struct VTable {
     _pad0: vtable::Pad<83>,
     create: unsafe extern "thiscall" fn(
-        this: *const Materials,
+        this: *const MaterialSystem,
         name: *const u8,
         settings: *const u8,
     ) -> *const u8,
     find: unsafe extern "thiscall" fn(
-        this: *const Materials,
+        this: *const MaterialSystem,
         name: *const u8,
         texture_group: *const u8,
         complain: bool,
@@ -31,11 +31,11 @@ struct VTable {
 }
 
 #[repr(C)]
-pub struct Materials {
+pub struct MaterialSystem {
     vtable: &'static VTable,
 }
 
-impl Materials {
+impl MaterialSystem {
     // settings is keyvalues
     #[inline]
     pub fn create<S>(&self, name: S, settings: *const u8) -> *const u8

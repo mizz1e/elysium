@@ -1,16 +1,7 @@
-//! Local player-related values.
-
-use core::cell::SyncUnsafeCell;
-use core::ptr;
+use crate::Entity;
 use elysium_math::Vec3;
 use providence_model::Bones;
-
-#[repr(transparent)]
-struct LocalWrapper(Local);
-
-unsafe impl Sync for LocalWrapper {}
-
-static LOCAL: SyncUnsafeCell<LocalWrapper> = SyncUnsafeCell::new(LocalWrapper(Local::new()));
+use std::ptr;
 
 /// Local player-related values.
 pub struct Local {
@@ -25,13 +16,11 @@ pub struct Local {
     /// Local player's old yaw.
     pub old_yaw: f32,
     /// Reference to the local player.
-    pub player: *const u8,
+    pub player: *const Entity,
     /// Local player's shot angle (used for ragebot).
     pub shot_view_angle: Vec3,
     /// Whether the local player is in thirdperson or not.
-    pub thirdperson: bool,
-    /// Prevent SDL_PollEvent key duplication (thus "breaking" toggling).
-    pub thirdperson_lock: bool,
+    pub thirdperson: (bool, bool),
     /// Total ammo the local player has.
     pub total_ammo: i32,
     /// Local player's view angle.
@@ -48,57 +37,49 @@ pub struct Local {
     pub was_on_ground: bool,
 }
 
-impl Local {
-    const INIT: Self = Self {
-        aim_punch_angle: Vec3::zero(),
-        bones: Bones::zero(),
-        health: 0,
-        magazine_ammo: 0,
-        old_yaw: 0.0,
-        player: ptr::null(),
-        shot_view_angle: Vec3::zero(),
-        thirdperson: false,
-        thirdperson_lock: false,
-        total_ammo: 0,
-        view_angle: Vec3::zero(),
-        view_punch_angle: Vec3::zero(),
-        visualize_shot: 0.0,
-        weapon: ptr::null(),
-        was_attacking: false,
-        was_on_ground: false,
-    };
+const NEW: Local = Local {
+    aim_punch_angle: Vec3::zero(),
+    bones: Bones::zero(),
+    health: 0,
+    magazine_ammo: 0,
+    old_yaw: 0.0,
+    player: ptr::null(),
+    shot_view_angle: Vec3::zero(),
+    thirdperson: (false, false),
+    total_ammo: 0,
+    view_angle: Vec3::zero(),
+    view_punch_angle: Vec3::zero(),
+    visualize_shot: 0.0,
+    weapon: ptr::null(),
+    was_attacking: false,
+    was_on_ground: false,
+};
 
+impl Local {
     /// Initailize local structurr.
     #[inline]
     pub(crate) const fn new() -> Self {
-        Self::INIT
-    }
-
-    /// Obtain a mutable reference to shared local player-related variables.
-    #[inline]
-    pub fn get() -> &'static mut Self {
-        // SAFETY: LocalWrapper is repr(transparent)
-        unsafe { &mut *SyncUnsafeCell::raw_get(&LOCAL).cast() }
+        NEW
     }
 
     /// Reset local player values.
     #[inline]
     pub fn reset(&mut self) {
-        *self = Self::INIT;
+        *self = NEW;
     }
 
     /// Toggle thirdperson.
     #[inline]
     pub fn toggle_thirdperson(&mut self) {
-        if !self.thirdperson_lock {
-            self.thirdperson ^= true;
-            self.thirdperson_lock = true;
+        if !self.thirdperson.1 {
+            self.thirdperson.0 ^= true;
+            self.thirdperson.1 = true;
         }
     }
 
     /// Release thirdperson lock.
     #[inline]
-    pub fn release_thirdperson_lock(&mut self) {
-        self.thirdperson_lock = false;
+    pub fn release_thirdperson_toggle(&mut self) {
+        self.thirdperson.1 = false;
     }
 }

@@ -26,6 +26,7 @@ pub use class::Class;
 pub use client::Client;
 pub use client_mode::ClientMode;
 pub use console::Console;
+pub use convar::Vars;
 pub use engine::{Engine, PlayerInfo};
 pub use entity::EntityList;
 pub use entry::Entry;
@@ -37,6 +38,7 @@ pub use input::{Command, Input};
 pub use input_system::InputSystem;
 pub use interfaces::{InterfaceKind, Interfaces, LibraryKind};
 pub use item_kind::ItemKind;
+pub use materials::MaterialSystem;
 pub use network::{Flow, NetworkChannel};
 pub use pad::Pad;
 pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
@@ -94,3 +96,34 @@ pub mod model;
 pub mod network;
 pub mod player_model;
 pub mod trace;
+
+#[derive(Debug)]
+pub struct Debug;
+#[derive(Debug)]
+pub struct Effects;
+#[derive(Debug)]
+pub struct Events;
+#[derive(Debug)]
+pub struct Filesystem;
+#[derive(Debug)]
+pub struct InputInternal;
+#[derive(Debug)]
+pub struct Kinds;
+#[derive(Debug)]
+pub struct Localize;
+#[derive(Debug)]
+pub struct Movement;
+#[derive(Debug)]
+pub struct Panel;
+#[derive(Debug)]
+pub struct Panorama;
+#[derive(Debug)]
+pub struct Physics;
+#[derive(Debug)]
+pub struct Prediction;
+#[derive(Debug)]
+pub struct Sound;
+#[derive(Debug)]
+pub struct Surface;
+#[derive(Debug)]
+pub struct VGui;

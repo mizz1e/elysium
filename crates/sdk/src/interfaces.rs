@@ -39,22 +39,6 @@ macro_rules! libraries {
     }
 }
 
-libraries! {
-    Client => "./csgo/bin/linux64/client_client.so",
-    Engine => "./bin/linux64/engine_client.so",
-    Filesystem => "./bin/linux64/filesystem_stdio_client.so",
-    Input => "./bin/linux64/inputsystem_client.so",
-    Localize => "./bin/linux64/localize_client.so",
-    Matchmaking => "./csgo/bin/linux64/matchmaking_client.so",
-    Material => "./bin/linux64/materialsystem_client.so",
-    Panorama => "./bin/linux64/panorama_gl_client.so",
-    Physics => "./bin/linux64/vphysics_client.so",
-    Server => "./bin/linux64/serverbrowser_client.so",
-    Surface => "./bin/linux64/vguimatsurface_client.so",
-    Tier0 => "./bin/linux64/libtier0_client.so",
-    VGui => "./bin/linux64/vgui2_client.so"
-}
-
 macro_rules! interfaces {
     ($(($ident:ident, $field:ident) => ($library:ident, $string:literal)),*) => {
         /// interface
@@ -104,11 +88,11 @@ macro_rules! interfaces {
             }
         }
 
-        #[derive(Debug)]
+        //#[derive(Debug)]
         #[non_exhaustive]
         pub struct Interfaces {
             $(
-                pub $field: *const u8,
+                pub $field: &'static mut $ident,
             )*
         }
 
@@ -116,19 +100,41 @@ macro_rules! interfaces {
             #[inline]
             pub unsafe fn from_loader<L>(mut loader: L) -> Self
             where
-                L: FnMut(InterfaceKind) -> *const ()
+                L: FnMut(InterfaceKind) -> *mut u8,
             {
                 Self { $(
-                    $field: loader(InterfaceKind::$ident).cast(),
+                    $field: &mut *loader(InterfaceKind::$ident).cast(),
                 )* }
             }
         }
     }
 }
 
+use crate::model::{ModelInfo, ModelRender};
+use crate::{Client, Engine, EntityList, InputSystem, Trace};
+use crate::{Console, Debug, Effects, Events, Filesystem, InputInternal};
+use crate::{Kinds, Localize, MaterialSystem, Movement, Panel, Panorama, Physics};
+use crate::{Prediction, Sound, Surface, VGui};
+
+libraries! {
+    Client => "./csgo/bin/linux64/client_client.so",
+    Engine => "./bin/linux64/engine_client.so",
+    Filesystem => "./bin/linux64/filesystem_stdio_client.so",
+    Input => "./bin/linux64/inputsystem_client.so",
+    Localize => "./bin/linux64/localize_client.so",
+    Matchmaking => "./csgo/bin/linux64/matchmaking_client.so",
+    MaterialSystem => "./bin/linux64/materialsystem_client.so",
+    Panorama => "./bin/linux64/panorama_gl_client.so",
+    Physics => "./bin/linux64/vphysics_client.so",
+    Server => "./bin/linux64/serverbrowser_client.so",
+    Surface => "./bin/linux64/vguimatsurface_client.so",
+    Tier0 => "./bin/linux64/libtier0_client.so",
+    VGui => "./bin/linux64/vgui2_client.so"
+}
+
 interfaces! {
     (Client, client) => (Client, "VClient"),
-    (ConVar, convar) => (Material, "VEngineCvar"),
+    (Console, console) => (MaterialSystem, "VEngineCvar"),
     (Debug, debug) => (Engine, "VDebugOverlay"),
     (Effects, effects) => (Engine, "VEngineEffects"),
     (Engine, engine) => (Engine, "VEngineClient"),
@@ -139,7 +145,7 @@ interfaces! {
     (InputSystem, input_system) => (Input, "InputSystemVersion"),
     (Kinds, kinds) => (Matchmaking, "VENGINE_GAMETYPES_VERSION002"),
     (Localize, localize) => (Localize, "Localize_"),
-    (Material, material) => (Material, "VMaterialSystem"),
+    (MaterialSystem, material_system) => (MaterialSystem, "VMaterialSystem"),
     (ModelInfo, model_info) => (Engine, "VModelInfoClient"),
     (ModelRender, model_render) => (Engine, "VEngineModel"),
     (Movement, movement) => (Client, "GameMovement"),

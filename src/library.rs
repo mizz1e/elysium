@@ -6,14 +6,14 @@ use std::{fmt, ptr, thread};
 /// An interface.
 #[repr(C)]
 pub struct Interface {
-    new: unsafe extern "C" fn() -> *mut (),
+    new: unsafe extern "C" fn() -> *mut u8,
     name: *const u8,
     next: *mut Interface,
 }
 
 impl Interface {
     #[inline]
-    pub fn new(&self) -> *mut () {
+    pub fn new(&self) -> *mut u8 {
         let new = self.new;
 
         unsafe { new() }
@@ -68,7 +68,7 @@ impl Interfaces {
     }
 
     #[inline]
-    pub fn get(&self, target: &str) -> *mut () {
+    pub fn get(&self, target: &str) -> *mut u8 {
         let cmp = if is_exact(target) {
             |name: &str, target: &str| name == target
         } else {
@@ -121,12 +121,12 @@ pub fn load_interfaces() -> elysium_sdk::Interfaces {
                 Err(error) => panic!("Failed to load library: {library_kind:?}: {error:?}"),
             };
 
-            let symbol: *mut Interface = match library.symbol("s_pInterfaceRegs\0") {
+            let symbol: *const *mut Interface = match library.symbol_ptr("s_pInterfaceRegs") {
                 Some(symbol) => symbol,
                 None => panic!("Failed to find interfaces within library: {library_kind:?}"),
             };
 
-            let interfaces = Interfaces::from_ptr(symbol);
+            let interfaces = Interfaces::from_ptr(*symbol);
             let interface = interfaces.get(interface_kind.as_str());
 
             println!("elysium | loaded interface \x1b[38;5;2m{interface_kind:?}\x1b[m (\x1b[38;5;2m{:?}\x1b[m) within \x1b[38;5;2m{library_kind:?}\x1b[m (\x1b[38;5;2m{:?}\x1b[m) at \x1b[38;5;3m{interface:?}\x1b[m", interface_kind.as_str(), library_kind.as_str());

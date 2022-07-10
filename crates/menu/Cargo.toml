@@ -3,38 +3,9 @@ edition = "2021"
 name = "elysium-menu"
 version = "0.0.0"
 
-[dependencies.elysium-dl]
-default-features = false
-path = "../library/dl"
-
-[dependencies.elysium-gl]
-default-features = false
-path = "../library/gl"
-
-[dependencies.elysium-mem]
-default-features = false
-path = "../mem"
-
-[dependencies.elysium-sdl]
-default-features = false
-path = "../library/sdl"
-
-[dependencies.elysium-theme]
-default-features = false
-path = "../theme"
-
-[dependencies.frosting]
-default-features = false
-git = "https://github.com/elysian6969/frosting"
-
-[dependencies.iced_elysium-gl]
-default-features = false
-path = "../iced/gl"
-
-[dependencies.iced_native]
-default-features = false
-git = "https://github.com/iced-rs/iced"
-
-[dependencies.sdl2-sys]
-default-features = false
-version = "0.35"
+[dependencies]
+elysium-mem = { path = "../mem" }
+frosting = { git = "https://github.com/elysian6969/frosting" }
+iced_glow = { git = "https://github.com/iced-rs/iced" }
+iced_native = { git = "https://github.com/iced-rs/iced" }
+sdl2-sys = "0.35"

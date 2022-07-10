@@ -1,5 +1,3 @@
-//! In-game entity cache.
-
 use core::ops::{Deref, DerefMut};
 use providence_model::Bones;
 

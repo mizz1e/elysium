@@ -1,10 +1,10 @@
-use crate::{state, Entity};
+use crate::state::Local;
+use crate::{Entity, State};
 use elysium_math::Vec3;
 use elysium_sdk::client::Class;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, InputSystem};
-use state::Local;
+use elysium_sdk::{EntityList, Frame, Globals, Input, Interfaces};
 
 fn update_vars(vars: &Vars) {
     // misc
@@ -84,6 +84,8 @@ fn update_tonemap(entity: &Entity) {
 
 /// Thirdperson handling.
 fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, local: &Entity) {
+    let state = State::get();
+
     if input.thirdperson {
         // fix the local player's view_angle when in thirdperson
         *local.view_angle() = local_vars.view_angle;
@@ -95,7 +97,7 @@ fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, 
             if local_vars.visualize_shot > globals.current_time {
                 *local.view_angle() = local_vars.shot_view_angle;
             } else {
-                *local.view_angle() = *state::view_angle();
+                *local.view_angle() = state.view_angle;
                 local_vars.visualize_shot = 0.0;
             }
         }
@@ -134,18 +136,25 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
-    // used interfaces
-    let engine = &*state::engine().cast::<Engine>();
-    let entity_list = &*state::entity_list().cast::<EntityList>();
-    let globals = &*state::globals().cast::<Globals>();
-    let input = &mut *state::input().as_mut().cast::<Input>();
-    let input_system = &*state::input_system().cast::<InputSystem>();
-    let vars = &*state::vars().cast::<Vars>();
-    let local_vars = state::Local::get();
-    let is_menu_open = state::is_menu_open();
+    frosting::println!();
+
+    let state = State::get();
+    let Interfaces {
+        engine,
+        entity_list,
+        input_system,
+        ..
+    } = state.interfaces.as_ref().unwrap_unchecked();
+
+    let hooks = state.hooks.as_mut().unwrap_unchecked();
+    let globals = state.globals.as_mut().unwrap_unchecked();
+    let input = state.input.as_mut().unwrap_unchecked();
+    let vars = state.vars.as_mut().unwrap_unchecked();
+    let local_vars = &mut state.local;
+    let is_menu_open = state.menu_open.0;
     let frame = Frame::from_raw_unchecked(frame);
 
-    *state::view_angle() = engine.view_angle();
+    state.view_angle = engine.view_angle();
 
     // force vars
     update_vars(&vars);
@@ -163,14 +172,10 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         input_system.cursor_visible(true);
     }
 
-    local_vars.player = entity_list.local_player(engine);
+    local_vars.player = entity_list.local_player(engine).cast();
 
-    if local_vars.player.is_null() {
-        local_vars.reset();
-    } else {
-        let local = &*local_vars.player.cast::<Entity>();
-
-        input.thirdperson = !local.observer_mode().breaks_thirdperson() && local_vars.thirdperson;
+    if let Some(local) = local_vars.player.as_ref() {
+        input.thirdperson = !local.observer_mode().breaks_thirdperson() && local_vars.thirdperson.0;
 
         match frame {
             Frame::RenderStart => {
@@ -179,7 +184,9 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
             }
             _ => {}
         }
+    } else {
+        local_vars.reset();
     }
 
-    state::hooks::frame_stage_notify(this, frame.into_raw());
+    (hooks.frame_stage_notify)(this, frame.into_raw());
 }

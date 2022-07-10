@@ -1,4 +1,4 @@
-use crate::{state, Networked};
+use crate::{Networked, State};
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::entity::{Networkable, ObserverMode, Renderable};
 use elysium_sdk::{object_validate, vtable_validate};
@@ -106,8 +106,8 @@ impl Entity {
     {
         unsafe {
             let this = (self as *const Self).cast::<u8>();
-            let networked = &*state::networked().cast::<Networked>();
-            let offset = f(networked);
+            let state = State::get();
+            let offset = f(&state.networked);
 
             &mut *this.byte_add(offset).as_mut().cast()
         }

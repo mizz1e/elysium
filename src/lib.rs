@@ -1,24 +1,25 @@
 //#![deny(warnings)]
+#![feature(abi_thiscall)]
+#![feature(const_ptr_offset_from)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
 #![feature(ptr_const_cast)]
-// src/entity.rs
-#![feature(const_ptr_offset_from)]
-#![feature(abi_thiscall)]
+#![feature(sync_unsafe_cell)]
+// todo remove
+#![feature(const_maybe_uninit_zeroed)]
 
-use elysium_sdk::convar::Vars;
-use elysium_sdk::model::ModelRender;
-use elysium_sdk::{Client, Console, LibraryKind};
+use elysium_sdk::{LibraryKind, Vars};
+use state::Hooks;
 use std::path::Path;
 use std::{mem, thread};
 
-pub use elysium_state as state;
-
 pub use entity::Entity;
 pub use networked::Networked;
+pub use state::State;
 
 mod entity;
+mod state;
 
 pub mod hooks;
 pub mod library;
@@ -35,18 +36,13 @@ unsafe extern "C" fn bootstrap() {
     // check the name of the process we're injected into
     let is_csgo = std::env::args()
         .next()
-        .and_then(|process_path| {
-            let process_path = Path::new(&process_path);
-            let process_name = process_path.file_name()?;
+        .and_then(|path| {
+            let path = Path::new(&path);
+            let name = path.file_name()?;
+            let name = name.to_str()?;
+            let is_csgo = matches!(name, "csgo_linux64" | "csgo-launcher");
 
-            if process_name == "csgo_linux64" ||
-                // https://github.com/elysian6969/csgo-launcher xoxo
-                process_name == "csgo-launcher"
-            {
-                Some(true)
-            } else {
-                None
-            }
+            is_csgo.then(|| true)
         })
         .unwrap_or(false);
 
@@ -60,185 +56,159 @@ unsafe extern "C" fn bootstrap() {
 }
 
 #[inline]
+fn hooked(name: &str) {
+    println!("elysium | hooked \x1b[38;5;2m{name}\x1b[m");
+}
+
+use elysium_sdk::materials::{Material, MaterialKind, MaterialSystem};
+use elysium_sdk::Vdf;
+use std::mem::MaybeUninit;
+use std::ptr;
+
+#[inline]
+unsafe fn vdf_init(vdf: *mut Vdf, base: *const u8) {
+    let state = State::get();
+    let hooks = state.hooks.as_ref().unwrap_unchecked();
+
+    (hooks.vdf_init)(vdf, base, 0, 0);
+}
+
+#[inline]
+unsafe fn vdf_from_bytes(vdf: *mut Vdf, name: *const u8, bytes: *const u8) {
+    let state = State::get();
+    let hooks = state.hooks.as_ref().unwrap_unchecked();
+
+    (hooks.vdf_from_bytes)(vdf, name, bytes, ptr::null(), ptr::null(), ptr::null());
+}
+
+#[inline]
+unsafe fn create_material(
+    material_system: &MaterialSystem,
+    material: MaterialKind,
+) -> *const Material {
+    let mut vdf: MaybeUninit<Vdf> = MaybeUninit::uninit();
+    let vdf = vdf.as_mut_ptr();
+
+    vdf_init(vdf, material.base_ptr());
+    vdf_from_bytes(vdf, material.name_ptr(), material.vdf_ptr());
+
+    material_system
+        .create(material.name(), vdf.cast())
+        .cast::<Material>()
+}
+
+#[inline]
 fn main() {
-    library::wait_for_serverbrowser();
-
-    let interfaces = library::load_interfaces();
-
     unsafe {
-        state::set_interfaces(mem::transmute_copy(&interfaces));
-    }
+        library::wait_for_serverbrowser();
 
-    let console: &'static Console = unsafe { &*interfaces.convar.cast() };
-    let client: &'static Client = unsafe { &*interfaces.client.cast() };
-    let model_render: &'static ModelRender = unsafe { &*interfaces.model_render.cast() };
-    let globals = client.globals();
-    let input = client.input();
+        let interfaces = library::load_interfaces();
+        let state = State::get();
 
-    console.write("welcome to elysium\n");
+        state.interfaces = Some(interfaces);
 
-    let vars = Vars::from_loader(|var_kind| {
-        let var_nul_name = var_kind.as_nul_str();
-        let var_name = var_kind.as_str();
-        let address = console.var(var_nul_name);
+        let interfaces = state.interfaces.as_ref().unwrap_unchecked();
+        let console = &interfaces.console;
+        let client = &interfaces.client;
+        let model_render = &interfaces.model_render;
 
-        println!("elysium | config variable \x1b[38;5;2m{var_name}\x1b[m found at \x1b[38;5;3m{address:?}\x1b[m");
+        let globals = client.globals();
+        let input = client.input();
 
-        address
-    });
+        console.write("welcome to elysium\n");
 
-    let networked = Networked::new(client);
+        let vars = Vars::from_loader(|var_kind| {
+            let name = var_kind.as_str();
+            let cstr = var_kind.as_nul_str();
+            let address = console.var(cstr);
 
-    let gl = elysium_gl::Gl::open().expect("libGL");
+            println!("elysium | config variable \x1b[38;5;2m{name}\x1b[m found at \x1b[38;5;3m{address:?}\x1b[m");
 
-    println!(
-        "elysium | loaded \x1b[38;5;2mlibGL\x1b[m at \x1b[38;5;3m{:?}\x1b[m",
-        gl
-    );
+            address
+        });
 
-    let sdl = elysium_sdl::Sdl::open().expect("libSDL");
+        state.networked.update(client);
 
-    /*println!(
-        "elysium | loaded \x1b[38;5;2mlibSDL\x1b[m at \x1b[38;5;3m{:?}\x1b[m",
-        sdl
-    );*/
+        /*let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_LAYERS).unwrap();
+        let _animation_layers = bytes.as_ptr().byte_add(35).cast::<u32>().read();
 
-    let swap_window = unsafe { sdl.swap_window() };
-    let poll_event = unsafe { sdl.poll_event() };
-
-    let _animation_layers = unsafe {
-        let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_LAYERS).unwrap();
-
-        bytes.as_ptr().byte_add(35).cast::<u32>().read()
-    };
-
-    let _animation_state = unsafe {
         let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_STATE).unwrap();
+        let _animation_state = bytes.as_ptr().byte_add(52).cast::<u32>().read();*/
 
-        bytes.as_ptr().byte_add(52).cast::<u32>().read()
-    };
+        // TODO: clean this up (remove maybeuninit).
+        let mut hooks = MaybeUninit::<Hooks>::uninit();
+        let hooks_ref = hooks.as_mut_ptr();
 
-    unsafe {
         let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
-        // convert to function pointer
-        let fun = mem::transmute(bytes.as_ptr());
+        (*hooks_ref).cl_move = mem::transmute(bytes.as_ptr());
 
-        state::hooks::set_cl_move(fun);
-    }
-
-    unsafe {
         let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_INIT).unwrap();
-        // convert to function pointer
-        let fun = mem::transmute(bytes.as_ptr());
+        (*hooks_ref).vdf_init = mem::transmute(bytes.as_ptr());
 
-        state::hooks::set_vdf_init(fun);
-    }
-
-    unsafe {
         let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
-        // convert to function pointer
-        let fun = mem::transmute(bytes.as_ptr());
+        (*hooks_ref).vdf_from_bytes = mem::transmute(bytes.as_ptr());
 
-        state::hooks::set_vdf_from_bytes(fun);
-    }
+        use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 
-    unsafe {
-        let gl_context = elysium_gl::Context::new(|symbol| gl.get_proc_address(symbol).cast());
+        let ptr = client.create_move_address().cast::<CreateMove>();
 
-        state::set_gl(gl);
-        state::set_sdl(sdl);
+        elysium_mem::unprotect(ptr, |ptr, prot| {
+            (*hooks_ref).create_move = ptr.replace(hooks::create_move);
+            hooked("CreateMove");
+            prot
+        });
 
-        state::set_gl_context(gl_context);
+        let ptr = model_render.draw_model_address().cast::<DrawModel>();
 
-        state::set_networked(mem::transmute(networked));
-        state::set_vars(mem::transmute(vars));
+        elysium_mem::unprotect(ptr, |ptr, prot| {
+            (*hooks_ref).draw_model = ptr.replace(hooks::draw_model);
+            hooked("DrawModelExecute");
+            prot
+        });
 
-        state::set_engine(interfaces.engine);
-        state::set_input_system(interfaces.input_system);
-        state::set_entity_list(interfaces.entity_list);
-        state::set_globals(globals);
-        state::set_input(input);
+        let ptr = client
+            .frame_stage_notify_address()
+            .cast::<FrameStageNotify>();
 
-        {
-            let address = client
-                .create_move_address()
-                .as_mut()
-                .cast::<state::hooks::CreateMove>();
+        elysium_mem::unprotect(ptr, |ptr, prot| {
+            (*hooks_ref).frame_stage_notify = ptr.replace(hooks::frame_stage_notify);
+            hooked("FrameStageNotify");
+            prot
+        });
 
-            // remove protection
-            let protection = elysium_mem::unprotect(address);
+        let ptr = client.override_view_address().cast::<OverrideView>();
 
-            state::hooks::set_create_move(address.replace(hooks::create_move));
-            println!("elysium | hooked \x1b[38;5;2mCreateMove\x1b[m");
+        elysium_mem::unprotect(ptr, |ptr, prot| {
+            (*hooks_ref).override_view = ptr.replace(hooks::override_view);
+            hooked("OverrideView");
+            prot
+        });
 
-            // restore protection
-            elysium_mem::protect(address, protection);
-        }
+        println!("libGL");
+        let glx = link::Library::load("libGL.so.1").unwrap();
 
-        {
-            let address = model_render
-                .draw_model_address()
-                .as_mut()
-                .cast::<state::hooks::DrawModel>();
+        println!("glXGetProcAddress");
+        state.get_proc_address = mem::transmute(glx.symbol_ptr::<_, u8>("glXGetProcAddress").unwrap());
 
-            // remove protection
-            let protection = elysium_mem::unprotect(address);
+        println!("libSDL");
+        let sdl = link::Library::load("libSDL2-2.0.so.0").unwrap();
 
-            state::hooks::set_draw_model(address.replace(hooks::draw_model));
-            println!("elysium | hooked \x1b[38;5;2mDrawModelExecute\x1b[m");
+        println!("swap_window");
+        let swap_window: *const SwapWindow = sdl.symbol_ptr("SDL_GL_SwapWindow").unwrap();
+        let swap_window = elysium_mem::next_abs_addr_mut(swap_window.as_mut());
+        (*hooks_ref).swap_window = swap_window.replace(hooks::swap_window);
 
-            // restore protection
-            elysium_mem::protect(address, protection);
-        }
+        hooked("SDL_GL_SwapWindow");
 
-        {
-            let address = client
-                .frame_stage_notify_address()
-                .as_mut()
-                .cast::<state::hooks::FrameStageNotify>();
+        println!("poll_event");
+        let poll_event: *const PollEvent = sdl.symbol_ptr("SDL_PollEvent").unwrap();
+        let poll_event = elysium_mem::next_abs_addr_mut(poll_event.as_mut());
+        (*hooks_ref).poll_event = poll_event.replace(hooks::poll_event);
 
-            // remove protection
-            let protection = elysium_mem::unprotect(address);
+        hooked("SDL_PollEvent");
 
-            state::hooks::set_frame_stage_notify(address.replace(hooks::frame_stage_notify));
-            println!("elysium | hooked \x1b[38;5;2mFrameStageNotify\x1b[m");
+        state.hooks = Some(hooks.assume_init());
 
-            // restore protection
-            elysium_mem::protect(address, protection);
-        }
-
-        {
-            let address = client
-                .override_view_address()
-                .as_mut()
-                .cast::<state::hooks::OverrideView>();
-
-            // remove protection
-            let protection = elysium_mem::unprotect(address);
-
-            state::hooks::set_override_view(address.replace(hooks::override_view));
-            println!("elysium | hooked \x1b[38;5;2mOverrideView\x1b[m");
-
-            // restore protection
-            elysium_mem::protect(address, protection);
-        }
-
-        state::hooks::set_swap_window(
-            swap_window
-                .as_mut()
-                .cast::<state::hooks::SwapWindow>()
-                .replace(hooks::SWAP_WINDOW),
-        );
-
-        println!("elysium | hooked \x1b[38;5;2mSDL_GL_SwapWindow\x1b[m");
-
-        state::hooks::set_poll_event(
-            poll_event
-                .as_mut()
-                .cast::<state::hooks::PollEvent>()
-                .replace(hooks::POLL_EVENT),
-        );
-
-        println!("elysium | hooked \x1b[38;5;2mSDL_PollEvent\x1b[m");
+        println!("reached end");
     }
 }

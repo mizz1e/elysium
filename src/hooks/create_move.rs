@@ -1,8 +1,9 @@
-use crate::{state, Entity};
+use crate::{Entity, State};
 use elysium_math::Vec3;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::{Networkable, ObserverMode, Renderable};
 use elysium_sdk::{Command, EntityList, HitGroup};
+use std::arch::asm;
 
 const IN_FORWARD: i32 = 1 << 3;
 const IN_BACKWARD: i32 = 1 << 4;
@@ -17,6 +18,22 @@ const IN_JUMP: i32 = 1 << 1;
 
 const ON_GROUND: i32 = 1 << 0;
 
+fn normalize(vec: &mut Vec3) {
+    let radius = (vec.x * vec.x + vec.y * vec.y + vec.z * vec.z).sqrt();
+    let iradius = 1.0 / (radius + f32::EPSILON);
+
+    vec.x *= iradius;
+    vec.y *= iradius;
+    vec.z *= iradius;
+}
+
+fn get_dir(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
+    let x = forward.x * movement.x + right.x * movement.y;
+    let y = forward.y * movement.x + right.y * movement.y;
+
+    Vec3::from_xy(x, y)
+}
+
 #[inline]
 fn fix_movement(command: &mut Command, wish_angle: Vec3) {
     let (mut wish_forward, mut wish_right, _wish_up) = wish_angle.angle_vector();
@@ -27,26 +44,10 @@ fn fix_movement(command: &mut Command, wish_angle: Vec3) {
     curr_forward.z = 0.0;
     curr_right.z = 0.0;
 
-    fn normalize(vec: &mut Vec3) {
-        let radius = (vec.x * vec.x + vec.y * vec.y + vec.z * vec.z).sqrt();
-        let iradius = 1.0 / (radius + f32::EPSILON);
-
-        vec.x *= iradius;
-        vec.y *= iradius;
-        vec.z *= iradius;
-    }
-
     normalize(&mut wish_forward);
     normalize(&mut wish_right);
     normalize(&mut curr_forward);
     normalize(&mut curr_right);
-
-    fn get_dir(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
-        let x = forward.x * movement.x + right.x * movement.y;
-        let y = forward.y * movement.x + right.y * movement.y;
-
-        Vec3::from_xy(x, y)
-    }
 
     let wish_dir = get_dir(command.movement, wish_forward, wish_right);
     let curr_dir = get_dir(command.movement, curr_forward, curr_right);
@@ -88,8 +89,6 @@ fn scale_damage(
 
 #[allow(dead_code)]
 fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
-    println!("src = {src:?}, dst = {dst:?}");
-
     let delta = src - dst;
     let hypot = (delta.x * delta.x + delta.y * delta.y).sqrt();
 
@@ -107,8 +106,9 @@ fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
 #[allow(unused_variables)]
 #[inline]
 unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mut bool) {
-    let vars = &*state::vars().cast::<Vars>();
-    let local_vars = state::Local::get();
+    let state = State::get();
+    let vars = state.vars.as_ref().unwrap_unchecked();
+    let mut local_vars = &mut state.local;
 
     // can you dont when on ladder or in noclip
     if matches!(local.move_kind(), 8 | 9) {
@@ -198,11 +198,9 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     // note: remember, desync isnt static, nor can it always be 58.0;
     let desync = 58.0;
 
-    //command.view_angle.x = pitch;
-    //command.view_angle.y += yaw_base - desync + (jitter_yaw * side);
-    //command.view_angle.z += roll_base + jitter_roll * side;
-
-    command.view_angle.y -= desync;
+    command.view_angle.x = pitch;
+    command.view_angle.y += yaw_base - desync + (jitter_yaw * side);
+    command.view_angle.z += roll_base + jitter_roll * side;
 
     if *send_packet {
         command.view_angle.y += desync;
@@ -211,61 +209,13 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     }
 
     if do_attack {
-        command.view_angle = *state::view_angle();
+        command.view_angle = state.view_angle;
     }
 
     command.view_angle = command.view_angle.sanitize_angle();
     command.state |= IN_BULLRUSH;
 
-    use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, InputSystem};
-
-    let engine = &*state::engine().cast::<Engine>();
-    let entity_list = &*state::entity_list().cast::<EntityList>();
-    let globals = &*state::globals().cast::<Globals>();
-    let input = &mut *state::input().as_mut().cast::<Input>();
-
-    /*let players = &mut *state::players();
-    let renderable = &*<*const Entity>::byte_add(local, 8).cast::<Renderable>();
-    let networkable = &*<*const Entity>::byte_add(local, 16).cast::<Networkable>();
-    let local_index = networkable.index();
-
-    // iterate player list
-    for index in entity_list.player_range() {
-        // skip local
-        if index == local_index {
-            continue;
-        }
-
-        let bones = &mut players[index as usize - 1].bones;
-        let entity = entity_list.entity(index);
-
-        // skip nonexistent
-        if entity.is_null() {
-            *bones = providence_model::Bones::zero();
-            continue;
-        }
-
-        let renderable = &*<*const Entity>::byte_add(local, 8).cast::<Renderable>();
-        let networkable = &*<*const Entity>::byte_add(local, 16).cast::<Networkable>();
-
-        let entity = &*entity.cast::<Entity>();
-
-        // skip dormant
-        if networkable.is_dormant() {
-            *bones = providence_model::Bones::zero();
-            continue;
-        }
-
-        renderable.setup_bones(&mut bones[0..128], 0x00000100, globals.current_time);
-        renderable.setup_bones(&mut bones[0..128], 0x000FFF00, globals.current_time);
-
-        /*let eye_origin = local.eye_origin();
-        let bone_origin = bones.get_origin(8).unwrap_unchecked();
-
-        command.view_angle = calculate_angle(eye_origin, bone_origin);*/
-    }*/
-
-    fix_movement(command, *state::view_angle());
+    fix_movement(command, state.view_angle);
     leg_animation_walk(command);
 }
 
@@ -273,18 +223,18 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
 pub unsafe extern "C" fn create_move(
     this: *const u8,
     input_sample_time: f32,
-    command: *mut u8,
+    command: &mut Command,
 ) -> bool {
-    state::hooks::create_move(this, input_sample_time, command);
+    let state = State::get();
+    let hooks = state.hooks.as_mut().unwrap_unchecked();
 
-    let command = &mut *command.cast::<Command>();
-    let local_vars = state::Local::get();
+    (hooks.create_move)(this, input_sample_time, command);
 
-    if command.tick_count == 0 || local_vars.player.is_null() {
+    if command.tick_count == 0 || state.local.player.is_null() {
         return false;
     }
 
-    let local = &*local_vars.player.cast::<Entity>();
+    let local = &*state.local.player;
 
     // can you dont when spectatng
     if local.observer_mode() != ObserverMode::None {
@@ -293,7 +243,7 @@ pub unsafe extern "C" fn create_move(
 
     let rbp: *mut *mut bool;
 
-    core::arch::asm!("mov {}, rbp", out(reg) rbp, options(nostack));
+    asm!("mov {}, rbp", out(reg) rbp, options(nostack));
 
     let send_packet = &mut *(*rbp).sub(24);
 
@@ -302,7 +252,7 @@ pub unsafe extern "C" fn create_move(
     do_create_move(command, local, send_packet);
 
     if *send_packet {
-        local_vars.view_angle = command.view_angle;
+        state.local.view_angle = command.view_angle;
     }
 
     false

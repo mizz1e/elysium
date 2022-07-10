@@ -1,5 +1,4 @@
-use elysium_theme::Theme;
-use iced_elysium_gl::Renderer;
+use iced_glow::Renderer;
 use iced_native::widget::{
     button, scrollable, slider, text_input, Button, Checkbox, Column, Container, ProgressBar, Row,
     Rule, Scrollable, Slider, Space, Text, TextInput, Toggler,
@@ -8,7 +7,6 @@ use iced_native::{Alignment, Command, Element, Length, Program};
 
 #[derive(Default)]
 pub struct Controls {
-    theme: Theme,
     scroll: scrollable::State,
     input: text_input::State,
     input_value: String,
@@ -64,34 +62,29 @@ impl Program for Controls {
             Message::InputChanged,
         )
         .padding(10)
-        .size(20)
-        .style(self.theme);
+        .size(20);
 
         let button = Button::new(&mut self.button, Text::new("inform ccp"))
             .padding(10)
-            .on_press(Message::ButtonPressed)
-            .style(self.theme);
+            .on_press(Message::ButtonPressed);
 
         let slider = Slider::new(
             &mut self.slider,
             0.0..=100.0,
             self.slider_value,
             Message::SliderChanged,
-        )
-        .style(self.theme);
+        );
 
-        let progress_bar = ProgressBar::new(0.0..=100.0, self.slider_value).style(self.theme);
+        let progress_bar = ProgressBar::new(0.0..=100.0, self.slider_value);
 
         let scrollable = Scrollable::new(&mut self.scroll)
             .width(Length::Fill)
             .height(Length::Units(100))
-            .style(self.theme)
             .push(Text::new("scroll"))
             .push(Space::with_height(Length::Units(800)))
             .push(Text::new("scrolled"));
 
-        let checkbox = Checkbox::new(self.checkbox_value, "checkbox", Message::CheckboxToggled)
-            .style(self.theme);
+        let checkbox = Checkbox::new(self.checkbox_value, "checkbox", Message::CheckboxToggled);
 
         let toggler = Toggler::new(
             self.toggler_value,
@@ -99,14 +92,13 @@ impl Program for Controls {
             Message::TogglerToggled,
         )
         .width(Length::Shrink)
-        .spacing(10)
-        .style(self.theme);
+        .spacing(10);
 
         let content = Column::new()
             .spacing(20)
             .padding(20)
             .max_width(600)
-            .push(Rule::horizontal(38).style(self.theme))
+            .push(Rule::horizontal(38))
             .push(Row::new().spacing(10).push(text_input).push(button))
             .push(slider)
             .push(progress_bar)
@@ -116,7 +108,7 @@ impl Program for Controls {
                     .height(Length::Units(100))
                     .align_items(Alignment::Center)
                     .push(scrollable)
-                    .push(Rule::vertical(38).style(self.theme))
+                    .push(Rule::vertical(38))
                     .push(
                         Column::new()
                             .width(Length::Shrink)
@@ -130,15 +122,13 @@ impl Program for Controls {
             .width(Length::Units(800))
             .height(Length::Units(640))
             .center_x()
-            .center_y()
-            .style(self.theme);
+            .center_y();
 
         Container::new(menu)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
             .center_y()
-            .style(elysium_theme::Overlay(self.theme))
             .into()
     }
 }

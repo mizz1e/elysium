@@ -3,61 +3,19 @@ edition = "2021"
 name = "elysium"
 version = "0.0.0"
 
-[dependencies.daisy_chain]
-default-features = false
-path = "crates/daisy_chain"
-
-[dependencies.elysium-math]
-default-features = false
-path = "crates/math"
-
-[dependencies.elysium-dl]
-default-features = false
-path = "crates/library/dl"
-
-[dependencies.elysium-gl]
-default-features = false
-path = "crates/library/gl"
-
-[dependencies.elysium-input]
-default-features = false
-path = "crates/input"
-
-[dependencies.elysium-mem]
-default-features = false
-path = "crates/mem"
-
-[dependencies.elysium-menu]
-default-features = false
-path = "crates/menu"
-
-[dependencies.elysium-sdk]
-default-features = false
-path = "crates/sdk"
-
-[dependencies.elysium-sdl]
-default-features = false
-path = "crates/library/sdl"
-
-[dependencies.elysium-state]
-default-features = false
-path = "crates/state"
-
-[dependencies.elysium-theme]
-default-features = false
-path = "crates/theme"
+[dependencies]
+daisy_chain = { path = "crates/daisy_chain" }
+elysium-input = { path = "crates/input" }
+elysium-math = { path = "crates/math" }
+elysium-mem = { path = "crates/mem" }
+elysium-menu = { path = "crates/menu" }
+elysium-sdk = { path = "crates/sdk" }
+iced_glow = { git = "https://github.com/iced-rs/iced" }
+iced_native = { git = "https://github.com/iced-rs/iced" }
 
 [dependencies.frosting]
 default-features = false
 git = "https://github.com/elysian6969/frosting"
-
-[dependencies.iced_elysium-gl]
-default-features = false
-path = "crates/iced/gl"
-
-[dependencies.iced_native]
-default-features = false
-git = "https://github.com/iced-rs/iced"
 
 [dependencies.libm]
 default-features = false
@@ -65,11 +23,8 @@ git = "https://github.com/elysian6969/libm"
 
 [dependencies.link]
 default-features = false
-git = "https://github.com/elysian6969/link"
-
-[dependencies.parking_lot]
-default-features = false
-version = "0.11"
+#git = "https://github.com/elysian6969/link"
+path = "../link"
 
 [dependencies.providence-model]
 default-features = false
@@ -92,15 +47,8 @@ lto = "fat"
 
 [workspace]
 members = [
-    "crates/iced/gl",
-    "crates/iced/gl-glyph",
     "crates/input",
-    "crates/library/dl",
-    "crates/library/gl",
-    "crates/library/sdl",
     "crates/mem",
     "crates/menu",
     "crates/sdk",
-    "crates/state",
-    "crates/theme",
 ]
