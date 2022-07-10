@@ -136,8 +136,6 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
-    frosting::println!();
-
     let state = State::get();
     let Interfaces {
         engine,
@@ -174,7 +172,11 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
     local_vars.player = entity_list.local_player(engine).cast();
 
-    if let Some(local) = local_vars.player.as_ref() {
+    if local_vars.player.is_null() {
+        local_vars.reset();
+    } else {
+        let local = &*local_vars.player;
+
         input.thirdperson = !local.observer_mode().breaks_thirdperson() && local_vars.thirdperson.0;
 
         match frame {
@@ -184,8 +186,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
             }
             _ => {}
         }
-    } else {
-        local_vars.reset();
     }
 
     (hooks.frame_stage_notify)(this, frame.into_raw());

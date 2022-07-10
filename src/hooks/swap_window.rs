@@ -22,8 +22,6 @@ unsafe fn window_size(window: *mut SDL_Window) -> Size<u32> {
 
 /// `SDL_GL_SwapWindow` hook.
 pub unsafe extern "C" fn swap_window(window: *mut sdl2_sys::SDL_Window) {
-    frosting::println!();
-
     let state = State::get();
     let hooks = state.hooks.as_mut().unwrap_unchecked();
 

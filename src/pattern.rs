@@ -58,7 +58,5 @@ pub fn get<const N: usize>(library: LibraryKind, pattern: &Pattern<N>) -> Option
     pattern
         .regex()
         .find(bytes)
-        .map(|found| {
-            &bytes[found.start()..]
-        })
+        .map(|found| &bytes[found.start()..])
 }

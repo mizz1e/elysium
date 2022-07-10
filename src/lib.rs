@@ -67,6 +67,8 @@ use std::ptr;
 
 #[inline]
 unsafe fn vdf_init(vdf: *mut Vdf, base: *const u8) {
+    println!("vdf init");
+    println!("vdf {:?}", &*vdf);
     let state = State::get();
     let hooks = state.hooks.as_ref().unwrap_unchecked();
 
@@ -75,6 +77,8 @@ unsafe fn vdf_init(vdf: *mut Vdf, base: *const u8) {
 
 #[inline]
 unsafe fn vdf_from_bytes(vdf: *mut Vdf, name: *const u8, bytes: *const u8) {
+    println!("vdf from bytes");
+    println!("vdf {:?}", &*vdf);
     let state = State::get();
     let hooks = state.hooks.as_ref().unwrap_unchecked();
 
@@ -86,6 +90,8 @@ unsafe fn create_material(
     material_system: &MaterialSystem,
     material: MaterialKind,
 ) -> *const Material {
+    println!("create material {:?}", material);
+
     let mut vdf: MaybeUninit<Vdf> = MaybeUninit::uninit();
     let vdf = vdf.as_mut_ptr();
 
@@ -111,9 +117,10 @@ fn main() {
         let console = &interfaces.console;
         let client = &interfaces.client;
         let model_render = &interfaces.model_render;
+        let material_system = &interfaces.material_system;
 
-        let globals = client.globals();
-        let input = client.input();
+        let globals = &mut *client.globals().as_mut().cast();
+        let input = &mut *client.input().as_mut().cast();
 
         console.write("welcome to elysium\n");
 
@@ -127,6 +134,9 @@ fn main() {
             address
         });
 
+        state.globals = Some(globals);
+        state.input = Some(input);
+        state.vars = Some(vars);
         state.networked.update(client);
 
         /*let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_LAYERS).unwrap();
@@ -142,9 +152,11 @@ fn main() {
         let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
         (*hooks_ref).cl_move = mem::transmute(bytes.as_ptr());
 
+        println!("vdf_init");
         let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_INIT).unwrap();
         (*hooks_ref).vdf_init = mem::transmute(bytes.as_ptr());
 
+        println!("vdf_from_bytes");
         let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
         (*hooks_ref).vdf_from_bytes = mem::transmute(bytes.as_ptr());
 
@@ -184,23 +196,19 @@ fn main() {
             prot
         });
 
-        println!("libGL");
         let glx = link::Library::load("libGL.so.1").unwrap();
 
-        println!("glXGetProcAddress");
-        state.get_proc_address = mem::transmute(glx.symbol_ptr::<_, u8>("glXGetProcAddress").unwrap());
+        state.get_proc_address =
+            mem::transmute(glx.symbol_ptr::<_, u8>("glXGetProcAddress").unwrap());
 
-        println!("libSDL");
         let sdl = link::Library::load("libSDL2-2.0.so.0").unwrap();
 
-        println!("swap_window");
         let swap_window: *const SwapWindow = sdl.symbol_ptr("SDL_GL_SwapWindow").unwrap();
         let swap_window = elysium_mem::next_abs_addr_mut(swap_window.as_mut());
         (*hooks_ref).swap_window = swap_window.replace(hooks::swap_window);
 
         hooked("SDL_GL_SwapWindow");
 
-        println!("poll_event");
         let poll_event: *const PollEvent = sdl.symbol_ptr("SDL_PollEvent").unwrap();
         let poll_event = elysium_mem::next_abs_addr_mut(poll_event.as_mut());
         (*hooks_ref).poll_event = poll_event.replace(hooks::poll_event);
@@ -209,6 +217,7 @@ fn main() {
 
         state.hooks = Some(hooks.assume_init());
 
-        println!("reached end");
+        println!("create gold");
+        state.materials.gold = Some(&*create_material(material_system, MaterialKind::Gold));
     }
 }

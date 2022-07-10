@@ -7,8 +7,6 @@ use iced_native::{mouse, Event};
 
 /// `SDL_PollEvent` hook.
 pub unsafe extern "C" fn poll_event(event: *mut sdl2_sys::SDL_Event) -> i32 {
-    frosting::println!();
-
     let state = State::get();
     let local_vars = &mut state.local;
     let hooks = state.hooks.as_ref().unwrap_unchecked();
@@ -44,7 +42,10 @@ pub unsafe extern "C" fn poll_event(event: *mut sdl2_sys::SDL_Event) -> i32 {
                 _ => {}
             };
 
-            menu.queue_event(event)
+            // dont queue events if the menu isnt open
+            if state.menu_open.0 {
+                menu.queue_event(event)
+            }
         });
     }
 

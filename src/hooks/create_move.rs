@@ -181,16 +181,16 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     }
 
     // 89.0 = down, -89.0 = up
-    let pitch = command.view_angle.x;
+    let pitch = 89.0;
 
     // 180.0 for backwards
-    let yaw_base = 0.0;
+    let yaw_base = 180.0;
 
     // roll base
     let roll_base = 0.0;
 
     // how much to jitter yaw
-    let jitter_yaw = 0.0;
+    let jitter_yaw = 9.0;
 
     // how much to jitter roll
     let jitter_roll = 50.0;
