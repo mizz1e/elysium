@@ -20,12 +20,12 @@ pub use networked::Networked;
 pub use state::State;
 
 mod entity;
-mod state;
 
 pub mod hooks;
 pub mod library;
 pub mod networked;
 pub mod pattern;
+pub mod state;
 
 // this is called by glibc after the library is loaded into a process
 #[link_section = ".init_array"]

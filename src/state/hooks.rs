@@ -14,7 +14,6 @@ pub type DrawModel = unsafe extern "C" fn(
     draw_state: *mut DrawModelState,
     info: *const ModelRenderInfo,
     bone_to_world: *const Matrix3x4,
-    unk1: usize,
 );
 
 pub type FrameStageNotify = unsafe extern "C" fn(this: *const u8, frame: i32);
@@ -24,7 +23,6 @@ pub type SwapWindow = unsafe extern "C" fn(window: *mut SDL_Window);
 pub type WriteUserCommand =
     unsafe extern "C" fn(buffer: *mut u8, from: *const u8, to: *const u8) -> bool;
 
-pub type VdfInit = unsafe extern "C" fn(vdf: *mut Vdf, name: *const u8, unk1: i32, unk2: i32);
 pub type VdfFromBytes =
     unsafe extern "C" fn(name: *const u8, value: *const u8, _unk1: *const u8) -> *const Vdf;
 
@@ -38,6 +36,5 @@ pub struct Hooks {
     pub poll_event: PollEvent,
     pub swap_window: SwapWindow,
     pub write_user_command: WriteUserCommand,
-    pub vdf_init: VdfInit,
     pub vdf_from_bytes: VdfFromBytes,
 }

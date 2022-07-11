@@ -147,10 +147,10 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         ..
     } = state.interfaces.as_ref().unwrap_unchecked();
 
-    let hooks = state.hooks.as_mut().unwrap_unchecked();
+    let hooks = state.hooks.as_ref().unwrap_unchecked();
     let globals = state.globals.as_mut().unwrap_unchecked();
     let input = state.input.as_mut().unwrap_unchecked();
-    let vars = state.vars.as_mut().unwrap_unchecked();
+    let vars = state.vars.as_ref().unwrap_unchecked();
     let local_vars = &mut state.local;
     let is_menu_open = state.menu_open.0;
     let frame = Frame::from_raw_unchecked(frame);
