@@ -1,5 +1,5 @@
 use super::{DrawModelState, ModelRenderInfo};
-use crate::materials::Material;
+use crate::material::Material;
 use crate::vtable_validate;
 use core::ptr;
 use elysium_math::Matrix3x4;

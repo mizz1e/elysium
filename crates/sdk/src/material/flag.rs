@@ -17,9 +17,9 @@ impl MaterialFlag {
     pub const ZNEARER: Self = Self(1 << 10);
     pub const MODEL: Self = Self(1 << 11);
     pub const FLAT: Self = Self(1 << 12);
-    pub const NOCULL: Self = Self(1 << 13);
-    pub const NOFOG: Self = Self(1 << 14);
-    pub const IGNOREZ: Self = Self(1 << 15);
+    pub const NO_CULL: Self = Self(1 << 13);
+    pub const NO_FOG: Self = Self(1 << 14);
+    pub const IGNORE_Z: Self = Self(1 << 15);
     pub const DECAL: Self = Self(1 << 16);
     pub const ENVMAPSPHERE: Self = Self(1 << 17);
 

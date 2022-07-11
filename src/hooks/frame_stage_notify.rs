@@ -4,12 +4,12 @@ use elysium_math::Vec3;
 use elysium_sdk::client::Class;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::{EntityList, Frame, Globals, Input, Interfaces};
+use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces};
 
-fn update_vars(vars: &Vars) {
+fn update_vars(vars: &Vars, engine: &Engine) {
     // misc
     vars.allow_developer.write(true);
-    //vars.fast_render.write(true);
+    vars.fast_render.write(!engine.is_in_game());
     vars.cheats.write(true);
     vars.developer.write(true);
 
@@ -158,7 +158,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     state.view_angle = engine.view_angle();
 
     // force vars
-    update_vars(&vars);
+    update_vars(vars, engine);
 
     if engine.is_in_game() {
         input_system.enable_input(is_menu_open);

@@ -16,6 +16,12 @@ pub unsafe extern "C" fn draw_model(
     let model_render = &interfaces.model_render;
 
     if let Some(gold) = state.materials.gold {
+        use elysium_sdk::material::MaterialFlag;
+
+        gold.set_rgba([1.0, 0.5, 0.0, 0.9]);
+        //gold.set_flag(MaterialFlag::NO_CULL, true);
+        gold.set_flag(MaterialFlag::IGNORE_Z, true);
+
         model_render.override_material(gold, 0, -1);
         (hooks.draw_model)(this, context, draw_state, info, bone_to_world);
         model_render.reset_material();

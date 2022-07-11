@@ -176,7 +176,7 @@ fn main() {
 
         println!("create gold");
         state.materials.gold = Some({
-            use elysium_sdk::materials::Material;
+            use elysium_sdk::material::Material;
             use std::ptr;
 
             let state = State::get();
@@ -185,10 +185,6 @@ fn main() {
             let vdf = &*(hooks.vdf_from_bytes)("UnlitGeneric\0".as_ptr(), ptr::null(), ptr::null());
 
             let material = &*material_system.create("flat", vdf).cast::<Material>();
-
-            //use elysium_sdk::materials::MaterialFlag;
-            //material.set_flag(MaterialFlag::WIREFRAME, false);
-            material.set_rgba([1.0, 0.0, 0.0, 0.5]);
 
             println!("name = {:?}", material.name());
             println!("texture_group = {:?}", material.texture_group());

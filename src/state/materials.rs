@@ -1,4 +1,4 @@
-use elysium_sdk::materials::Material;
+use elysium_sdk::material::Material;
 
 const NEW: Materials = Materials { gold: None };
 
