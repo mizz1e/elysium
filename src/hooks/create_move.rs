@@ -199,13 +199,11 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     let desync = 58.0;
 
     command.view_angle.x = pitch;
-    command.view_angle.y += yaw_base - desync + (jitter_yaw * side);
-    command.view_angle.z += roll_base + jitter_roll * side;
+    command.view_angle.y += yaw_base; // + (jitter_yaw * side);
+    command.view_angle.z += roll_base; // + jitter_roll * side;
 
-    if *send_packet {
-        command.view_angle.y += desync;
-    } else {
-        command.view_angle.y += desync * 2.0;
+    if !*send_packet {
+        command.view_angle.y += 270.0;
     }
 
     if do_attack {
@@ -216,7 +214,7 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     command.state |= IN_BULLRUSH;
 
     fix_movement(command, state.view_angle);
-    leg_animation_walk(command);
+    //leg_animation_walk(command);
 }
 
 /// `CreateMove` hook.
