@@ -6,6 +6,7 @@
 #![feature(pointer_byte_offsets)]
 #![feature(ptr_const_cast)]
 #![feature(sync_unsafe_cell)]
+#![feature(strict_provenance)]
 // todo remove
 #![feature(const_maybe_uninit_zeroed)]
 
@@ -60,49 +61,6 @@ fn hooked(name: &str) {
     println!("elysium | hooked \x1b[38;5;2m{name}\x1b[m");
 }
 
-use elysium_sdk::materials::{Material, MaterialKind, MaterialSystem};
-use elysium_sdk::Vdf;
-use std::mem::MaybeUninit;
-use std::ptr;
-
-#[inline]
-unsafe fn vdf_init(vdf: *mut Vdf, base: *const u8) {
-    println!("vdf init");
-    println!("vdf {:?}", &*vdf);
-    let state = State::get();
-    let hooks = state.hooks.as_ref().unwrap_unchecked();
-
-    (hooks.vdf_init)(vdf, base, 0, 0);
-}
-
-#[inline]
-unsafe fn vdf_from_bytes(vdf: *mut Vdf, name: *const u8, bytes: *const u8) {
-    println!("vdf from bytes");
-    println!("vdf {:?}", &*vdf);
-    let state = State::get();
-    let hooks = state.hooks.as_ref().unwrap_unchecked();
-
-    (hooks.vdf_from_bytes)(vdf, name, bytes, ptr::null(), ptr::null(), ptr::null());
-}
-
-#[inline]
-unsafe fn create_material(
-    material_system: &MaterialSystem,
-    material: MaterialKind,
-) -> *const Material {
-    println!("create material {:?}", material);
-
-    let mut vdf: MaybeUninit<Vdf> = MaybeUninit::uninit();
-    let vdf = vdf.as_mut_ptr();
-
-    vdf_init(vdf, material.base_ptr());
-    vdf_from_bytes(vdf, material.name_ptr(), material.vdf_ptr());
-
-    material_system
-        .create(material.name(), vdf.cast())
-        .cast::<Material>()
-}
-
 #[inline]
 fn main() {
     unsafe {
@@ -146,19 +104,18 @@ fn main() {
         let _animation_state = bytes.as_ptr().byte_add(52).cast::<u32>().read();*/
 
         // TODO: clean this up (remove maybeuninit).
+        use std::mem::MaybeUninit;
         let mut hooks = MaybeUninit::<Hooks>::uninit();
         let hooks_ref = hooks.as_mut_ptr();
 
         let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
         (*hooks_ref).cl_move = mem::transmute(bytes.as_ptr());
 
-        println!("vdf_init");
-        let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_INIT).unwrap();
-        (*hooks_ref).vdf_init = mem::transmute(bytes.as_ptr());
-
-        println!("vdf_from_bytes");
         let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
-        (*hooks_ref).vdf_from_bytes = mem::transmute(bytes.as_ptr());
+        // TODO: make not shit
+        let base = bytes.as_ptr().cast::<i32>().byte_add(1);
+        let new = base.byte_add(4).byte_offset(base.read() as isize);
+        (*hooks_ref).vdf_from_bytes = mem::transmute(new);
 
         use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 
@@ -218,6 +175,25 @@ fn main() {
         state.hooks = Some(hooks.assume_init());
 
         println!("create gold");
-        state.materials.gold = Some(&*create_material(material_system, MaterialKind::Gold));
+        state.materials.gold = Some({
+            use elysium_sdk::materials::Material;
+            use std::ptr;
+
+            let state = State::get();
+            let hooks = state.hooks.as_ref().unwrap_unchecked();
+
+            let vdf = &*(hooks.vdf_from_bytes)("UnlitGeneric\0".as_ptr(), ptr::null(), ptr::null());
+
+            let material = &*material_system.create("flat", vdf).cast::<Material>();
+
+            //use elysium_sdk::materials::MaterialFlag;
+            //material.set_flag(MaterialFlag::WIREFRAME, false);
+            material.set_rgba([1.0, 0.0, 0.0, 0.5]);
+
+            println!("name = {:?}", material.name());
+            println!("texture_group = {:?}", material.texture_group());
+
+            material
+        });
     }
 }

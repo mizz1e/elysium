@@ -8,12 +8,17 @@ use frosting::ffi::vtable;
 #[repr(C)]
 struct VTable {
     _pad0: vtable::Pad<1>,
-    override_material: unsafe extern "thiscall" fn(this: *const ModelRender, material: *const u8),
-    _pad1: vtable::Pad<19>,
-    draw_model: unsafe extern "thiscall" fn(
+    override_material: unsafe extern "C" fn(
         this: *const ModelRender,
-        context: *const u8,
-        state: *const DrawModelState,
+        material: *const Material,
+        override_kind: i32,
+        material_index: i32,
+    ),
+    _pad1: vtable::Pad<19>,
+    draw_model: unsafe extern "C" fn(
+        this: *const ModelRender,
+        context: *mut u8,
+        state: *mut DrawModelState,
         info: *const ModelRenderInfo,
         bone_to_world: *const Matrix3x4,
     ),
@@ -31,36 +36,39 @@ pub struct ModelRender {
 }
 
 impl ModelRender {
-    pub fn override_material(&self, material: &Material) {
-        let material = <*const Material>::cast(material);
-
-        unsafe { (self.vtable.override_material)(self, material) }
+    #[inline]
+    fn _override_material(
+        &self,
+        material: *const Material,
+        override_kind: i32,
+        material_index: i32,
+    ) {
+        unsafe { (self.vtable.override_material)(self, material, override_kind, material_index) }
     }
 
+    #[inline]
+    pub fn override_material(&self, material: &Material, override_kind: i32, material_index: i32) {
+        self._override_material(material, override_kind, material_index)
+    }
+
+    #[inline]
     pub fn reset_material(&self) {
-        unsafe { (self.vtable.override_material)(self, ptr::null()) }
+        self._override_material(ptr::null(), 0, -1)
     }
 
+    #[inline]
     pub fn draw_model(
         &self,
-        context: *const u8,
-        state: &DrawModelState,
+        context: *mut u8,
+        state: &mut DrawModelState,
         info: &ModelRenderInfo,
         bone_to_world: &Matrix3x4,
     ) {
         unsafe { (self.vtable.draw_model)(self, context, state, info, bone_to_world) }
     }
 
+    #[inline]
     pub fn draw_model_address(&self) -> *const u8 {
-        let draw_model = &self.vtable.draw_model
-            as *const unsafe extern "thiscall" fn(
-                this: *const ModelRender,
-                context: *const u8,
-                state: *const DrawModelState,
-                info: *const ModelRenderInfo,
-                bone_to_world: *const Matrix3x4,
-            );
-
-        draw_model.cast()
+        &self.vtable.draw_model as *const _ as *const u8
     }
 }

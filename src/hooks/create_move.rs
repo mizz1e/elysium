@@ -205,7 +205,7 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     if *send_packet {
         command.view_angle.y += desync;
     } else {
-        command.view_angle.y += 120.0;
+        command.view_angle.y += 179.0;
     }
 
     if do_attack {
@@ -225,6 +225,8 @@ pub unsafe extern "C" fn create_move(
     input_sample_time: f32,
     command: &mut Command,
 ) -> bool {
+    //frosting::println!();
+
     let state = State::get();
     let hooks = state.hooks.as_mut().unwrap_unchecked();
 

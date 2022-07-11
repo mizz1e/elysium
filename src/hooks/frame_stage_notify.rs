@@ -9,6 +9,7 @@ use elysium_sdk::{EntityList, Frame, Globals, Input, Interfaces};
 fn update_vars(vars: &Vars) {
     // misc
     vars.allow_developer.write(true);
+    //vars.fast_render.write(true);
     vars.cheats.write(true);
     vars.developer.write(true);
 
@@ -136,6 +137,8 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
+    //frosting::println!();
+
     let state = State::get();
     let Interfaces {
         engine,

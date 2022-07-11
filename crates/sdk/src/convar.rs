@@ -235,6 +235,7 @@ vars! {
     decals: bool => "r_drawdecals",
     do_interp: bool => "cl_interpolate",
     engine_sleep: bool => "engine_no_focus_sleep",
+    fast_render: bool => "cl_skipslowpath",
     ffa: bool => "mp_teammates_are_enemies",
     feet_shadows: bool => "cl_foot_contact_shadows",
     freeze_cam: bool => "cl_disablefreezecam",

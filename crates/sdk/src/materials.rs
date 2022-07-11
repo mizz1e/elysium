@@ -1,4 +1,4 @@
-use crate::ffi;
+use crate::{ffi, vtable_validate, Vdf};
 use core::ptr;
 use frosting::ffi::vtable;
 use std::ffi::OsStr;
@@ -19,7 +19,7 @@ struct VTable {
     create: unsafe extern "thiscall" fn(
         this: *const MaterialSystem,
         name: *const u8,
-        settings: *const u8,
+        vdf: *const Vdf,
     ) -> *const u8,
     find: unsafe extern "thiscall" fn(
         this: *const MaterialSystem,
@@ -30,22 +30,26 @@ struct VTable {
     ) -> *const u8,
 }
 
+vtable_validate! {
+    create => 83,
+    find => 84,
+}
+
 #[repr(C)]
 pub struct MaterialSystem {
     vtable: &'static VTable,
 }
 
 impl MaterialSystem {
-    // settings is keyvalues
     #[inline]
-    pub fn create<S>(&self, name: S, settings: *const u8) -> *const u8
+    pub fn create<S>(&self, name: S, vdf: &Vdf) -> *const u8
     where
         S: AsRef<OsStr>,
     {
         let cstr = ffi::osstr_to_cstr_cow(name);
         let ptr = ffi::cstr_cow_as_ptr(cstr.as_ref());
 
-        unsafe { (self.vtable.create)(self, ptr, settings) }
+        unsafe { (self.vtable.create)(self, ptr, vdf) }
     }
 
     #[inline]
