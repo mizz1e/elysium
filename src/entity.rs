@@ -148,6 +148,18 @@ impl Entity {
 
     /// only for players
     #[inline]
+    pub fn is_scoped(&self) -> bool {
+        *self.networked(|networked| networked.player.is_scoped)
+    }
+
+    /// only for players
+    /*#[inline]
+    pub fn is_defusing(&self) -> bool {
+        *self.networked(|networked| networked.player.is_defusing)
+    }*/
+
+    /// only for players
+    #[inline]
     pub fn flags(&self) -> i32 {
         *self.networked(|networked| networked.player.flags)
     }

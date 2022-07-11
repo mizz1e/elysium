@@ -176,15 +176,18 @@ fn main() {
 
         println!("create gold");
         state.materials.gold = Some({
-            use elysium_sdk::material::Material;
+            use elysium_sdk::material::{Material, MaterialKind};
             use std::ptr;
 
             let state = State::get();
             let hooks = state.hooks.as_ref().unwrap_unchecked();
+            let material = MaterialKind::Glow;
+            let vdf =
+                &*(hooks.vdf_from_bytes)(material.base_ptr(), material.vdf_ptr(), ptr::null());
 
-            let vdf = &*(hooks.vdf_from_bytes)("UnlitGeneric\0".as_ptr(), ptr::null(), ptr::null());
-
-            let material = &*material_system.create("flat", vdf).cast::<Material>();
+            let material = &*material_system
+                .create(material.name(), vdf)
+                .cast::<Material>();
 
             println!("name = {:?}", material.name());
             println!("texture_group = {:?}", material.texture_group());
