@@ -1,5 +1,5 @@
 use super::Pad;
-use frosting::ffi::vtable;
+use cake::ffi::vtable;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(i32)]

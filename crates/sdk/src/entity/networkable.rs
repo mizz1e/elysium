@@ -1,5 +1,5 @@
 use crate::vtable_validate;
-use frosting::ffi::vtable;
+use cake::ffi::vtable;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 #[repr(i32)]

@@ -1,5 +1,5 @@
 use crate::{vtable_validate, Command, View};
-use frosting::ffi::vtable;
+use cake::ffi::vtable;
 
 #[repr(C)]
 struct VTable {

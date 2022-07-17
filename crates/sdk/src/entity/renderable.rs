@@ -1,6 +1,6 @@
 use crate::vtable_validate;
+use cake::ffi::vtable;
 use elysium_math::Matrix3x4;
-use frosting::ffi::vtable;
 
 #[repr(C)]
 struct VTable {

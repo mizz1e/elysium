@@ -8,7 +8,7 @@
 #![feature(const_option_ext)]
 #![feature(const_ptr_offset_from)]
 #![feature(const_refs_to_cell)]
-#![feature(const_slice_from_raw_parts)]
+#![feature(const_slice_from_raw_parts_mut)]
 #![feature(const_slice_index)]
 #![feature(const_str_from_utf8_unchecked_mut)]
 #![feature(const_trait_impl)]

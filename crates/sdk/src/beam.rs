@@ -1,6 +1,6 @@
 use super::Pad;
+use cake::ffi::vtable;
 use elysium_math::Vec3;
-use frosting::ffi::vtable;
 
 /// Information for creating a beam.
 #[repr(C)]

@@ -10,7 +10,7 @@ macro_rules! object_validate {
             let object: $type = unsafe { core::mem::MaybeUninit::uninit().assume_init() };
 
             $(
-                if frosting::offset_of!(object.$ident) != $offset {
+                if cake::offset_of!(object.$ident) != $offset {
                     panic!(concat!("invalid object.", stringify!($ident), " offset"));
                 }
             )*
@@ -45,7 +45,7 @@ macro_rules! vtable_validate {
             let vtable: VTable = unsafe { core::mem::MaybeUninit::uninit().assume_init() };
 
             $(
-                if frosting::offset_of!(vtable.$ident) != $offset * 8 {
+                if cake::offset_of!(vtable.$ident) != $offset * 8 {
                     panic!(concat!("invalid vtable.", stringify!($ident), " offset"));
                 }
             )*

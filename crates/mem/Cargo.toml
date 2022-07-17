@@ -3,14 +3,7 @@ edition = "2021"
 name = "elysium-mem"
 version = "0.0.0"
 
-[dependencies.dismal]
-default-features = false
-git = "https://github.com/elysian6969/dismal"
-
-[dependencies.frosting]
-default-features = false
-git = "https://github.com/elysian6969/frosting"
-
-[dependencies.libc]
-default-features = false
-version = "0.2"
+[dependencies]
+cake = { git = "https://github.com/elysian6969/cake" }
+dismal = { git = "https://github.com/elysian6969/dismal" }
+libc = "0.2"

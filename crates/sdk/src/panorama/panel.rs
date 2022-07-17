@@ -1,5 +1,5 @@
 use crate::ffi;
-use frosting::ffi::vtable;
+use cake::ffi::vtable;
 use std::ffi::OsStr;
 
 #[repr(C)]

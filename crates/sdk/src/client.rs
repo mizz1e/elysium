@@ -1,7 +1,6 @@
 use crate::{vtable_validate, ClientMode};
-use core::mem;
-use frosting::ffi::vtable;
-use frosting::option;
+use cake::ffi::vtable;
+use core::{mem, ptr};
 
 pub use class::Class;
 pub use classes::Classes;
@@ -29,7 +28,7 @@ struct VTable {
         message_kind: i32,
         passthrough_flags: i32,
         len: i32,
-        data: *const (),
+        data: *const u8,
     ) -> bool,
 }
 
@@ -59,24 +58,17 @@ impl Client {
     #[inline]
     pub fn dispatch_user_message<'a, D>(
         &self,
-        message_kind: i32,
-        passthrough_flags: i32,
-        data: D,
-    ) -> bool
-    where
-        D: Into<Option<&'a [()]>>,
-    {
-        let (data, len) = option::to_raw_parts(data);
+        kind: i32,
+        flags: i32,
+        data: Option<&'a [u8]>,
+    ) -> bool {
+        const EMPTY: (*const u8, i32) = (ptr::null(), 0);
 
-        unsafe {
-            (self.vtable.dispatch_user_message)(
-                self,
-                message_kind,
-                passthrough_flags,
-                len as i32,
-                data,
-            )
-        }
+        let (bytes, len) = data
+            .map(|bytes| (bytes.as_ptr(), bytes.len() as i32))
+            .unwrap_or(EMPTY);
+
+        unsafe { (self.vtable.dispatch_user_message)(self, kind, flags, len, bytes) }
     }
 
     #[inline]
@@ -113,10 +105,9 @@ impl Client {
 
     #[inline]
     pub fn frame_stage_notify_address(&self) -> *const u8 {
-        let frame_stage_notify = &self.vtable.frame_stage_notify
-            as *const unsafe extern "thiscall" fn(this: *const (), frame: i32) -> bool;
+        let frame_stage_notify = self.vtable.frame_stage_notify as *const ();
 
-        frame_stage_notify.cast()
+        &frame_stage_notify as *const *const () as *const u8
     }
 
     #[inline]

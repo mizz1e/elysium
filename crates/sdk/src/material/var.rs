@@ -1,4 +1,4 @@
-use frosting::ffi::vtable;
+use cake::ffi::vtable;
 
 #[repr(C)]
 struct VTable {

@@ -1,9 +1,9 @@
 use super::{DrawModelState, ModelRenderInfo};
 use crate::material::Material;
 use crate::vtable_validate;
+use cake::ffi::vtable;
 use core::ptr;
 use elysium_math::Matrix3x4;
-use frosting::ffi::vtable;
 
 #[repr(C)]
 struct VTable {

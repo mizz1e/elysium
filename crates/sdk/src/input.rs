@@ -1,8 +1,8 @@
 //! Input interace.
 
 use crate::Pad;
+use cake::ffi::vtable;
 use elysium_math::Vec3;
-use frosting::ffi::vtable;
 
 pub use button::Button;
 pub use joystick::Joystick;

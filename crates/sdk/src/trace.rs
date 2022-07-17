@@ -1,8 +1,8 @@
 //! Trace interface
 
+use cake::ffi::vtable;
 use core::mem::MaybeUninit;
 use elysium_math::Vec3;
-use frosting::ffi::vtable;
 
 pub use contents::Contents;
 pub use displacement::Displacement;

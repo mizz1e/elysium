@@ -4,8 +4,8 @@ name = "elysium-menu"
 version = "0.0.0"
 
 [dependencies]
+cake = { git = "https://github.com/elysian6969/cake" }
 elysium-mem = { path = "../mem" }
-frosting = { git = "https://github.com/elysian6969/frosting" }
 iced_glow = { git = "https://github.com/iced-rs/iced" }
 iced_native = { git = "https://github.com/iced-rs/iced" }
 sdl2-sys = "0.35"

@@ -3,6 +3,5 @@ edition = "2021"
 name = "elysium-math"
 version = "0.0.0"
 
-[dependencies.meth]
-default-features = false
-git = "https://github.com/elysian6969/meth"
+[dependencies]
+meth = { git = "https://github.com/elysian6969/meth" }

@@ -1,6 +1,6 @@
 use crate::{ffi, vtable_validate, Vdf};
+use cake::ffi::vtable;
 use core::ptr;
-use frosting::ffi::vtable;
 use std::ffi::OsStr;
 
 pub use flag::MaterialFlag;

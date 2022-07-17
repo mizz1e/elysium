@@ -1,8 +1,8 @@
 use crate::{Networked, State};
+use cake::ffi::vtable;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::entity::{Networkable, ObserverMode, Renderable};
 use elysium_sdk::{object_validate, vtable_validate};
-use frosting::ffi::vtable;
 
 #[repr(C)]
 struct VTable {

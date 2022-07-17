@@ -1,7 +1,7 @@
 use crate::{Pad, UtlVec};
+use cake::ffi::vtable;
 use core::fmt;
 use core::marker::PhantomData;
-use frosting::ffi::vtable;
 
 mod sealed {
     use super::Var;

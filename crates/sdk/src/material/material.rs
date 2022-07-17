@@ -1,7 +1,7 @@
 use super::MaterialFlag;
 use crate::{ffi, vtable_validate};
-use core::mem::MaybeUninit;
-use frosting::ffi::vtable;
+use cake::ffi::vtable;
+use cake::mem::MaybeUninitArray;
 
 #[repr(C)]
 struct VTable {
@@ -77,14 +77,13 @@ impl Material {
 
     #[inline]
     pub fn rgb(&self) -> [f32; 3] {
-        let mut rgb = MaybeUninit::uninit_array();
+        let mut rgb = MaybeUninitArray::uninit();
+        let [r, g, b] = MaybeUninitArray::each_mut_ptr(&mut rgb);
 
         unsafe {
-            let ptr = rgb.as_mut_ptr().cast::<f32>();
+            (self.vtable.rgb)(self, r, g, b);
 
-            (self.vtable.rgb)(self, ptr, ptr.add(1), ptr.add(2));
-
-            MaybeUninit::array_assume_init(rgb)
+            MaybeUninitArray::assume_init(rgb)
         }
     }
 

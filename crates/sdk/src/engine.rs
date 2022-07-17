@@ -1,7 +1,6 @@
 use super::{ffi, vtable_export, vtable_validate, NetworkChannel, SteamAPIContext, SteamId};
+use cake::ffi::vtable;
 use elysium_math::{Matrix3x4, Vec3};
-use frosting::ffi::vtable;
-use frosting::str;
 use std::ffi::OsStr;
 use std::mem::MaybeUninit;
 

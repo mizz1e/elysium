@@ -137,7 +137,7 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
-    //frosting::println!();
+    //cake::println!();
 
     let state = State::get();
     let Interfaces {
