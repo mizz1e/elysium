@@ -1,5 +1,5 @@
 use super::Pad;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(i32)]
@@ -13,7 +13,7 @@ pub enum OverrideKind {
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<33>,
+    _pad0: VTablePad<33>,
     forced_material_override: unsafe extern "C" fn(
         this: *const Render,
         material: *const (),

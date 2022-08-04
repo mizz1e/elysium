@@ -1,20 +1,20 @@
 use super::{DrawModelState, ModelRenderInfo};
 use crate::material::Material;
 use crate::vtable_validate;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use core::ptr;
 use elysium_math::Matrix3x4;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<1>,
+    _pad0: VTablePad<1>,
     override_material: unsafe extern "C" fn(
         this: *const ModelRender,
         material: *const Material,
         override_kind: i32,
         material_index: i32,
     ),
-    _pad1: vtable::Pad<19>,
+    _pad1: VTablePad<19>,
     draw_model: unsafe extern "C" fn(
         this: *const ModelRender,
         context: *mut u8,

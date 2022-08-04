@@ -1,11 +1,11 @@
 use crate::{vtable_validate, Command, View};
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<19>,
+    _pad0: VTablePad<19>,
     override_view: unsafe extern "thiscall" fn(this: *const ClientMode, view: *const View),
-    _pad1: vtable::Pad<5>,
+    _pad1: VTablePad<5>,
     create_move: unsafe extern "thiscall" fn(
         this: *const ClientMode,
         input_sample_time: f32,

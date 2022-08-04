@@ -77,8 +77,8 @@ fn main() {
         let model_render = &interfaces.model_render;
         let material_system = &interfaces.material_system;
 
-        let globals = &mut *client.globals().as_mut().cast();
-        let input = &mut *client.input().as_mut().cast();
+        let globals = &mut *(client.globals() as *mut _);
+        let input = &mut *(client.input() as *mut _);
 
         console.write("welcome to elysium\n");
 
@@ -161,13 +161,13 @@ fn main() {
         let sdl = link::Library::load("libSDL2-2.0.so.0").unwrap();
 
         let swap_window: *const SwapWindow = sdl.symbol_ptr("SDL_GL_SwapWindow").unwrap();
-        let swap_window = elysium_mem::next_abs_addr_mut(swap_window.as_mut());
+        let swap_window = elysium_mem::next_abs_addr_mut(swap_window as *mut SwapWindow);
         (*hooks_ref).swap_window = swap_window.replace(hooks::swap_window);
 
         hooked("SDL_GL_SwapWindow");
 
         let poll_event: *const PollEvent = sdl.symbol_ptr("SDL_PollEvent").unwrap();
-        let poll_event = elysium_mem::next_abs_addr_mut(poll_event.as_mut());
+        let poll_event = elysium_mem::next_abs_addr_mut(poll_event as *mut PollEvent);
         (*hooks_ref).poll_event = poll_event.replace(hooks::poll_event);
 
         hooked("SDL_PollEvent");

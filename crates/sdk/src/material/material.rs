@@ -1,17 +1,17 @@
 use super::MaterialFlag;
 use crate::{ffi, vtable_validate};
-use cake::ffi::vtable;
-use cake::mem::MaybeUninitArray;
+use cake::ffi::VTablePad;
+use cake::mem::UninitArray;
 
 #[repr(C)]
 struct VTable {
     name: unsafe extern "thiscall" fn(this: *const Material) -> *const u8,
     texture_group: unsafe extern "thiscall" fn(this: *const Material) -> *const u8,
-    _pad0: vtable::Pad<25>,
+    _pad0: VTablePad<25>,
     set_alpha: unsafe extern "thiscall" fn(this: *const Material, alpha: f32),
     set_rgb: unsafe extern "thiscall" fn(this: *const Material, red: f32, green: f32, blue: f32),
     set_flag: unsafe extern "thiscall" fn(this: *const Material, flag: MaterialFlag, enabled: bool),
-    _pad1: vtable::Pad<14>,
+    _pad1: VTablePad<14>,
     alpha: unsafe extern "thiscall" fn(this: *const Material) -> f32,
     rgb: unsafe extern "thiscall" fn(
         this: *const Material,
@@ -77,13 +77,13 @@ impl Material {
 
     #[inline]
     pub fn rgb(&self) -> [f32; 3] {
-        let mut rgb = MaybeUninitArray::uninit();
-        let [r, g, b] = MaybeUninitArray::each_mut_ptr(&mut rgb);
+        let mut rgb = UninitArray::uninit();
+        let [r, g, b] = UninitArray::each_mut_ptr(&mut rgb);
 
         unsafe {
             (self.vtable.rgb)(self, r, g, b);
 
-            MaybeUninitArray::assume_init(rgb)
+            UninitArray::assume_init(rgb)
         }
     }
 

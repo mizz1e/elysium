@@ -1,13 +1,13 @@
 use super::vtable_validate;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<11>,
+    _pad0: VTablePad<11>,
     enable_input: unsafe extern "thiscall" fn(this: *const InputSystem, enable: bool),
-    _pad1: vtable::Pad<27>,
+    _pad1: VTablePad<27>,
     reset_input_state: unsafe extern "thiscall" fn(this: *const InputSystem),
-    _pad2: vtable::Pad<17>,
+    _pad2: VTablePad<17>,
     cursor_visible: unsafe extern "thiscall" fn(this: *const InputSystem, visible: bool),
 }
 

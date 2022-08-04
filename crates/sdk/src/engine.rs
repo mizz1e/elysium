@@ -1,5 +1,5 @@
 use super::{ffi, vtable_export, vtable_validate, NetworkChannel, SteamAPIContext, SteamId};
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use std::ffi::OsStr;
 use std::mem::MaybeUninit;
@@ -21,10 +21,10 @@ pub struct PlayerInfo {
 
 #[repr(C)]
 struct VTable {
-    _unknown0: vtable::Pad<5>,
+    _unknown0: VTablePad<5>,
     get_screen_size:
         unsafe extern "thiscall" fn(this: *const Engine, width: *mut f32, height: *mut f32),
-    _unknown1: vtable::Pad<2>,
+    _unknown1: VTablePad<2>,
     get_player_info: unsafe extern "thiscall" fn(
         this: *const Engine,
         index: i32,
@@ -32,36 +32,36 @@ struct VTable {
     ) -> bool,
     get_player_for_user_id:
         unsafe extern "thiscall" fn(this: *const Engine, user_id: SteamId) -> i32,
-    _unknown2: vtable::Pad<2>,
+    _unknown2: VTablePad<2>,
     local_player_index: unsafe extern "thiscall" fn(this: *const Engine) -> i32,
-    _unknown3: vtable::Pad<5>,
+    _unknown3: VTablePad<5>,
     view_angle: unsafe extern "thiscall" fn(this: *const Engine, angle: *mut Vec3),
     set_view_angle: unsafe extern "thiscall" fn(this: *const Engine, angle: *const Vec3),
     get_max_clients: unsafe extern "thiscall" fn(this: *const Engine) -> i32,
-    _unknown4: vtable::Pad<5>,
+    _unknown4: VTablePad<5>,
     is_in_game: unsafe extern "thiscall" fn(this: *const Engine) -> bool,
     is_connected: unsafe extern "thiscall" fn(this: *const Engine) -> bool,
-    _unknown5: vtable::Pad<6>,
+    _unknown5: VTablePad<6>,
     set_cull_box: unsafe extern "thiscall" fn(
         this: *const Engine,
         min: *const Vec3,
         max: *const Vec3,
     ) -> bool,
-    _unknown6: vtable::Pad<2>,
+    _unknown6: VTablePad<2>,
     world_to_screen_matrix: unsafe extern "thiscall" fn(this: *const Engine) -> *const Matrix3x4,
-    _unknown7: vtable::Pad<5>,
+    _unknown7: VTablePad<5>,
     get_bsp_tree_query: unsafe extern "thiscall" fn(this: *const Engine) -> *const (),
-    _unknown8: vtable::Pad<9>,
+    _unknown8: VTablePad<9>,
     get_level_name: unsafe extern "thiscall" fn(this: *const Engine) -> *const u8,
-    _unknown9: vtable::Pad<24>,
+    _unknown9: VTablePad<24>,
     get_network_channel: unsafe extern "thiscall" fn(this: *const Engine) -> *const NetworkChannel,
-    _unknown10: vtable::Pad<34>,
+    _unknown10: VTablePad<34>,
     command: unsafe extern "thiscall" fn(
         this: *const Engine,
         command: *const u8,
         from_console_or_keybind: bool,
     ),
-    _unknown11: vtable::Pad<72>,
+    _unknown11: VTablePad<72>,
     get_steam_api_context:
         unsafe extern "thiscall" fn(this: *const Engine) -> *const SteamAPIContext,
 }

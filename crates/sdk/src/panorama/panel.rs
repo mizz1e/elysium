@@ -1,24 +1,24 @@
 use crate::ffi;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use std::ffi::OsStr;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<49>,
+    _pad0: VTablePad<49>,
     get_child_count: unsafe extern "thiscall" fn(this: *const UIPanel) -> i32,
     get_child: unsafe extern "thiscall" fn(this: *const UIPanel, index: i32) -> *const UIPanel,
-    _pad1: vtable::Pad<89>,
+    _pad1: VTablePad<89>,
     has_class: unsafe extern "thiscall" fn(this: *const UIPanel, name: *const u8) -> bool,
-    _pad2: vtable::Pad<6>,
+    _pad2: VTablePad<6>,
     set_has_class:
         unsafe extern "thiscall" fn(this: *const UIPanel, name: *const u8, has_class: bool),
-    _pad3: vtable::Pad<133>,
+    _pad3: VTablePad<133>,
     get_attribute_f32: unsafe extern "thiscall" fn(
         this: *const UIPanel,
         name: *const u8,
         default_value: f32,
     ) -> f32,
-    _pad4: vtable::Pad<5>,
+    _pad4: VTablePad<5>,
     set_attribute_f32:
         unsafe extern "thiscall" fn(this: *const UIPanel, name: *const u8, value: f32),
 }

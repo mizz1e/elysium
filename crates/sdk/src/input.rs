@@ -1,7 +1,7 @@
 //! Input interace.
 
 use crate::Pad;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use elysium_math::Vec3;
 
 pub use button::Button;
@@ -98,7 +98,7 @@ impl Command {
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<8>,
+    _pad0: VTablePad<8>,
     get_user_command:
         unsafe extern "thiscall" fn(this: *const Input, slot: i32, sequence: i32) -> *const Command,
 }

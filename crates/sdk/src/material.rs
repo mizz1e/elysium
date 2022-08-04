@@ -1,5 +1,5 @@
 use crate::{ffi, vtable_validate, Vdf};
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use core::ptr;
 use std::ffi::OsStr;
 
@@ -15,7 +15,7 @@ mod var;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<83>,
+    _pad0: VTablePad<83>,
     create: unsafe extern "thiscall" fn(
         this: *const MaterialSystem,
         name: *const u8,

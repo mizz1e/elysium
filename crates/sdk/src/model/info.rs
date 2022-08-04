@@ -1,23 +1,23 @@
 use super::{Hdr, Model};
 use crate::ffi;
 use crate::vtable_validate;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use std::ffi::OsStr;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<2>,
+    _pad0: VTablePad<2>,
     model: unsafe extern "thiscall" fn(this: *const ModelInfo, index: i32) -> *const u8,
     model_index: unsafe extern "thiscall" fn(this: *const ModelInfo, file_name: *const u8) -> i32,
     model_name: unsafe extern "thiscall" fn(this: *const ModelInfo, model: *const u8) -> *const u8,
-    _pad1: vtable::Pad<13>,
+    _pad1: VTablePad<13>,
     model_materials: unsafe extern "thiscall" fn(
         this: *const ModelInfo,
         model: *const u8,
         len: i32,
         materials: *mut *mut u8,
     ),
-    _pad2: vtable::Pad<12>,
+    _pad2: VTablePad<12>,
     studio_model:
         unsafe extern "thiscall" fn(this: *const ModelInfo, model: *const u8) -> *const u8,
 }

@@ -1,5 +1,5 @@
 use crate::{vtable_validate, ClientMode};
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use core::{mem, ptr};
 
 pub use class::Class;
@@ -14,14 +14,14 @@ mod table;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<8>,
+    _pad0: VTablePad<8>,
     get_all_classes: unsafe extern "thiscall" fn(this: *const Client) -> *mut Class,
-    _pad1: vtable::Pad<1>,
+    _pad1: VTablePad<1>,
     hud_process_input: unsafe extern "thiscall" fn(),
     hud_update: unsafe extern "thiscall" fn(),
-    _pad2: vtable::Pad<4>,
+    _pad2: VTablePad<4>,
     activate_mouse: unsafe extern "thiscall" fn(),
-    _pad3: vtable::Pad<20>,
+    _pad3: VTablePad<20>,
     frame_stage_notify: unsafe extern "thiscall" fn(this: *const (), frame: i32) -> bool,
     dispatch_user_message: unsafe extern "thiscall" fn(
         this: *const Client,

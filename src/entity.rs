@@ -1,16 +1,16 @@
 use crate::{Networked, State};
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::entity::{Networkable, ObserverMode, Renderable};
 use elysium_sdk::{object_validate, vtable_validate};
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<12>,
+    _pad0: VTablePad<12>,
     origin: unsafe extern "thiscall" fn(this: *const Entity) -> *const Vec3,
-    _pad1: vtable::Pad<144>,
+    _pad1: VTablePad<144>,
     is_player: unsafe extern "thiscall" fn(this: *const Entity) -> bool,
-    _pad2: vtable::Pad<199>,
+    _pad2: VTablePad<199>,
     observer_mode: unsafe extern "thiscall" fn(this: *const Entity) -> ObserverMode,
 }
 
@@ -109,7 +109,7 @@ impl Entity {
             let state = State::get();
             let offset = f(&state.networked);
 
-            &mut *this.byte_add(offset).as_mut().cast()
+            &mut *(this.byte_add(offset) as *mut T)
         }
     }
 
@@ -134,7 +134,7 @@ impl Entity {
     #[inline]
     pub fn view_angle(&self) -> &mut Vec3 {
         unsafe {
-            let view_angle_address = self.is_dead_address().byte_add(4).as_mut().cast();
+            let view_angle_address = self.is_dead_address().byte_add(4) as *mut Vec3;
 
             &mut *view_angle_address
         }

@@ -1,5 +1,5 @@
 use crate::{Pad, UtlVec};
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use core::fmt;
 use core::marker::PhantomData;
 
@@ -57,10 +57,10 @@ impl Kind for bool {}
 
 #[repr(C)]
 struct VTable<T> {
-    _pad0: vtable::Pad<15>,
+    _pad0: VTablePad<15>,
     read_f32: unsafe extern "thiscall" fn(this: *const Var<T>) -> f32,
     write_f32: unsafe extern "thiscall" fn(this: *const Var<T>, value: f32),
-    _pad1: vtable::Pad<1>,
+    _pad1: VTablePad<1>,
     read_i32: unsafe extern "thiscall" fn(this: *const Var<T>) -> i32,
     write_i32: unsafe extern "thiscall" fn(this: *const Var<T>, value: i32),
 }
@@ -209,7 +209,7 @@ macro_rules! vars {
             {
                 $(
                     let $name = {
-                        let var = loader(VarKind::$name).cast::<Var<$type>>().as_mut();
+                        let var = loader(VarKind::$name) as *mut Var<$type>;
 
                         if var.is_null() {
                             panic!(concat!("config variable `", stringify!($name), "` is null"));

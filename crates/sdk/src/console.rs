@@ -1,12 +1,12 @@
 use crate::ffi;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use std::ffi::OsStr;
 
 #[repr(C)]
 pub struct VTable {
-    _pad0: vtable::Pad<15>,
+    _pad0: VTablePad<15>,
     var: unsafe extern "thiscall" fn(this: *const Console, var: *const u8) -> *const (),
-    _pad1: vtable::Pad<11>,
+    _pad1: VTablePad<11>,
     write: unsafe extern "thiscall" fn(this: *const Console, fmt: *const u8, txt: *const u8),
 }
 

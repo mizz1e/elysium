@@ -1,6 +1,6 @@
 //! Trace interface
 
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use core::mem::MaybeUninit;
 use elysium_math::Vec3;
 
@@ -41,7 +41,7 @@ struct VTable {
         contents: u32,
         entities: *const *const (),
     ) -> u32,
-    _pad0: vtable::Pad<3>,
+    _pad0: VTablePad<3>,
     clip_to_entity: unsafe extern "thiscall" fn(
         this: *const Trace,
         ray: *const Ray,

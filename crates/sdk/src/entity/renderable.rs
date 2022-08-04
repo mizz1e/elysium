@@ -1,14 +1,14 @@
 use crate::vtable_validate;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use elysium_math::Matrix3x4;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<5>,
+    _pad0: VTablePad<5>,
     should_draw: unsafe extern "thiscall" fn(this: *const Renderable) -> bool,
-    _pad1: vtable::Pad<2>,
+    _pad1: VTablePad<2>,
     get_model: unsafe extern "thiscall" fn(this: *const Renderable) -> *const u8,
-    _pad2: vtable::Pad<4>,
+    _pad2: VTablePad<4>,
     setup_bones: unsafe extern "thiscall" fn(
         this: *const Renderable,
         bones: *mut Matrix3x4,

@@ -1,9 +1,9 @@
 use super::UIEngine;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<11>,
+    _pad0: VTablePad<11>,
     access_ui_engine: unsafe extern "thiscall" fn(this: *const PanoramaUIEngine) -> *const UIEngine,
 }
 

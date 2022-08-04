@@ -1,5 +1,5 @@
 use super::Pad;
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 use elysium_math::Vec3;
 
 /// Information for creating a beam.
@@ -48,7 +48,7 @@ pub struct Beam {
 
 #[repr(C)]
 struct VTable {
-    _pad0: vtable::Pad<9>,
+    _pad0: VTablePad<9>,
     create_beam_points: unsafe extern "thiscall" fn(
         this: *const ViewRenderBeams,
         beam_info: *const BeamInfo,

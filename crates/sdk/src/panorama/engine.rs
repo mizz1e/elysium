@@ -1,8 +1,8 @@
-use cake::ffi::vtable;
+use cake::ffi::VTablePad;
 
 #[repr(C)]
 struct VTable {
-    _pad: vtable::Pad<53>,
+    _pad: VTablePad<53>,
     dispatch_event: unsafe extern "thiscall" fn(this: *const UIEngine, event: *const ()),
 }
 
