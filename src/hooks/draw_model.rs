@@ -53,6 +53,10 @@ pub unsafe extern "C" fn draw_model(
                 if local.is_scoped() && local_vars.thirdperson.0 {
                     gold.set_alpha(0.05);
                 }
+
+                if state.view_angle.x < 0.0 {
+                    gold.set_alpha(0.05);
+                }
             }
 
             //gold.set_flag(MaterialFlag::NO_CULL, true);
