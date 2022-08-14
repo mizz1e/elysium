@@ -1,7 +1,6 @@
 //! Memory related functions.
 
 #![feature(pointer_byte_offsets)]
-#![feature(ptr_const_cast)]
 #![feature(strict_provenance)]
 
 use core::ptr;

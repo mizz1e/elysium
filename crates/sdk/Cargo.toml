@@ -8,4 +8,4 @@ cake = { git = "https://github.com/elysian6969/cake" }
 daisy_chain = { path = "../daisy_chain" }
 elysium-math = { path = "../math" }
 elysium-mem = { path = "../mem" }
-phf = { default-features = false, features = ["macros"], version = "0.10" }
+phf = { default-features = false, features = ["macros"], version = "0.11" }

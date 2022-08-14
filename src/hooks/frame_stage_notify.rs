@@ -80,7 +80,7 @@ fn update_tonemap(entity: &Entity) {
     *entity.enable_max_exposure() = true;
     *entity.min_exposure() = 0.5;
     *entity.max_exposure() = 0.5;
-    *entity.bloom_scale() = 3.5;
+    *entity.bloom_scale() = 2.9;
 }
 
 /// Thirdperson handling.
@@ -137,20 +137,18 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
-    //cake::println!();
-
     let state = State::get();
     let Interfaces {
         engine,
         entity_list,
         input_system,
         ..
-    } = state.interfaces.as_ref().unwrap_unchecked();
+    } = state.interfaces.as_ref().unwrap();
 
-    let hooks = state.hooks.as_ref().unwrap_unchecked();
-    let globals = state.globals.as_mut().unwrap_unchecked();
-    let input = state.input.as_mut().unwrap_unchecked();
-    let vars = state.vars.as_ref().unwrap_unchecked();
+    let hooks = state.hooks.as_ref().unwrap();
+    let globals = state.globals.as_mut().unwrap();
+    let input = state.input.as_mut().unwrap();
+    let vars = state.vars.as_ref().unwrap();
     let local_vars = &mut state.local;
     let is_menu_open = state.menu_open.0;
     let frame = Frame::from_raw_unchecked(frame);

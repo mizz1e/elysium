@@ -54,68 +54,19 @@ impl Program for Controls {
     }
 
     #[inline]
-    fn view(&mut self) -> Element<Message, Renderer> {
-        let text_input = TextInput::new(
-            &mut self.input,
-            "sample text sample text",
-            &self.input_value,
-            Message::InputChanged,
-        )
-        .padding(10)
-        .size(20);
-
-        let button = Button::new(&mut self.button, Text::new("inform ccp"))
-            .padding(10)
-            .on_press(Message::ButtonPressed);
-
-        let slider = Slider::new(
-            &mut self.slider,
-            0.0..=100.0,
-            self.slider_value,
-            Message::SliderChanged,
-        );
-
-        let progress_bar = ProgressBar::new(0.0..=100.0, self.slider_value);
-
-        let scrollable = Scrollable::new(&mut self.scroll)
-            .width(Length::Fill)
-            .height(Length::Units(100))
-            .push(Text::new("scroll"))
-            .push(Space::with_height(Length::Units(800)))
-            .push(Text::new("scrolled"));
-
-        let checkbox = Checkbox::new(self.checkbox_value, "checkbox", Message::CheckboxToggled);
-
-        let toggler = Toggler::new(
-            self.toggler_value,
-            String::from("togger"),
-            Message::TogglerToggled,
-        )
-        .width(Length::Shrink)
-        .spacing(10);
-
+    fn view(&self) -> Element<Message, Renderer> {
         let content = Column::new()
             .spacing(20)
             .padding(20)
             .max_width(600)
             .push(Rule::horizontal(38))
-            .push(Row::new().spacing(10).push(text_input).push(button))
-            .push(slider)
-            .push(progress_bar)
             .push(
                 Row::new()
                     .spacing(10)
                     .height(Length::Units(100))
                     .align_items(Alignment::Center)
-                    .push(scrollable)
                     .push(Rule::vertical(38))
-                    .push(
-                        Column::new()
-                            .width(Length::Shrink)
-                            .spacing(20)
-                            .push(checkbox)
-                            .push(toggler),
-                    ),
+                    .push(Column::new().width(Length::Shrink).spacing(20)),
             );
 
         let menu = Container::new(content)

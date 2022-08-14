@@ -129,7 +129,11 @@ pub fn load_interfaces() -> elysium_sdk::Interfaces {
             let interfaces = Interfaces::from_ptr(*symbol);
             let interface = interfaces.get(interface_kind.as_str());
 
-            println!("elysium | loaded interface \x1b[38;5;2m{interface_kind:?}\x1b[m (\x1b[38;5;2m{:?}\x1b[m) within \x1b[38;5;2m{library_kind:?}\x1b[m (\x1b[38;5;2m{:?}\x1b[m) at \x1b[38;5;3m{interface:?}\x1b[m", interface_kind.as_str(), library_kind.as_str());
+            if interface.is_null() {
+                println!("elysium | unable to load interface \x1b[38;5;2m{:?}\x1b[m within \x1b[38;5;2m{:?}\x1b[m at \x1b[38;5;3m{interface:?}\x1b[m", interface_kind.as_str(), library_kind.as_str());
+            } else {
+                println!("elysium | loaded interface \x1b[38;5;2m{:?}\x1b[m within \x1b[38;5;2m{:?}\x1b[m at \x1b[38;5;3m{interface:?}\x1b[m", interface_kind.as_str(), library_kind.as_str());
+            }
 
             interface
         })

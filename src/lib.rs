@@ -4,7 +4,6 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
-#![feature(ptr_const_cast)]
 #![feature(sync_unsafe_cell)]
 #![feature(strict_provenance)]
 // todo remove
@@ -87,7 +86,13 @@ fn main() {
             let cstr = var_kind.as_nul_str();
             let address = console.var(cstr);
 
-            println!("elysium | config variable \x1b[38;5;2m{name}\x1b[m found at \x1b[38;5;3m{address:?}\x1b[m");
+            if address.is_null() {
+                println!(
+                    "elysium | config variable \x1b[38;5;2m{name}\x1b[m was not found, remove it"
+                );
+            } else {
+                println!("elysium | config variable \x1b[38;5;2m{name}\x1b[m found at \x1b[38;5;3m{address:?}\x1b[m");
+            }
 
             address
         });
