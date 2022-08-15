@@ -9,10 +9,9 @@ daisy_chain = { path = "crates/daisy_chain" }
 elysium-input = { path = "crates/input" }
 elysium-math = { path = "crates/math" }
 elysium-mem = { path = "crates/mem" }
-elysium-menu = { path = "crates/menu" }
 elysium-sdk = { path = "crates/sdk" }
 iced_glow = { git = "https://github.com/iced-rs/iced" }
-iced_native = { git = "https://github.com/iced-rs/iced" }
+iced_native = { features = ["debug"], git = "https://github.com/iced-rs/iced" }
 libm = { git = "https://github.com/elysian6969/libm" }
 link = { git = "https://github.com/elysian6969/link" }
 # rename when
@@ -31,6 +30,5 @@ lto = "fat"
 members = [
     "crates/input",
     "crates/mem",
-    "crates/menu",
     "crates/sdk",
 ]
