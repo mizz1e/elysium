@@ -44,6 +44,7 @@ pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPane
 pub use render::{OverrideKind, Render};
 pub use sound::{ActiveChannels, Channel};
 pub use steam::SteamAPIContext;
+pub use surface::Surface;
 pub use trace::{Filter, Trace, TraceKind};
 pub use utl_map::UtlMap;
 pub use utl_mem::UtlMem;
@@ -75,6 +76,7 @@ mod physics;
 mod render;
 mod sound;
 mod steam;
+mod surface;
 mod utl_map;
 mod utl_mem;
 mod utl_string;
@@ -122,7 +124,5 @@ pub struct Physics;
 pub struct Prediction;
 #[derive(Debug)]
 pub struct Sound;
-#[derive(Debug)]
-pub struct Surface;
 #[derive(Debug)]
 pub struct VGui;

@@ -1,6 +1,6 @@
 //! Input interace.
 
-use crate::Pad;
+use crate::{vtable_validate, Pad};
 use cake::ffi::VTablePad;
 use core::{fmt, ptr};
 use elysium_math::Vec3;
@@ -102,6 +102,15 @@ struct VTable {
     _pad0: VTablePad<8>,
     get_user_command:
         unsafe extern "thiscall" fn(this: *const Input, slot: i32, sequence: i32) -> *const Command,
+    _pad1: VTablePad<13>,
+    activate_mouse: unsafe extern "thiscall" fn(this: *const Input),
+    deactivate_mouse: unsafe extern "thiscall" fn(this: *const Input),
+}
+
+vtable_validate! {
+    get_user_command => 8,
+    activate_mouse => 22,
+    deactivate_mouse => 23,
 }
 
 #[repr(C)]
@@ -121,6 +130,18 @@ impl Input {
     #[inline]
     pub fn get_user_command(&self, slot: i32, sequence: i32) -> *const Command {
         unsafe { (self.vtable.get_user_command)(self, slot, sequence) }
+    }
+
+    /// hides the cursor and starts re-centering
+    #[inline]
+    pub fn activate_mouse(&self) {
+        unsafe { (self.vtable.activate_mouse)(self) }
+    }
+
+    /// gives back the cursor and stops centering the mouse
+    #[inline]
+    pub fn deactivate_mouse(&self) {
+        unsafe { (self.vtable.deactivate_mouse)(self) }
     }
 }
 

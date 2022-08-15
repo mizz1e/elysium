@@ -80,7 +80,7 @@ fn update_tonemap(entity: &Entity) {
     *entity.enable_max_exposure() = true;
     *entity.min_exposure() = 0.5;
     *entity.max_exposure() = 0.5;
-    *entity.bloom_scale() = 2.9;
+    *entity.bloom_scale() = 2.0;
 }
 
 /// Thirdperson handling.
@@ -142,6 +142,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         engine,
         entity_list,
         input_system,
+        surface,
         ..
     } = state.interfaces.as_ref().unwrap();
 
@@ -160,15 +161,16 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
     if engine.is_in_game() {
         input_system.enable_input(is_menu_open);
-        input_system.cursor_visible(is_menu_open);
 
         if is_menu_open {
-            input_system.reset_input_state();
+            surface.unlock_cursor();
+            input.deactivate_mouse();
+        } else {
+            input.activate_mouse();
         }
     } else {
         // apparently needs to be enabled as you're enterting a map
         input_system.enable_input(true);
-        input_system.cursor_visible(true);
     }
 
     local_vars.player = entity_list.local_player(engine).cast();
