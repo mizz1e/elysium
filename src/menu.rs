@@ -60,7 +60,7 @@ impl Menu {
             &mut self.renderer,
             &iced_glow::Theme::Dark,
             &renderer::Style {
-                text_color: Color::WHITE,
+                text_color: Color::BLACK,
             },
             &mut self.clipboard,
             &mut self.debug,

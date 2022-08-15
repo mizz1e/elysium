@@ -14,12 +14,19 @@ use state::Hooks;
 use std::path::Path;
 use std::{mem, thread};
 
+pub use controls::Controls;
 pub use entity::Entity;
+pub use menu::Menu;
 pub use networked::Networked;
+pub use scene::Scene;
 pub use state::State;
 
+mod controls;
 mod entity;
+mod menu;
+mod scene;
 
+pub mod assets;
 pub mod hooks;
 pub mod library;
 pub mod networked;
@@ -78,6 +85,9 @@ fn main() {
 
         let globals = &mut *(client.globals() as *mut _);
         let input = &mut *(client.input() as *mut _);
+
+        println!("{globals:?}");
+        println!("{input:?}");
 
         console.write("welcome to elysium\n");
 

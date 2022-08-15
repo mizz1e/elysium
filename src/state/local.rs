@@ -5,6 +5,8 @@ use std::ptr;
 
 /// Local player-related values.
 pub struct Local {
+    /// Anti-aiming?
+    pub anti_aim: bool,
     /// Local player's aim punch angle.
     pub aim_punch_angle: Vec3,
     /// Local player's bones.
@@ -38,6 +40,7 @@ pub struct Local {
 }
 
 const NEW: Local = Local {
+    anti_aim: false,
     aim_punch_angle: Vec3::zero(),
     bones: Bones::zero(),
     health: 0,
@@ -65,7 +68,13 @@ impl Local {
     /// Reset local player values.
     #[inline]
     pub fn reset(&mut self) {
-        *self = NEW;
+        let Self { anti_aim, .. } = self;
+        let anti_aim = *anti_aim;
+
+        *self = Self {
+            anti_aim,
+            ..Self::new()
+        };
     }
 
     /// Toggle thirdperson.

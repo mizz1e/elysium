@@ -180,30 +180,32 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
         fix_movement(command, wish_angle);
     }
 
-    // 89.0 = down, -89.0 = up
-    let pitch = 89.0;
+    if state.local.anti_aim {
+        // 89.0 = down, -89.0 = up
+        let pitch = 89.0;
 
-    // 180.0 for backwards
-    let yaw_base = 180.0;
+        // 180.0 for backwards
+        let yaw_base = 180.0;
 
-    // roll base
-    let roll_base = 0.0;
+        // roll base
+        let roll_base = 0.0;
 
-    // how much to jitter yaw
-    let jitter_yaw = 9.0;
+        // how much to jitter yaw
+        let jitter_yaw = 9.0;
 
-    // how much to jitter roll
-    let jitter_roll = 50.0;
+        // how much to jitter roll
+        let jitter_roll = 50.0;
 
-    // note: remember, desync isnt static, nor can it always be 58.0;
-    let desync = 58.0;
+        // note: remember, desync isnt static, nor can it always be 58.0;
+        let desync = 58.0;
 
-    command.view_angle.x = pitch;
-    command.view_angle.y += yaw_base; // + (jitter_yaw * side);
-    command.view_angle.z += roll_base; // + jitter_roll * side;
+        command.view_angle.x = pitch;
+        command.view_angle.y += yaw_base; // + (jitter_yaw * side);
+        command.view_angle.z += roll_base; // + jitter_roll * side;
 
-    if !*send_packet {
-        command.view_angle.y += 270.0;
+        if !*send_packet {
+            command.view_angle.y += 270.0;
+        }
     }
 
     if do_attack {

@@ -1,6 +1,5 @@
-use crate::State;
+use crate::{Menu, State};
 use core::mem::MaybeUninit;
-use elysium_menu::Menu;
 use glow::HasContext;
 use iced_glow::{glow, Viewport};
 use iced_native::Size;

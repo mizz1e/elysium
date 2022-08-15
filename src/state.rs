@@ -1,6 +1,5 @@
-use crate::Networked;
+use crate::{Menu, Networked};
 use elysium_math::Vec3;
-use elysium_menu::Menu;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
 use iced_glow::glow;
 use iced_native::{Point, Size};

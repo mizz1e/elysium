@@ -2,6 +2,7 @@
 
 use crate::Pad;
 use cake::ffi::VTablePad;
+use core::{fmt, ptr};
 use elysium_math::Vec3;
 
 pub use button::Button;
@@ -120,5 +121,32 @@ impl Input {
     #[inline]
     pub fn get_user_command(&self, slot: i32, sequence: i32) -> *const Command {
         unsafe { (self.vtable.get_user_command)(self, slot, sequence) }
+    }
+}
+
+impl fmt::Debug for Input {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Input")
+            .field("vtable", &self.vtable)
+            .field("_pad0", &self._pad0)
+            .field("is_track_ir_available", &self.is_track_ir_available)
+            .field("is_mouse_initialized", &self.is_mouse_initialized)
+            .field("is_mouse_active", &self.is_mouse_active)
+            .field("_pad1", &self._pad1)
+            .field("thirdperson", &self.thirdperson)
+            .field("camera_moving_with_mouse", &self.camera_moving_with_mouse)
+            .field("offset", &self.offset)
+            .finish()
+    }
+}
+
+impl fmt::Debug for VTable {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("VTable")
+            .field("_pad0", &self._pad0)
+            .field("get_user_command", &ptr::addr_of!(self.get_user_command))
+            .finish()
     }
 }
