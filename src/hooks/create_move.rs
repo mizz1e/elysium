@@ -87,7 +87,7 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
         return;
     }
 
-    println!("{:?}", local.team());
+    /*println!("{:?}", local.team());
 
     let weapon = local.active_weapon();
 
@@ -103,7 +103,7 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
 
             println!("{data:?}");
         }
-    }
+    }*/
 
     if local_vars.was_attacking {
         command.state &= !IN_ATTACK;

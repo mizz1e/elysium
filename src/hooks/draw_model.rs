@@ -42,12 +42,14 @@ pub unsafe extern "C" fn draw_model(
     let model_name = model_info.model_name(model);
 
     if let Some(gold) = state.materials.gold {
+        gold.set_rgba([1.0, 1.0, 1.0, 0.9]);
+        gold.set_flag(MaterialFlag::IGNORE_Z, false);
+        gold.set_flag(MaterialFlag::WIREFRAME, false);
+
         if model_name.starts_with("models/player") {
             let entity_index = (*info).entity_index;
             let entity = entity_list.entity(entity_index).cast::<Entity>();
             let local = local_vars.player.as_ref().unwrap();
-
-            gold.set_rgba([1.0, 1.0, 1.0, 0.9]);
 
             if !entity.is_null() {
                 let entity = EntityRef::from_raw(entity);

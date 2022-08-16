@@ -12,6 +12,7 @@
 use elysium_sdk::material::{Material, MaterialKind};
 use elysium_sdk::{Interfaces, LibraryKind, Vars};
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
+use std::io::Write;
 use std::path::Path;
 use std::ptr;
 use std::{mem, thread};
@@ -75,10 +76,12 @@ fn console() {
     let state = State::get();
     let Interfaces { engine, .. } = state.interfaces.as_ref().unwrap();
 
+    let mut out = std::io::stdout();
     let mut lines = std::io::stdin().lines().flatten();
 
     while let Some(line) = {
-        print!("> ");
+        let _ = write!(out, "> ");
+        let _ = out.flush();
 
         lines.next()
     } {
