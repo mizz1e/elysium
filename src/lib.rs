@@ -17,7 +17,7 @@ use std::ptr;
 use std::{mem, thread};
 
 pub use controls::Controls;
-pub use entity::Entity;
+pub use entity::{Entity, EntityRef};
 pub use menu::Menu;
 pub use networked::Networked;
 pub use scene::Scene;

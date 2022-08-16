@@ -50,20 +50,20 @@ pub struct Item {
 
 #[derive(Debug)]
 pub struct Player {
-    pub account: usize,
     pub armor: usize,
     pub eye_angle: usize,
     pub flags: usize,
     pub has_defuse_kit: usize,
     pub has_helmet: usize,
     pub in_bomb_zone: usize,
+    pub is_defusing: usize,
     pub is_immune: usize,
     pub is_scoped: usize,
     pub lower_body_yaw: usize,
     pub max_flash_alpha: usize,
     pub money: usize,
     pub observer: usize,
-    pub player_patch_indicies: usize,
+    pub patch_indicies: usize,
     pub ragdoll: usize,
     pub shots_fired: usize,
     pub wait_for_no_attack: usize,
@@ -120,15 +120,14 @@ impl Networked {
                 }
             }
         }
+
+        println!("{self:?}");
     }
 }
 
 /// Insert an entry we have interest in into our map.
 #[inline]
 fn insert_entry(this: &mut Networked, class: Class, entry: Entry, offset: usize) {
-    // TODO: some nice way to log
-    //println!("elysium | networked \x1b[38;5;2m{class:?}\x1b[m variable \x1b[38;5;2m{entry:?}\x1b[m offset \x1b[38;5;3m{offset:0x?}\x1b[m");
-
     match (class, entry) {
         // base_animating
         (Class::BaseAnimating, Entry::ClientSideAnimation) => {
@@ -169,15 +168,22 @@ fn insert_entry(this: &mut Networked, class: Class, entry: Entry, offset: usize)
         // player
         (Class::Player, Entry::Armor) => this.player.armor = offset,
         (Class::Player, Entry::EyeAngle) => this.player.eye_angle = offset,
-        (Class::Player, Entry::IsImmune) => this.player.is_immune = offset,
+        (Class::Player, Entry::Flags) => this.player.flags = offset,
         (Class::Player, Entry::HasDefuseKit) => this.player.has_defuse_kit = offset,
         (Class::Player, Entry::HasHelmet) => this.player.has_helmet = offset,
+        (Class::Player, Entry::InBombZone) => this.player.in_bomb_zone = offset,
+        (Class::Player, Entry::IsDefusing) => this.player.is_defusing = offset,
+        (Class::Player, Entry::IsImmune) => this.player.is_immune = offset,
         (Class::Player, Entry::IsScoped) => this.player.is_scoped = offset,
-        (Class::Player, Entry::Flags) => this.player.flags = offset,
         (Class::Player, Entry::LowerBodyYaw) => this.player.lower_body_yaw = offset,
-        (Class::Player, Entry::Weapon) => this.player.weapon = offset,
-        (Class::Player, Entry::Observer) => this.player.observer = offset,
+        (Class::Player, Entry::MaxFlashAlpha) => this.player.max_flash_alpha = offset,
         (Class::Player, Entry::Money) => this.player.money = offset,
+        (Class::Player, Entry::Observer) => this.player.observer = offset,
+        (Class::Player, Entry::PatchIndicies) => this.player.patch_indicies = offset,
+        (Class::Player, Entry::Ragdoll) => this.player.ragdoll = offset,
+        (Class::Player, Entry::ShotsFired) => this.player.shots_fired = offset,
+        (Class::Player, Entry::WaitForNoAttack) => this.player.wait_for_no_attack = offset,
+        (Class::Player, Entry::Weapon) => this.player.weapon = offset,
 
         // weapon
         (Class::Weapon, Entry::RevolverCockTime) => this.weapon.revolver_cock_time = offset,

@@ -1,8 +1,8 @@
-use crate::{Entity, State};
+use crate::{Entity, EntityRef, State};
 use elysium_math::Vec3;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
-use elysium_sdk::{Command, EntityList, HitGroup};
+use elysium_sdk::{Command, EntityList, HitGroup, Interfaces};
 use std::arch::asm;
 
 const IN_FORWARD: i32 = 1 << 3;
@@ -17,15 +17,6 @@ const IN_BULLRUSH: i32 = 1 << 22;
 const IN_JUMP: i32 = 1 << 1;
 
 const ON_GROUND: i32 = 1 << 0;
-
-fn normalize(vec: &mut Vec3) {
-    let radius = (vec.x * vec.x + vec.y * vec.y + vec.z * vec.z).sqrt();
-    let iradius = 1.0 / (radius + f32::EPSILON);
-
-    vec.x *= iradius;
-    vec.y *= iradius;
-    vec.z *= iradius;
-}
 
 fn get_dir(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
     let x = forward.x * movement.x + right.x * movement.y;
@@ -44,10 +35,10 @@ fn fix_movement(command: &mut Command, wish_angle: Vec3) {
     curr_forward.z = 0.0;
     curr_right.z = 0.0;
 
-    normalize(&mut wish_forward);
-    normalize(&mut wish_right);
-    normalize(&mut curr_forward);
-    normalize(&mut curr_right);
+    wish_forward = wish_forward.normalize();
+    wish_right = wish_right.normalize();
+    curr_forward = curr_forward.normalize();
+    curr_right = curr_right.normalize();
 
     let wish_dir = get_dir(command.movement, wish_forward, wish_right);
     let curr_dir = get_dir(command.movement, curr_forward, curr_right);
@@ -107,7 +98,7 @@ fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
 #[inline]
 unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mut bool) {
     let state = State::get();
-    let vars = state.vars.as_ref().unwrap_unchecked();
+    let vars = state.vars.as_ref().unwrap();
     let mut local_vars = &mut state.local;
 
     // don't do anything fancy whilest on a ladder or noclipping

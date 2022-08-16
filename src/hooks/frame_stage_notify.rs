@@ -1,5 +1,5 @@
 use crate::state::Local;
-use crate::{Entity, State};
+use crate::{Entity, EntityRef, State};
 use elysium_math::Vec3;
 use elysium_sdk::client::Class;
 use elysium_sdk::convar::Vars;
@@ -62,7 +62,7 @@ fn update_vars(vars: &Vars, engine: &Engine) {
 }
 
 /// Override fog controller properties.
-fn update_fog(entity: &Entity) {
+fn update_fog(entity: EntityRef) {
     *entity.is_enabled() = true;
     *entity.start_distance() = 150.0;
     *entity.end_distance() = 350.0;
@@ -74,7 +74,7 @@ fn update_fog(entity: &Entity) {
 }
 
 /// Override tonemap controller properties.
-fn update_tonemap(entity: &Entity) {
+fn update_tonemap(entity: EntityRef) {
     *entity.enable_bloom_scale() = true;
     *entity.enable_min_exposure() = true;
     *entity.enable_max_exposure() = true;
@@ -111,6 +111,25 @@ fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, 
 /// Iterate entities and update entity specific things.
 #[inline]
 unsafe fn update_entities(entity_list: &EntityList) {
+    let state = State::get();
+    let players = &mut state.players;
+    let globals = state.globals.as_ref().unwrap();
+    let time = globals.current_time;
+
+    for index in entity_list.player_range() {
+        let entity = entity_list.entity(index);
+
+        if entity.is_null() {
+            continue;
+        }
+
+        let entity = EntityRef::from_raw(entity.cast::<Entity>());
+        let mut bones = players[index as usize - 1].bones;
+
+        entity.setup_bones(&mut bones[..128], 0x00000100, time);
+        entity.setup_bones(&mut bones[..128], 0x000FFF00, time);
+    }
+
     for index in entity_list.non_player_range() {
         let entity = entity_list.entity(index);
 
@@ -118,7 +137,7 @@ unsafe fn update_entities(entity_list: &EntityList) {
             continue;
         }
 
-        let entity = &*entity.cast::<Entity>();
+        let entity = EntityRef::from_raw(entity.cast::<Entity>());
         let class = entity.client_class();
 
         if class.is_null() {

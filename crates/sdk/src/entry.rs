@@ -73,8 +73,10 @@ entries! {
     HasHelmet => "m_bHasHelmet",
     Health => "m_iHealth",
 
+    InBombZone => "m_bInBombZone",
     InReload => "m_bInReload",
     IsDead => "deadflag",
+    IsDefusing => "m_bIsDefusing",
     IsDefused => "m_mBombDefused",
     IsImmune => "m_bGunGameImmunity",
     IsScoped => "m_bIsScoped",
@@ -92,12 +94,15 @@ entries! {
 
     Observer => "m_hObserverTarget",
 
+    PatchIndicies => "m_vecPlayerPatchEconIndices",
     PoseParameter => "m_flPoseParameter",
-    RenderMode => "m_nRenderMode",
 
+    Ragdoll => "m_hRagdoll",
+    RenderMode => "m_nRenderMode",
     RevolverCockTime => "m_flPostponeFireReadyTime",
 
     Sequence => "m_nSequence",
+    ShotsFired => "m_iShotsFired",
     SimulationTime => "m_flSimulationTime",
     Skin => "m_nSkin",
     SurvivalTeam => "m_nSurvivalTeam",
@@ -110,5 +115,6 @@ entries! {
     ViewOffset => "m_vecViewOffset[0]",
     ViewPunchAngle => "m_viewPunchAngle",
 
+    WaitForNoAttack => "m_bWaitForNoAttack",
     Weapon => "m_hActiveWeapon"
 }

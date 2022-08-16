@@ -3,6 +3,8 @@ use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable, Team};
 use elysium_sdk::{object_validate, vtable_validate, WeaponInfo};
+use std::marker::PhantomData;
+use std::ops;
 
 #[repr(C)]
 struct VTable {
@@ -83,6 +85,40 @@ pub struct Entity {
     pub networkable: Networkable,
 }
 
+#[derive(Clone, Copy)]
+pub struct EntityRef<'a> {
+    entity: *const Entity,
+    _phantom: PhantomData<&'a Entity>,
+}
+
+impl<'a> EntityRef<'a> {
+    #[inline]
+    pub unsafe fn from_raw(entity: *const Entity) -> Self {
+        let _phantom = PhantomData;
+
+        Self { entity, _phantom }
+    }
+
+    #[inline]
+    pub fn as_ptr(&self) -> *const Entity {
+        self.entity
+    }
+
+    #[inline]
+    pub fn as_entity(&self) -> &'a Entity {
+        unsafe { &*self.entity }
+    }
+}
+
+impl<'a> ops::Deref for EntityRef<'a> {
+    type Target = Entity;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        self.as_entity()
+    }
+}
+
 object_validate! {
     Entity;
     vtable => 0,
@@ -91,52 +127,40 @@ object_validate! {
 }
 
 impl Entity {
-    /// for whatever reason, things get optimized weirdly, and result in segmentation faults
-    #[inline(never)]
-    pub fn renderable<'a>(entity: *const Entity) -> &'a Renderable {
-        unsafe { &*entity.byte_add(8).cast::<Renderable>() }
-    }
-
-    /// for whatever reason, things get optimized weirdly, and result in segmentation faults
-    #[inline(never)]
-    pub fn networkable<'a>(entity: *const Entity) -> &'a Networkable {
-        unsafe { &*entity.byte_add(16).cast::<Networkable>() }
-    }
-
     /// the entity's class
     #[inline]
     pub fn client_class(&self) -> *const u8 {
-        Self::networkable(self).client_class()
+        self.networkable.client_class()
     }
 
     /// is the entity dormant
     #[inline]
     pub fn is_dormant(&self) -> bool {
-        Self::networkable(self).is_dormant()
+        self.networkable.is_dormant()
     }
 
     /// the entity's index
     #[inline]
     pub fn index(&self) -> i32 {
-        Self::networkable(self).index()
+        self.networkable.index()
     }
 
     /// the entity's model
     #[inline]
     pub fn model(&self) -> *const u8 {
-        Self::renderable(self).model()
+        self.renderable.model()
     }
 
     /// setup bones
     #[inline]
     pub fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool {
-        Self::renderable(self).setup_bones(bones, mask, time)
+        self.renderable.setup_bones(bones, mask, time)
     }
 
     /// should draw?
     #[inline]
     pub fn should_draw(&self) -> bool {
-        Self::renderable(self).should_draw()
+        self.renderable.should_draw()
     }
 
     #[inline]
@@ -286,7 +310,7 @@ impl Entity {
 
     /// only for base_players=
     #[inline]
-    unsafe fn is_dead_address(&self) -> *const u8 {
+    fn is_dead_address(&self) -> *const u8 {
         self.networked(|networked| networked.base_player.is_dead)
     }
 
@@ -330,11 +354,11 @@ impl Entity {
         *self.networked(|networked| networked.player.has_helmet)
     }
 
-    /*/ is player defusing
+    /// is player defusing
     #[inline]
     pub fn is_defusing(&self) -> bool {
         *self.networked(|networked| networked.player.is_defusing)
-    }*/
+    }
 
     /// is player scoped
     #[inline]

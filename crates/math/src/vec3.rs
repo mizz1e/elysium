@@ -123,6 +123,7 @@ impl Vec3 {
         while self.x > 89.0 {
             self.x -= 180.0;
         }
+
         while self.x < -89.0 {
             self.x += 180.0;
         }
@@ -130,6 +131,7 @@ impl Vec3 {
         while self.y > 180.0 {
             self.y -= 360.0;
         }
+
         while self.y < -180.0 {
             self.y += 360.0;
         }

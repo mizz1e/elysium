@@ -31,6 +31,8 @@ vtable_validate! {
 }
 
 /// Entity list interface.
+///
+/// NOTE: Using this in `create_move` seems to crash the game.
 #[repr(C)]
 pub struct EntityList {
     vtable: &'static VTable,
