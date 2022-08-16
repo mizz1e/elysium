@@ -1,4 +1,4 @@
-use crate::Pad;
+use cake::ffi::BytePad;
 use elysium_math::Vec3;
 
 /// Extra information about the trace.
@@ -10,5 +10,5 @@ pub struct Plane {
     pub distance: f32,
     pub kind: u8,
     pub sign_bits: u8,
-    _pad0: Pad<2>,
+    _pad0: BytePad<2>,
 }

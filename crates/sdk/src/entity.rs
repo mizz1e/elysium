@@ -48,6 +48,15 @@ pub enum MoveKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(i32)]
+pub enum Team {
+    None = 0,
+    Spectators = 1,
+    Terrorist = 2,
+    Counter = 3,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(i32)]
 pub enum ObserverMode {
     None = 0,
     Deathcam = 1,

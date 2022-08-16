@@ -1,12 +1,13 @@
 use super::Table;
 use crate::entity::EntityId;
-use crate::{ffi, Pad};
+use crate::ffi;
+use cake::ffi::BytePad;
 use core::fmt;
 
 #[non_exhaustive]
 #[repr(C)]
 pub struct Class {
-    _pad0: Pad<16>,
+    _pad0: BytePad<16>,
     name: *const u8,
     pub table: Option<&'static Table>,
     pub(super) next: *mut Class,

@@ -33,6 +33,7 @@ pub mod hooks;
 pub mod library;
 pub mod networked;
 pub mod pattern;
+//pub mod simulation;
 pub mod state;
 
 // this is called by glibc after the library is loaded into a process

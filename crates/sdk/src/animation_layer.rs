@@ -1,10 +1,10 @@
-use crate::Pad;
+use cake::ffi::BytePad;
 use core::fmt;
 
 /// An animation layer.
 #[repr(C)]
 pub struct AnimationLayer {
-    _pad0: Pad<24>,
+    _pad0: BytePad<24>,
     pub order: i32,
     pub sequence: i32,
     pub previous_cycle: f32,
@@ -12,7 +12,7 @@ pub struct AnimationLayer {
     pub weight_delta_rate: f32,
     pub playback_rate: f32,
     pub cycle: f32,
-    _pad1: Pad<16>,
+    _pad1: BytePad<16>,
 }
 
 impl fmt::Debug for AnimationLayer {

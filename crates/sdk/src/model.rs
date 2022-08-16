@@ -1,4 +1,4 @@
-use crate::Pad;
+use cake::ffi::BytePad;
 use core::marker::PhantomData;
 use core::ptr;
 use elysium_math::{Matrix3x4, Vec3};
@@ -76,7 +76,7 @@ pub struct Bone {
     pub surface_prop_offset: i32,
     pub contents: i32,
     pub surface_prop_lookup: i32,
-    _pad0: Pad<28>,
+    _pad0: BytePad<28>,
 }
 
 impl Bone {
@@ -111,9 +111,9 @@ pub struct BoundingBox {
     pub max: Vec3,
     pub min: Vec3,
     pub hitbox_name_offset: i32,
-    _pad0: Pad<12>,
+    _pad0: BytePad<12>,
     pub radius: f32,
-    _pad1: Pad<16>,
+    _pad1: BytePad<16>,
 }
 
 impl BoundingBox {
@@ -199,9 +199,9 @@ pub struct Hdr {
     pub constant_directional_light_dot: u8,
     pub root_lod: u8,
     pub allowed_root_lods: u8,
-    _pad0: Pad<5>,
+    _pad0: BytePad<5>,
     pub flex_controller_ui: MagicArray<()>,
-    _pad1: Pad<16>,
+    _pad1: BytePad<16>,
 }
 
 #[derive(Debug)]
@@ -230,7 +230,7 @@ pub struct Model {
 pub struct ModelRenderInfo {
     pub origin: Vec3,
     pub angles: Vec3,
-    _pad0: Pad<4>,
+    _pad0: BytePad<4>,
     pub renderable: *const *const (),
     pub model: *const Model,
     pub model_to_world: *const Matrix3x4,

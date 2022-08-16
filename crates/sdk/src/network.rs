@@ -1,6 +1,7 @@
 // https://github.com/HackerPolice/MissedIT/blob/master/src/SDK/INetChannel.h
 
-use crate::{ffi, object_validate, vtable_export, vtable_validate, Pad};
+use crate::{ffi, object_validate, vtable_export, vtable_validate};
+use cake::ffi::BytePad;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 
@@ -100,7 +101,7 @@ vtable_validate! {
 #[repr(C)]
 pub struct NetworkChannel {
     vtable: &'static VTable,
-    _pad0: Pad<36>,
+    _pad0: BytePad<36>,
     pub choked_packets: i32,
 }
 

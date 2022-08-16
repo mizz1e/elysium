@@ -88,7 +88,7 @@ entries! {
     MinExposure => "m_flCustomAutoExposureMin",
     Money => "m_iAccount",
 
-    NextAttackAvailableAfter => "m_flNextPrimaryAttack",
+    NextAttackTime => "m_flNextPrimaryAttack",
 
     Observer => "m_hObserverTarget",
 

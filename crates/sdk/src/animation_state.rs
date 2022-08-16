@@ -1,17 +1,17 @@
-use crate::pad::Pad;
+use cake::ffi::BytePad;
 use core::fmt;
 
 /// Animation state.
 #[repr(C)]
 pub struct AnimationState {
-    _pad0: Pad<164>,
+    _pad0: BytePad<164>,
     pub duck_amount: f32,
-    _pad1: Pad<80>,
+    _pad1: BytePad<80>,
     pub foot_speed: f32,
     pub foot_speed2: f32,
-    _pad2: Pad<22>,
+    _pad2: BytePad<22>,
     pub stop_to_full_running_fraction: f32,
-    _pad3: Pad<532>,
+    _pad3: BytePad<532>,
     // p sure wrong offset
     pub velocity_subtract_y: f32,
 }

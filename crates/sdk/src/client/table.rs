@@ -1,14 +1,15 @@
 use super::Property;
-use crate::{ffi, Pad};
+use crate::ffi;
+use cake::ffi::BytePad;
 use core::fmt;
 
 #[non_exhaustive]
 #[repr(C)]
 pub struct Table {
     properties: (*const Property, i32),
-    _pad0: Pad<8>,
+    _pad0: BytePad<8>,
     name: *const u8,
-    _pad1: Pad<2>,
+    _pad1: BytePad<2>,
 }
 
 impl Table {

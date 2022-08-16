@@ -1,5 +1,4 @@
-use super::Pad;
-use cake::ffi::VTablePad;
+use cake::ffi::{BytePad, VTablePad};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(i32)]
@@ -25,9 +24,9 @@ struct VTable {
 #[repr(C)]
 pub struct Render {
     vtable: &'static VTable,
-    _pad0: Pad<592>,
+    _pad0: BytePad<592>,
     pub material_override: *const (),
-    _pad1: Pad<24>,
+    _pad1: BytePad<24>,
     pub override_kind: OverrideKind,
 }
 

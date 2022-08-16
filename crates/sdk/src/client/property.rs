@@ -1,5 +1,6 @@
 use super::Table;
-use crate::{ffi, Pad};
+use crate::ffi;
+use cake::ffi::BytePad;
 use core::fmt;
 use core::ptr::NonNull;
 use elysium_math::Vec3;
@@ -61,9 +62,9 @@ pub struct Property {
     pub flags: i32,
     pub string_len: i32,
     pub inside_array: bool,
-    _pad0: Pad<8>,
+    _pad0: BytePad<8>,
     pub array_prop: Option<NonNull<Property>>,
-    _pad1: Pad<24>,
+    _pad1: BytePad<24>,
     pub data_table: Option<&'static Table>,
     pub offset: i32,
     pub element_stride: i32,

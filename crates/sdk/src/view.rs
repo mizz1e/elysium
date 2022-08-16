@@ -1,4 +1,4 @@
-use crate::Pad;
+use cake::ffi::BytePad;
 use elysium_math::Vec3;
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ pub struct View {
     pub old_width: i32,
     pub height: i32,
     pub old_height: i32,
-    _pad0: Pad<152>,
+    _pad0: BytePad<152>,
     pub fov: f32,
     pub view_model_fov: f32,
     pub origin: Vec3,

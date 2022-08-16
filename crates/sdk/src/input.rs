@@ -1,7 +1,7 @@
 //! Input interace.
 
-use crate::{vtable_validate, Pad};
-use cake::ffi::VTablePad;
+use crate::vtable_validate;
+use cake::ffi::{BytePad, VTablePad};
 use core::{fmt, ptr};
 use elysium_math::Vec3;
 
@@ -116,11 +116,11 @@ vtable_validate! {
 #[repr(C)]
 pub struct Input {
     vtable: &'static VTable,
-    _pad0: Pad<8>,
+    _pad0: BytePad<8>,
     pub is_track_ir_available: bool,
     pub is_mouse_initialized: bool,
     pub is_mouse_active: bool,
-    _pad1: Pad<162>,
+    _pad1: BytePad<162>,
     pub thirdperson: bool,
     pub camera_moving_with_mouse: bool,
     pub offset: Vec3,

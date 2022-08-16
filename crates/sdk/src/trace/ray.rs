@@ -1,4 +1,4 @@
-use crate::Pad;
+use cake::ffi::BytePad;
 use elysium_math::{Vec3, Vec4Aligned};
 
 /// Ray to be traced.
@@ -7,9 +7,9 @@ use elysium_math::{Vec3, Vec4Aligned};
 #[repr(C)]
 pub struct Ray {
     pub start: Vec4Aligned,
-    _pad0: Pad<4>,
+    _pad0: BytePad<4>,
     pub delta: Vec4Aligned,
-    _pad1: Pad<44>,
+    _pad1: BytePad<44>,
     pub is_ray: bool,
     pub is_swept: bool,
 }
@@ -25,9 +25,9 @@ impl Ray {
 
         Self {
             start,
-            _pad0: Pad::uninit(),
+            _pad0: BytePad::uninit(),
             delta,
-            _pad1: Pad::uninit(),
+            _pad1: BytePad::uninit(),
             is_ray,
             is_swept,
         }

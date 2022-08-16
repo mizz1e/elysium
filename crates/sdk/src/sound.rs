@@ -1,4 +1,4 @@
-use super::Pad;
+use cake::ffi::BytePad;
 use elysium_math::Vec3;
 
 /// Active audio channels.
@@ -11,10 +11,10 @@ pub struct ActiveChannels {
 /// A audio channel.
 #[repr(C)]
 pub struct Channel {
-    _pad0: Pad<260>,
+    _pad0: BytePad<260>,
     pub sound_source: i32,
-    _pad1: Pad<56>,
+    _pad1: BytePad<56>,
     pub origin: Vec3,
     pub direction: Vec3,
-    _pad2: Pad<80>,
+    _pad2: BytePad<80>,
 }

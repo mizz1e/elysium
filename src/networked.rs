@@ -26,7 +26,7 @@ pub struct BasePlayer {
 
 #[derive(Debug)]
 pub struct BaseWeapon {
-    pub next_attack_available_after: usize,
+    pub next_attack_time: usize,
     pub magazine: usize,
 }
 
@@ -142,9 +142,7 @@ fn insert_entry(this: &mut Networked, class: Class, entry: Entry, offset: usize)
         (Class::BasePlayer, Entry::ViewPunchAngle) => this.base_player.view_punch_angle = offset,
 
         // base_weapon
-        (Class::BaseWeapon, Entry::NextAttackAvailableAfter) => {
-            this.base_weapon.next_attack_available_after = offset
-        }
+        (Class::BaseWeapon, Entry::NextAttackTime) => this.base_weapon.next_attack_time = offset,
         (Class::BaseWeapon, Entry::Magazine) => this.base_weapon.magazine = offset,
 
         // fog

@@ -1,10 +1,11 @@
-use super::{Pad, UtlVec};
+use crate::UtlVec;
+use cake::ffi::BytePad;
 
 #[repr(C)]
 pub struct VarEntry {
     pub kind: u16,
     pub need_to_interpolate: u16,
-    _pad0: Pad<8>,
+    _pad0: BytePad<8>,
 }
 
 #[repr(C)]

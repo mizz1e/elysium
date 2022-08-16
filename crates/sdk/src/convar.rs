@@ -1,5 +1,5 @@
-use crate::{Pad, UtlVec};
-use cake::ffi::VTablePad;
+use crate::UtlVec;
+use cake::ffi::{BytePad, VTablePad};
 use core::fmt;
 use core::marker::PhantomData;
 
@@ -70,12 +70,12 @@ struct VTable<T> {
 pub struct Var<T> {
     /// blah blah static
     vtable: *const VTable<T>,
-    _pad0: Pad<40>,
+    _pad0: BytePad<40>,
     pub change_callback: Option<unsafe extern "thiscall" fn()>,
     pub parent: *const Var<()>,
     pub default_value: *const u8,
     pub string: *const u8,
-    _pad1: Pad<28>,
+    _pad1: BytePad<28>,
     pub on_change_callbacks: UtlVec<unsafe extern "thiscall" fn()>,
     // we do be owning T, tho
     _phantom: PhantomData<T>,
@@ -85,9 +85,14 @@ impl<T> fmt::Debug for Var<T> {
     #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Var")
+            .field("vtable", &"<vtable>")
+            .field("_pad0", &self._pad0)
+            .field("change_callback", &"<change_callback>")
             .field("parent", &self.parent)
             .field("default_value", &self.default_value)
             .field("string", &self.string)
+            .field("_pad1", &self._pad1)
+            .field("on_change_callbacks", &"<on_change_callbacks>")
             .finish()
     }
 }

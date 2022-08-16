@@ -71,14 +71,14 @@ impl Category {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Team {
-    CounterTerrorist,
+    Counter,
     Terrorist,
 }
 
 impl Team {
     pub const fn as_str(&self) -> &'static str {
         match self {
-            Team::CounterTerrorist => "counter terrorist",
+            Team::Counter => "counter terrorist",
             Team::Terrorist => "terrorist",
         }
     }
@@ -144,42 +144,42 @@ models! {
         label: "Chef d'Escadron Rouchard",
         mdl: "models/player/custom_player/legacy/ctm_gendarmerie_variantc.mdl\0",
         series: Series::GendarmerieNationale,
-        team: Team::CounterTerrorist,
+        team: Team::Counter,
     },
     CmdrFrankWetSoxBaroud => {
         category: Category::Master,
         label: "Cmdr. Frank 'Wet Sox' Baroud",
         mdl: "models/player/custom_player/legacy/ctm_diver_variantb.mdl\0",
         series: Series::SEALFrogman,
-        team: Team::CounterTerrorist,
+        team: Team::Counter,
     },
     CmdrDavidaGogglesFernandez => {
         category: Category::Master,
         label: "Cmdr. Davida 'Goggles' Fernandez",
         mdl: "models/player/custom_player/legacy/ctm_diver_varianta.mdl\0",
         series: Series::SEALFrogman,
-        team: Team::CounterTerrorist,
+        team: Team::Counter,
     },
     LtCommanderRicksaw => {
         category: Category::Master,
         label: "Lt. Commander Ricksaw",
         mdl: "models/player/custom_player/legacy/ctm_st6_varianti.mdl\0",
         series: Series::NSWCSEAL,
-        team: Team::CounterTerrorist,
+        team: Team::Counter,
     },
     SpecialAgentAva => {
         category: Category::Master,
         label: "Special Agent Ava",
         mdl: "models/player/custom_player/legacy/ctm_fbi_variantb.mdl\0",
         series: Series::FBI,
-        team: Team::CounterTerrorist,
+        team: Team::Counter,
     },
     CmdrMaeDeadColdJamison => {
         category: Category::Master,
         label: "Cmdr. Mae 'Dead Cold' Jamison",
         mdl: "models/player/custom_player/legacy/ctm_swat_variante.mdl\0",
         series: Series::SWAT,
-        team: Team::CounterTerrorist,
+        team: Team::Counter,
     },
     // terrorist master series
     VypaSistaOfTheRevolution => {

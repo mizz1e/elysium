@@ -1,5 +1,4 @@
-use super::Pad;
-use cake::ffi::VTablePad;
+use cake::ffi::{BytePad, VTablePad};
 use elysium_math::Vec3;
 
 /// Information for creating a beam.
@@ -40,9 +39,9 @@ pub struct BeamInfo {
 /// A beam.
 #[repr(C)]
 pub struct Beam {
-    _pad0: Pad<76>,
+    _pad0: BytePad<76>,
     flags: i32,
-    _pad1: Pad<144>,
+    _pad1: BytePad<144>,
     die_at: f32,
 }
 

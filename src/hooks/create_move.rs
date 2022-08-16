@@ -1,7 +1,7 @@
 use crate::{Entity, State};
 use elysium_math::Vec3;
 use elysium_sdk::convar::Vars;
-use elysium_sdk::entity::{Networkable, ObserverMode, Renderable};
+use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
 use elysium_sdk::{Command, EntityList, HitGroup};
 use std::arch::asm;
 
@@ -110,9 +110,22 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
     let vars = state.vars.as_ref().unwrap_unchecked();
     let mut local_vars = &mut state.local;
 
-    // can you dont when on ladder or in noclip
-    if matches!(local.move_kind(), 8 | 9) {
+    // don't do anything fancy whilest on a ladder or noclipping
+    if matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
         return;
+    }
+
+    let weapon = local.active_weapon();
+
+    if !weapon.is_null() {
+        let weapon = &*weapon;
+        let data = weapon.weapon_data();
+
+        if !data.is_null() {
+            let data = &*data;
+
+            println!("{data:?}");
+        }
     }
 
     if local_vars.was_attacking {
