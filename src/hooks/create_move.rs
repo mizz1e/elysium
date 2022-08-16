@@ -115,10 +115,15 @@ unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mu
         return;
     }
 
+    println!("{:?}", local.team());
+
     let weapon = local.active_weapon();
 
     if !weapon.is_null() {
         let weapon = &*weapon;
+
+        println!("next_attack_time = {:?}", weapon.next_attack_time());
+
         let data = weapon.weapon_data();
 
         if !data.is_null() {
@@ -254,12 +259,7 @@ pub unsafe extern "C" fn create_move(
         return false;
     }
 
-    // ugly
-    let rbp: *mut *mut bool;
-
-    asm!("mov {}, rbp", out(reg) rbp, options(nostack));
-
-    let send_packet = &mut *(*rbp).sub(24);
+    let send_packet = &mut *cake::return_address!().read().sub(24);
 
     *send_packet = command.command % 2 != 0;
 

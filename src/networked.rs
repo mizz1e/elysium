@@ -50,17 +50,24 @@ pub struct Item {
 
 #[derive(Debug)]
 pub struct Player {
+    pub account: usize,
     pub armor: usize,
     pub eye_angle: usize,
+    pub flags: usize,
     pub has_defuse_kit: usize,
     pub has_helmet: usize,
+    pub in_bomb_zone: usize,
     pub is_immune: usize,
     pub is_scoped: usize,
-    pub flags: usize,
     pub lower_body_yaw: usize,
-    pub weapon: usize,
+    pub max_flash_alpha: usize,
     pub money: usize,
     pub observer: usize,
+    pub player_patch_indicies: usize,
+    pub ragdoll: usize,
+    pub shots_fired: usize,
+    pub wait_for_no_attack: usize,
+    pub weapon: usize,
 }
 
 #[derive(Debug)]

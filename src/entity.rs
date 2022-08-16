@@ -191,6 +191,7 @@ impl Entity {
         unsafe { (self.vtable.eye_pos)(self) }
     }
 
+    /// only for base_weapon
     #[inline]
     pub fn weapon_sub_kind(&self) -> i32 {
         unsafe { (self.vtable.weapon_sub_kind)(self) }
@@ -211,21 +212,25 @@ impl Entity {
         unsafe { (self.vtable.aim_punch)(self) }
     }
 
+    /// only for base_weapon
     #[inline]
     pub fn draw_crosshair(&self) {
         unsafe { (self.vtable.draw_crosshair)(self) }
     }
 
+    /// only for base_weapon
     #[inline]
     pub fn spread(&self) -> f32 {
         unsafe { (self.vtable.spread)(self) }
     }
 
+    /// only for base_weapon
     #[inline]
     pub fn weapon_kind(&self) -> i32 {
         unsafe { (self.vtable.weapon_kind)(self) }
     }
 
+    /// only for base_weapon
     #[inline]
     pub fn weapon_data(&self) -> *const WeaponInfo {
         unsafe { (self.vtable.weapon_data)(self) }
@@ -241,6 +246,7 @@ impl Entity {
         unsafe { (self.vtable.muzzle_attachment_index_3rd)(self) }
     }
 
+    /// only for base_weapon
     #[inline]
     pub fn inaccuracy(&self) -> f32 {
         unsafe { (self.vtable.inaccuracy)(self) }
@@ -266,25 +272,25 @@ impl Entity {
         }
     }
 
-    /// only for base_entitys
+    /// only for base_entity
     #[inline]
     fn render_mode_address(&self) -> *const u8 {
         self.networked(|networked| networked.base_entity.render_mode)
     }
 
-    /// only for base_players
+    /// only for base_player
     #[inline]
     pub fn move_kind(&self) -> MoveKind {
         unsafe { *self.render_mode_address().byte_add(1).cast() }
     }
 
-    /// only for base_players
+    /// only for base_players=
     #[inline]
     unsafe fn is_dead_address(&self) -> *const u8 {
         self.networked(|networked| networked.base_player.is_dead)
     }
 
-    /// only for base_players
+    /// only for base_player
     #[inline]
     pub fn view_angle(&self) -> &mut Vec3 {
         unsafe {
@@ -294,49 +300,55 @@ impl Entity {
         }
     }
 
-    /// only for base_players
+    /// only for base_player
     #[inline]
     pub fn velocity(&self) -> Vec3 {
         *self.networked(|networked| networked.base_player.velocity)
     }
 
-    /// only for players
-    #[inline]
-    pub fn is_scoped(&self) -> bool {
-        *self.networked(|networked| networked.player.is_scoped)
-    }
-
-    /// only for players
-    /*#[inline]
-    pub fn is_defusing(&self) -> bool {
-        *self.networked(|networked| networked.player.is_defusing)
-    }*/
-
-    /// only for players
-    #[inline]
-    pub fn flags(&self) -> i32 {
-        *self.networked(|networked| networked.player.flags)
-    }
-
-    /// only for players
-    #[inline]
-    pub fn armor(&self) -> i32 {
-        *self.networked(|networked| networked.player.armor)
-    }
-
-    /// only for players
-    #[inline]
-    pub fn has_helmet(&self) -> bool {
-        *self.networked(|networked| networked.player.has_helmet)
-    }
-
-    /// only for base players
+    /// base player view offset
     #[inline]
     pub fn view_offset(&self) -> Vec3 {
         *self.networked(|networked| networked.base_player.view_offset)
     }
 
-    /// only for base players
+    /// player armor value
+    #[inline]
+    pub fn armor(&self) -> i32 {
+        *self.networked(|networked| networked.player.armor)
+    }
+
+    /// player flags
+    #[inline]
+    pub fn flags(&self) -> i32 {
+        *self.networked(|networked| networked.player.flags)
+    }
+
+    /// does player have a helmet
+    #[inline]
+    pub fn has_helmet(&self) -> bool {
+        *self.networked(|networked| networked.player.has_helmet)
+    }
+
+    /*/ is player defusing
+    #[inline]
+    pub fn is_defusing(&self) -> bool {
+        *self.networked(|networked| networked.player.is_defusing)
+    }*/
+
+    /// is player scoped
+    #[inline]
+    pub fn is_scoped(&self) -> bool {
+        *self.networked(|networked| networked.player.is_scoped)
+    }
+
+    /// player lower body yaw
+    #[inline]
+    pub fn lby(&self) -> i32 {
+        *self.networked(|networked| networked.player.lower_body_yaw)
+    }
+
+    /// only for base player
     #[inline]
     pub fn eye_origin(&self) -> Vec3 {
         let origin = self.origin();
