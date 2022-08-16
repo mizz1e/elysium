@@ -10,7 +10,7 @@
 #![feature(const_maybe_uninit_zeroed)]
 
 use elysium_sdk::material::{Material, MaterialKind};
-use elysium_sdk::{LibraryKind, Vars};
+use elysium_sdk::{Interfaces, LibraryKind, Vars};
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 use std::path::Path;
 use std::ptr;
@@ -71,6 +71,22 @@ fn hooked(name: &str) {
 }
 
 #[inline]
+fn console() {
+    let state = State::get();
+    let Interfaces { engine, .. } = state.interfaces.as_ref().unwrap();
+
+    let mut lines = std::io::stdin().lines().flatten();
+
+    while let Some(line) = {
+        print!("> ");
+
+        lines.next()
+    } {
+        engine.execute_command(line, true);
+    }
+}
+
+#[inline]
 fn main() {
     unsafe {
         library::wait_for_serverbrowser();
@@ -79,6 +95,8 @@ fn main() {
         let state = State::get();
 
         state.interfaces = Some(interfaces);
+
+        thread::spawn(console);
 
         let interfaces = state.interfaces.as_ref().unwrap_unchecked();
         let console = &interfaces.console;

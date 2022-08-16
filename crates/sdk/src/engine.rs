@@ -56,7 +56,7 @@ struct VTable {
     _unknown9: VTablePad<24>,
     get_network_channel: unsafe extern "thiscall" fn(this: *const Engine) -> *const NetworkChannel,
     _unknown10: VTablePad<34>,
-    command: unsafe extern "thiscall" fn(
+    execute_command: unsafe extern "thiscall" fn(
         this: *const Engine,
         command: *const u8,
         from_console_or_keybind: bool,
@@ -81,7 +81,7 @@ vtable_validate! {
     get_bsp_tree_query => 43,
     get_level_name => 53,
     get_network_channel => 78,
-    command => 113,
+    execute_command => 113,
     get_steam_api_context => 186,
 }
 
@@ -195,7 +195,7 @@ impl Engine {
 
     /// executes a command
     #[inline]
-    pub fn command<C>(&self, command: C, from_console_or_keybind: bool)
+    pub fn execute_command<C>(&self, command: C, from_console_or_keybind: bool)
     where
         C: AsRef<OsStr>,
     {
@@ -203,7 +203,7 @@ impl Engine {
             let maybe_cstr = ffi::osstr_to_cstr_cow(command);
             let ptr = ffi::cstr_cow_as_ptr(maybe_cstr.as_ref());
 
-            (self.vtable.command)(self, ptr, from_console_or_keybind);
+            (self.vtable.execute_command)(self, ptr, from_console_or_keybind);
         }
     }
 }

@@ -1,7 +1,8 @@
 use crate::state::DrawModel;
-use crate::State;
+use crate::{Entity, EntityRef, State};
 use elysium_math::Matrix3x4;
-use elysium_sdk::material::Material;
+use elysium_sdk::entity::Team;
+use elysium_sdk::material::{Material, MaterialFlag};
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
 use elysium_sdk::Interfaces;
 
@@ -29,25 +30,34 @@ pub unsafe extern "C" fn draw_model(
 ) {
     let state = State::get();
     let draw_model_original = state.hooks.draw_model.unwrap();
-    let interfaces = state.interfaces.as_ref().unwrap_unchecked();
     let local_vars = &state.local;
     let Interfaces {
         entity_list,
         model_info,
         ..
-    } = interfaces;
+    } = state.interfaces.as_ref().unwrap();
 
-    let model_name = model_info.model_name(&*(*info).model);
+    let info = info.as_ref().unwrap();
+    let model = info.model.as_ref().unwrap();
+    let model_name = model_info.model_name(model);
 
     if let Some(gold) = state.materials.gold {
         if model_name.starts_with("models/player") {
             let entity_index = (*info).entity_index;
-            let _entity = entity_list.entity(entity_index);
-            let local = &*local_vars.player;
-
-            use elysium_sdk::material::MaterialFlag;
+            let entity = entity_list.entity(entity_index).cast::<Entity>();
+            let local = local_vars.player.as_ref().unwrap();
 
             gold.set_rgba([1.0, 1.0, 1.0, 0.9]);
+
+            if !entity.is_null() {
+                let entity = EntityRef::from_raw(entity);
+
+                match entity.team() {
+                    Team::Counter => gold.set_rgba([0.0, 0.5, 1.0, 0.9]),
+                    Team::Terrorist => gold.set_rgba([1.0, 1.0, 0.0, 0.9]),
+                    _ => {}
+                }
+            }
 
             if local.index() == entity_index {
                 if local.is_scoped() && local_vars.thirdperson.0 {
@@ -59,7 +69,6 @@ pub unsafe extern "C" fn draw_model(
                 }
             }
 
-            //gold.set_flag(MaterialFlag::NO_CULL, true);
             gold.set_flag(MaterialFlag::IGNORE_Z, true);
             gold.set_flag(MaterialFlag::WIREFRAME, true);
 

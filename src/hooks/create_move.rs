@@ -18,6 +18,7 @@ const IN_JUMP: i32 = 1 << 1;
 
 const ON_GROUND: i32 = 1 << 0;
 
+#[inline]
 fn get_dir(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
     let x = forward.x * movement.x + right.x * movement.y;
     let y = forward.y * movement.x + right.y * movement.y;
@@ -59,26 +60,7 @@ fn leg_animation_walk(command: &mut Command) {
     command.state ^= IN_FORWARD | IN_BACKWARD | IN_RIGHTWARD | IN_LEFTWARD;
 }
 
-#[allow(dead_code)]
 #[inline]
-fn scale_damage(
-    entity: &Entity,
-    group: HitGroup,
-    weapon_armor_ratio: f32,
-    mut base_damage: f32,
-) -> f32 {
-    base_damage *= group.damage_modifier();
-
-    if entity.armor() > 0 {
-        if group.is_head() && entity.has_helmet() {
-            base_damage *= weapon_armor_ratio * 0.5;
-        }
-    }
-
-    base_damage
-}
-
-#[allow(dead_code)]
 fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
     let delta = src - dst;
     let hypot = (delta.x * delta.x + delta.y * delta.y).sqrt();
@@ -94,7 +76,6 @@ fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
     Vec3::from_xyz(x, y, z)
 }
 
-#[allow(unused_variables)]
 #[inline]
 unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mut bool) {
     let state = State::get();

@@ -2,7 +2,7 @@ use crate::{Networked, State};
 use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable, Team};
-use elysium_sdk::{object_validate, vtable_validate, WeaponInfo};
+use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
 use std::marker::PhantomData;
 use std::ops;
 
@@ -391,6 +391,20 @@ impl Entity {
         };
 
         origin + view_offset
+    }
+
+    /// damage modifier applied to a player based on their armor
+    #[inline]
+    pub fn damage_modifier(&self, group: HitGroup, weapon_armor_ratio: f32) -> f32 {
+        let mut modifier = group.damage_modifier();
+
+        if self.armor() > 0 {
+            if group.is_head() && self.has_helmet() {
+                modifier *= weapon_armor_ratio * 0.5;
+            }
+        }
+
+        modifier
     }
 
     /// only for fog
