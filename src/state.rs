@@ -30,7 +30,7 @@ const NEW: State = State {
     menu_open: (false, false),
     cursor_position: Point::new(0.0, 0.0),
     window_size: Size::new(0, 0),
-    hooks: None,
+    hooks: Hooks::new(),
     networked: Networked::new(),
     vars: None,
     interfaces: None,
@@ -59,7 +59,7 @@ pub struct State {
     /// csgos window size
     pub window_size: Size<u32>,
     /// csgo, sdl, etc hooks
-    pub hooks: Option<Hooks>,
+    pub hooks: Hooks,
     /// netvars
     pub networked: Networked,
     /// cvars

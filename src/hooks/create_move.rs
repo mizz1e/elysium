@@ -226,9 +226,9 @@ pub unsafe extern "C" fn create_move(
     command: &mut Command,
 ) -> bool {
     let state = State::get();
-    let hooks = state.hooks.as_ref().unwrap_unchecked();
+    let create_move_original = state.hooks.create_move.unwrap();
 
-    (hooks.create_move)(this, input_sample_time, command);
+    (create_move_original)(this, input_sample_time, command);
 
     if command.tick_count == 0 || state.local.player.is_null() {
         return false;
@@ -236,11 +236,12 @@ pub unsafe extern "C" fn create_move(
 
     let local = &*state.local.player;
 
-    // can you dont when spectatng
+    // don't mess with input if you are spectating
     if local.observer_mode() != ObserverMode::None {
         return false;
     }
 
+    // ugly
     let rbp: *mut *mut bool;
 
     asm!("mov {}, rbp", out(reg) rbp, options(nostack));

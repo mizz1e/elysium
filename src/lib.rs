@@ -9,9 +9,11 @@
 // todo remove
 #![feature(const_maybe_uninit_zeroed)]
 
+use elysium_sdk::material::{Material, MaterialKind};
 use elysium_sdk::{LibraryKind, Vars};
-use state::Hooks;
+use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 use std::path::Path;
+use std::ptr;
 use std::{mem, thread};
 
 pub use controls::Controls;
@@ -118,52 +120,46 @@ fn main() {
         let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_STATE).unwrap();
         let _animation_state = bytes.as_ptr().byte_add(52).cast::<u32>().read();*/
 
-        // TODO: clean this up (remove maybeuninit).
-        use std::mem::MaybeUninit;
-        let mut hooks = MaybeUninit::<Hooks>::uninit();
-        let hooks_ref = hooks.as_mut_ptr();
-
         let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
-        (*hooks_ref).cl_move = mem::transmute(bytes.as_ptr());
+
+        state.hooks.cl_move = Some(mem::transmute(bytes.as_ptr()));
 
         let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
-        // TODO: make not shit
         let base = bytes.as_ptr().cast::<i32>().byte_add(1);
         let new = base.byte_add(4).byte_offset(base.read() as isize);
-        (*hooks_ref).vdf_from_bytes = mem::transmute(new);
 
-        use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
+        state.hooks.vdf_from_bytes = Some(mem::transmute(new));
 
-        let ptr = client.create_move_address().cast::<CreateMove>();
+        let address = client.create_move_address().cast::<CreateMove>();
 
-        elysium_mem::unprotect(ptr, |ptr, prot| {
-            (*hooks_ref).create_move = ptr.replace(hooks::create_move);
+        elysium_mem::unprotect(address, |address, prot| {
+            state.hooks.create_move = Some(address.replace(hooks::create_move));
             hooked("CreateMove");
             prot
         });
 
-        let ptr = model_render.draw_model_address().cast::<DrawModel>();
+        let address = model_render.draw_model_address().cast::<DrawModel>();
 
-        elysium_mem::unprotect(ptr, |ptr, prot| {
-            (*hooks_ref).draw_model = ptr.replace(hooks::draw_model);
+        elysium_mem::unprotect(address, |address, prot| {
+            state.hooks.draw_model = Some(address.replace(hooks::draw_model));
             hooked("DrawModelExecute");
             prot
         });
 
-        let ptr = client
+        let address = client
             .frame_stage_notify_address()
             .cast::<FrameStageNotify>();
 
-        elysium_mem::unprotect(ptr, |ptr, prot| {
-            (*hooks_ref).frame_stage_notify = ptr.replace(hooks::frame_stage_notify);
+        elysium_mem::unprotect(address, |address, prot| {
+            state.hooks.frame_stage_notify = Some(address.replace(hooks::frame_stage_notify));
             hooked("FrameStageNotify");
             prot
         });
 
-        let ptr = client.override_view_address().cast::<OverrideView>();
+        let address = client.override_view_address().cast::<OverrideView>();
 
-        elysium_mem::unprotect(ptr, |ptr, prot| {
-            (*hooks_ref).override_view = ptr.replace(hooks::override_view);
+        elysium_mem::unprotect(address, |address, prot| {
+            state.hooks.override_view = Some(address.replace(hooks::override_view));
             hooked("OverrideView");
             prot
         });
@@ -177,28 +173,23 @@ fn main() {
 
         let swap_window: *const SwapWindow = sdl.symbol_ptr("SDL_GL_SwapWindow").unwrap();
         let swap_window = elysium_mem::next_abs_addr_mut(swap_window as *mut SwapWindow);
-        (*hooks_ref).swap_window = swap_window.replace(hooks::swap_window);
+
+        state.hooks.swap_window = Some(swap_window.replace(hooks::swap_window));
 
         hooked("SDL_GL_SwapWindow");
 
         let poll_event: *const PollEvent = sdl.symbol_ptr("SDL_PollEvent").unwrap();
         let poll_event = elysium_mem::next_abs_addr_mut(poll_event as *mut PollEvent);
-        (*hooks_ref).poll_event = poll_event.replace(hooks::poll_event);
+
+        state.hooks.poll_event = Some(poll_event.replace(hooks::poll_event));
 
         hooked("SDL_PollEvent");
 
-        state.hooks = Some(hooks.assume_init());
-
         println!("create gold");
         state.materials.gold = Some({
-            use elysium_sdk::material::{Material, MaterialKind};
-            use std::ptr;
-
-            let state = State::get();
-            let hooks = state.hooks.as_ref().unwrap_unchecked();
+            let vdf_from_bytes = state.hooks.vdf_from_bytes.unwrap();
             let material = MaterialKind::Glow;
-            let vdf =
-                &*(hooks.vdf_from_bytes)(material.base_ptr(), material.vdf_ptr(), ptr::null());
+            let vdf = &*(vdf_from_bytes)(material.base_ptr(), material.vdf_ptr(), ptr::null());
 
             let material = &*material_system
                 .create(material.name(), vdf)

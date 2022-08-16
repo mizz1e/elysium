@@ -137,6 +137,8 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
+    println!("fsn");
+
     let state = State::get();
     let Interfaces {
         engine,
@@ -146,7 +148,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         ..
     } = state.interfaces.as_ref().unwrap();
 
-    let hooks = state.hooks.as_ref().unwrap();
+    let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();
     let globals = state.globals.as_mut().unwrap();
     let input = state.input.as_mut().unwrap();
     let vars = state.vars.as_ref().unwrap();
@@ -191,5 +193,5 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         }
     }
 
-    (hooks.frame_stage_notify)(this, frame.into_raw());
+    (frame_stage_notify_original)(this, frame.into_raw());
 }

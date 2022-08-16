@@ -26,15 +26,36 @@ pub type WriteUserCommand =
 pub type VdfFromBytes =
     unsafe extern "C" fn(name: *const u8, value: *const u8, _unk1: *const u8) -> *const Vdf;
 
+// `Option<fn()>` is niche-optimized, btw, this will be the same size as a bunch of fn pointers
 pub struct Hooks {
-    pub cl_move: ClMove,
-    pub cl_send_move: ClSendMove,
-    pub create_move: CreateMove,
-    pub draw_model: DrawModel,
-    pub frame_stage_notify: FrameStageNotify,
-    pub override_view: OverrideView,
-    pub poll_event: PollEvent,
-    pub swap_window: SwapWindow,
-    pub write_user_command: WriteUserCommand,
-    pub vdf_from_bytes: VdfFromBytes,
+    pub cl_move: Option<ClMove>,
+    pub cl_send_move: Option<ClSendMove>,
+    pub create_move: Option<CreateMove>,
+    pub draw_model: Option<DrawModel>,
+    pub frame_stage_notify: Option<FrameStageNotify>,
+    pub override_view: Option<OverrideView>,
+    pub poll_event: Option<PollEvent>,
+    pub swap_window: Option<SwapWindow>,
+    pub write_user_command: Option<WriteUserCommand>,
+    pub vdf_from_bytes: Option<VdfFromBytes>,
+}
+
+impl Hooks {
+    const NEW: Self = Self {
+        cl_move: None,
+        cl_send_move: None,
+        create_move: None,
+        draw_model: None,
+        frame_stage_notify: None,
+        override_view: None,
+        poll_event: None,
+        swap_window: None,
+        write_user_command: None,
+        vdf_from_bytes: None,
+    };
+
+    #[inline]
+    pub const fn new() -> Self {
+        Self::NEW
+    }
 }

@@ -9,8 +9,8 @@ use iced_native::{mouse, Event};
 pub unsafe extern "C" fn poll_event(event: *mut sdl2_sys::SDL_Event) -> i32 {
     let state = State::get();
     let local_vars = &mut state.local;
-    let hooks = state.hooks.as_ref().unwrap_unchecked();
-    let result = (hooks.poll_event)(event);
+    let poll_event_original = state.hooks.poll_event.unwrap();
+    let result = (poll_event_original)(event);
     let menu = state.menu.as_mut();
 
     if let Some(menu) = menu {

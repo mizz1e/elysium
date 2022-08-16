@@ -1,4 +1,4 @@
-use crate::state::Hooks;
+use crate::state::DrawModel;
 use crate::State;
 use elysium_math::Matrix3x4;
 use elysium_sdk::material::Material;
@@ -11,11 +11,11 @@ unsafe fn draw_layer(
     draw_state: *mut DrawModelState,
     info: *const ModelRenderInfo,
     bone_to_world: *const Matrix3x4,
-    hooks: &Hooks,
+    draw_model_original: &DrawModel,
     material: &Material,
 ) {
     this.override_material(material, 0, -1);
-    (hooks.draw_model)(this, context, draw_state, info, bone_to_world);
+    (draw_model_original)(this, context, draw_state, info, bone_to_world);
     this.reset_material();
 }
 
@@ -28,7 +28,7 @@ pub unsafe extern "C" fn draw_model(
     bone_to_world: *const Matrix3x4,
 ) {
     let state = State::get();
-    let hooks = state.hooks.as_ref().unwrap_unchecked();
+    let draw_model_original = state.hooks.draw_model.unwrap();
     let interfaces = state.interfaces.as_ref().unwrap_unchecked();
     let local_vars = &state.local;
     let Interfaces {
@@ -69,7 +69,7 @@ pub unsafe extern "C" fn draw_model(
                 draw_state,
                 info,
                 bone_to_world,
-                hooks,
+                &draw_model_original,
                 gold,
             );
 
@@ -81,7 +81,7 @@ pub unsafe extern "C" fn draw_model(
                 draw_state,
                 info,
                 bone_to_world,
-                hooks,
+                &draw_model_original,
                 gold,
             );
 
@@ -93,7 +93,7 @@ pub unsafe extern "C" fn draw_model(
                 draw_state,
                 info,
                 bone_to_world,
-                hooks,
+                &draw_model_original,
                 gold,
             );
 
@@ -101,5 +101,5 @@ pub unsafe extern "C" fn draw_model(
         }
     }
 
-    (hooks.draw_model)(this, context, draw_state, info, bone_to_world);
+    (draw_model_original)(this, context, draw_state, info, bone_to_world);
 }

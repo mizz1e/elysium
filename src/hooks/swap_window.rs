@@ -22,7 +22,7 @@ unsafe fn window_size(window: *mut SDL_Window) -> Size<u32> {
 /// `SDL_GL_SwapWindow` hook.
 pub unsafe extern "C" fn swap_window(window: *mut sdl2_sys::SDL_Window) {
     let state = State::get();
-    let hooks = state.hooks.as_ref().unwrap_unchecked();
+    let swap_window_original = state.hooks.swap_window.unwrap();
 
     state.window_size = window_size(window);
 
@@ -66,5 +66,5 @@ pub unsafe extern "C" fn swap_window(window: *mut sdl2_sys::SDL_Window) {
     // disable alpha blending to not break vgui fonts
     context.disable(glow::BLEND);
 
-    (hooks.swap_window)(window);
+    (swap_window_original)(window);
 }
