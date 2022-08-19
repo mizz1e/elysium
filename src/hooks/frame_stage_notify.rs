@@ -3,7 +3,7 @@ use crate::{Entity, EntityRef, State};
 use elysium_math::Vec3;
 use elysium_sdk::client::Class;
 use elysium_sdk::convar::Vars;
-use elysium_sdk::entity::EntityId;
+use elysium_sdk::entity::{DataUpdateKind, EntityId};
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces};
 
 fn update_vars(vars: &Vars, engine: &Engine) {
@@ -108,6 +108,28 @@ fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, 
     }
 }
 
+/*unsafe fn update_precipitation() {
+    let state = State::get();
+    let Interfaces {
+        entity_list,
+        ..
+    } = state.interfaces.as_ref().unwrap();
+
+    let precipitation_networkable = precpitation_class.new(MAX_EDICTS - 1, 0);
+
+    let entity = entity_list.entity(MAX_EDICTS - 1);
+    let entity = EntityRef::from_raw(entity.cast());
+
+    entity.networkable.pre_data_update(DataUpdateKind::Created);
+    entity.networkable.on_pre_data_changed(DataUpdateKind::Created);
+
+    *entity.mins() = Vec3::splat(-32767.0);
+    *entity.maxs() = Vec3::splat(32767.0);
+
+    entity.networkable.on_data_changed(DataUpdateKind::Created);
+    entity.networkable.post_data_update(DataUpdateKind::Created);
+}*/
+
 /// Iterate entities and update entity specific things.
 #[inline]
 unsafe fn update_entities(entity_list: &EntityList) {
@@ -115,6 +137,10 @@ unsafe fn update_entities(entity_list: &EntityList) {
     let players = &mut state.players;
     let globals = state.globals.as_ref().unwrap();
     let time = globals.current_time;
+
+    println!("{:?}", &entity_list.list[..10]);
+    println!("{:?}", &entity_list.cache[..10]);
+    println!("{:?}", entity_list.highest_entity_index());
 
     for index in entity_list.player_range() {
         let entity = entity_list.entity(index);
@@ -147,8 +173,9 @@ unsafe fn update_entities(entity_list: &EntityList) {
         let class = &*class.cast::<Class>();
 
         match class.entity_id {
-            EntityId::CFogController => update_fog(entity),
             EntityId::CEnvTonemapController => update_tonemap(entity),
+            EntityId::CFogController => update_fog(entity),
+            EntityId::CPrecipitation => println!("got rain"),
             _ => {}
         }
     }

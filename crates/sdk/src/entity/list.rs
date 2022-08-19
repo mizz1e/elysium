@@ -1,4 +1,4 @@
-use crate::{vtable_validate, Engine};
+use crate::{vtable_validate, Engine, UtlVec};
 use core::ops::RangeInclusive;
 
 #[repr(C)]
@@ -30,12 +30,56 @@ vtable_validate! {
     max_entities => 8,
 }
 
+pub const MAX_EDICT_BITS: i32 = 11;
+pub const MAX_EDICTS: i32 = 1 << MAX_EDICT_BITS;
+
+pub const NUM_ENT_ENTRY_BITS: i32 = MAX_EDICT_BITS + 2;
+pub const NUM_ENT_ENTRIES: i32 = 1 << NUM_ENT_ENTRY_BITS;
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct EntityInfo {
+    pub entity: *const u8,
+    pub serial: i32,
+    pub previous: *const EntityInfo,
+    pub next: *const EntityInfo,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct EntityInfoList {
+    pub head: *const EntityInfo,
+    pub tail: *const EntityInfo,
+}
+
+// src/public/icliententitylist.h
+#[derive(Debug)]
+#[repr(C)]
+pub struct EntityCacheInfo {
+    pub networkable: *const u8,
+    pub base_entities_index: u16,
+    pub dormant: u16,
+}
+
 /// Entity list interface.
 ///
 /// NOTE: Using this in `create_move` seems to crash the game.
 #[repr(C)]
 pub struct EntityList {
     vtable: &'static VTable,
+    // src/game/shared/entitylist_base.h
+    pub list: [EntityInfo; NUM_ENT_ENTRIES as usize],
+    pub active: EntityInfoList,
+    pub non_networkable: EntityInfoList,
+    // src/game/client/cliententitylist.h
+    pub server_len: i32,
+    pub max_server_len: i32,
+    pub non_networkable_len: i32,
+    pub max_used_server_index: i32,
+    pub cache: [EntityCacheInfo; NUM_ENT_ENTRIES as usize],
+    //pub base_entities: UtlLinkedList<*const Entity, u16>,
+    //pub pvs_notify: UtlLinkedList<PvsNotifyInfo, u16>,
+    //pub pvs_notify_map: UtlMap<*const ClientUnknown, u16, u16>,
 }
 
 impl EntityList {

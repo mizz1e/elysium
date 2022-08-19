@@ -3,7 +3,7 @@ use cake::ffi::VTablePad;
 use core::{mem, ptr};
 
 pub use class::Class;
-pub use classes::Classes;
+pub use classes::{Classes, ClassesIter};
 pub use property::Property;
 pub use table::Table;
 
