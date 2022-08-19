@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "providence-model"
+name = "elysium-model"
 version = "0.0.0"
 
 [dependencies.elysium-math]

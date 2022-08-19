@@ -9,14 +9,13 @@ daisy_chain = { path = "crates/daisy_chain" }
 elysium-input = { path = "crates/input" }
 elysium-math = { path = "crates/math" }
 elysium-mem = { path = "crates/mem" }
+elysium-model = { path = "crates/model" }
+elysium-pattern = { path = "crates/pattern" }
 elysium-sdk = { path = "crates/sdk" }
 iced_glow = { git = "https://github.com/iced-rs/iced" }
 iced_native = { features = ["debug"], git = "https://github.com/iced-rs/iced" }
 libm = { git = "https://github.com/elysian6969/libm" }
 link = { git = "https://github.com/elysian6969/link" }
-# rename when
-providence-model = { path = "crates/model" }
-providence-pattern = { path = "crates/pattern" }
 sdl2-sys = "0.35"
 
 [lib]

@@ -1,5 +1,5 @@
 use core::ops::{Deref, DerefMut};
-use providence_model::Bones;
+use elysium_model::Bones;
 
 /// A cached player.
 pub struct Player {

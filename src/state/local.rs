@@ -1,6 +1,6 @@
 use crate::Entity;
 use elysium_math::Vec3;
-use providence_model::Bones;
+use elysium_model::Bones;
 use std::ptr;
 
 /// Local player-related values.

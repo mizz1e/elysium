@@ -1,6 +1,6 @@
+use elysium_pattern::Pattern;
 use elysium_sdk::LibraryKind;
 use link::Library;
-use providence_pattern::Pattern;
 
 pub const ANIMATION_LAYERS: Pattern<80> =
     Pattern::new("55 48 89 E5 41 56 41 55 41 89 F5 41 54 53 48 89 FB 8B");
