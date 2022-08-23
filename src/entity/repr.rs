@@ -1,5 +1,5 @@
 use super::PlayerRef;
-use crate::{Networked, State};
+use crate::{networked, networked_mut, Networked, State};
 use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
@@ -357,6 +357,21 @@ impl EntityRepr {
 
 // fog
 impl EntityRepr {
+    networked!(rgb: bool = fog.color_primary);
+    networked_mut!(rgb_mut: bool = fog.color_primary);
+
+    networked!(density: bool = fog.color_primary);
+    networked_mut!(density_mut: bool = fog.color_primary);
+
+    networked!(is_enabled: bool = fog.is_enabled);
+    networked_mut!(is_enabled_mut: bool = fog.is_enabled);
+
+    networked!(start: bool = fog.start);
+    networked_mut!(start_mut: bool = fog.start);
+
+    networked!(end: bool = fog.end);
+    networked!(end_mut: bool = fog.end);
+
     /// Returns the fog’s clip distance (far-Z).
     #[inline]
     pub fn clip_distance(&self) -> f32 {
@@ -376,19 +391,13 @@ impl EntityRepr {
     #[inline]
     pub fn range(&self) -> Option<RangeInclusive<f32>> {
         unsafe {
-            self.networked(|networked| networked.fog.is_enabled)
-                .read_unaligned()
-                .then(|| {
-                    let start = self
-                        .networked(|networked| networked.fog.start)
-                        .read_unaligned();
+            self.is_enabled().read_unaligned().then(|| {
+                let start = self.start().read_unaligned();
 
-                    let end = self
-                        .networked(|networked| networked.fog.end)
-                        .read_unaligned();
+                let end = self.end().read_unaligned();
 
-                    start..=end
-                })
+                start..=end
+            })
         }
     }
 
@@ -396,13 +405,9 @@ impl EntityRepr {
     #[inline]
     pub fn rgba(&self) -> (u8, u8, u8, f32) {
         unsafe {
-            let rgb = self
-                .networked(|networked| networked.fog.color_primary)
-                .read_unaligned();
+            let rgb = self.rgb().read_unaligned();
 
-            let alpha = self
-                .networked(|networked| networked.fog.density)
-                .read_unaligned();
+            let alpha = self.density().read_unaligned();
 
             let [r, g, b, _] = rgb.to_ne_bytes();
 
@@ -423,17 +428,13 @@ impl EntityRepr {
     #[inline]
     pub fn set_range(&self, range: Option<RangeInclusive<f32>>) {
         unsafe {
-            self.networked_mut(|networked| networked.fog.is_enabled)
-                .write_unaligned(range.is_some());
+            self.enabled_mut().write_unaligned(range.is_some());
 
             if let Some(range) = range {
                 let RangeInclusive { start, end } = range;
 
-                self.networked_mut(|networked| networked.fog.start)
-                    .write_unaligned(start);
-
-                self.networked_mut(|networked| networked.fog.end)
-                    .write_unaligned(end);
+                self.start_mut().write_unaligned(start);
+                self.end_mut().write_unaligned(end);
             }
         }
     }
@@ -445,11 +446,9 @@ impl EntityRepr {
         let rgb = i32::from_ne_bytes([r, g, b, 0]);
 
         unsafe {
-            self.networked_mut(|networked| networked.fog.color_primary)
-                .write_unaligned(rgb);
+            self.rgb_mut().write_unaligned(rgb);
 
-            self.networked_mut(|networked| networked.fog.density)
-                .write_unaligned(alpha);
+            self.density_mut().write_unaligned(alpha);
         }
     }
 }
@@ -501,6 +500,12 @@ mod exposure {
 
 // tonemap
 impl EntityRepr {
+    networked!(bloom_scale: f32 = tonemap.bloom_scale);
+    networked_mut!(bloom_scale_mut: f32 = tonemap.bloom_scale);
+
+    networked!(enable_bloom_scale: bool = tonemap.enable_bloom_scale);
+    networked_mut!(enable_bloom_scale_mut: bool = tonemap.enable_bloom_scale);
+
     networked!(enable_max_exposure: bool = tonemap.enable_max_exposure);
     networked_mut!(enable_max_exposure_mut: bool = tonemap.enable_max_exposure);
 
@@ -517,14 +522,9 @@ impl EntityRepr {
     #[inline]
     pub fn bloom(&self) -> Option<f32> {
         unsafe {
-            let enabled: bool = self
-                .networked(|networked| networked.tonemap.enable_bloom_scale)
-                .read_unaligned();
+            let enabled: bool = self.enable_bloom_scale().read_unaligned();
 
-            enabled.then(|| {
-                self.networked(|networked| networked.tonemap.bloom_scale)
-                    .read_unaligned()
-            })
+            enabled.then(|| self.bloom_scale().read_unaligned())
         }
     }
 
@@ -552,13 +552,11 @@ impl EntityRepr {
         let enabled = scale.is_some();
 
         unsafe {
-            self.networked_mut(|networked| networked.tonemap.enable_bloom_scale)
-                .write_unaligned(enabled);
-
             if let Some(scale) = scale {
-                self.networked_mut(|networked| networked.tonemap.bloom_scale)
-                    .write_unaligned(scale);
+                self.bloom_scale_mut().write_unaligned(scale);
             }
+
+            self.enable_bloom_scale_mut().write_unaligned(enabled);
         }
     }
 
@@ -566,7 +564,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_exposure<R: RangeBounds<f32>>(&mut self, exposure: Option<R>) {
         let exposure = exposure.map(Exposure::from);
-        let (start, end) = match eexposure {
+        let (start, end) = match exposure {
             Some(exposure) => {
                 let start = exposure.start();
                 let end = exposure.end();
@@ -587,6 +585,7 @@ impl EntityRepr {
 
             self.enable_min_exposure_mut()
                 .write_unaligned(start.is_some());
+
             self.enable_max_exposure_mut()
                 .write_unaligned(end.is_some());
         }
