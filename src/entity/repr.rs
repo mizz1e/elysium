@@ -100,6 +100,8 @@ object_validate! {
 
 // generic
 impl EntityRepr {
+    networked!(render_mode_address: u8 = base_entity.render_mode);
+
     #[inline]
     fn as_ptr(&self) -> *const EntityRepr {
         self.entity.as_ptr() as *const EntityRepr
@@ -188,11 +190,6 @@ impl EntityRepr {
     }
 
     #[inline]
-    fn render_mode_address(&self) -> *const u8 {
-        self.networked(|networked| networked.base_entity.render_mode)
-    }
-
-    #[inline]
     pub fn set_model_index(&mut self, index: i32) {
         unsafe { (self.vtable.set_model_index)(self, index) }
     }
@@ -210,6 +207,16 @@ impl EntityRepr {
 
 // player
 impl EntityRepr {
+    networked!(armor_ref: u8 = player.armor);
+    networked!(flags_ref: i32 = player.flags);
+    networked!(has_helmet_ref: i32 = player.has_helmet);
+    networked!(is_dead_address: u8 = base_player.is_dead);
+    networked!(is_defusing_ref: i32 = player.is_defusing);
+    networked!(is_scoped_ref: i32 = player.is_scoped);
+    networked!(lower_body_yaw_ref: i32 = player.lower_body_yaw);
+    networked!(view_offset_ref: u8 = base_player.view_offset);
+    networked!(velocity_ref: u8 = base_player.velocity);
+
     #[inline]
     pub fn aim_punch(&self) -> Vec3 {
         unsafe { (self.vtable.aim_punch)(self) }
@@ -222,18 +229,13 @@ impl EntityRepr {
 
     #[inline]
     pub fn armor(&self) -> i32 {
-        unsafe {
-            self.networked(|networked| networked.player.armor)
-                .read_unaligned()
-        }
+        unsafe { self.armor_ref().read_unaligned() }
     }
 
     #[inline]
     pub fn eye_offset(&self) -> Vec3 {
         unsafe {
-            let view_offset = self
-                .networked(|networked| networked.base_player.view_offset)
-                .read_unaligned();
+            let view_offset = self.view_offset().read_unaligned();
 
             // zero view offset fix
             if view_offset.is_zero() {
@@ -271,16 +273,9 @@ impl EntityRepr {
     }
 
     #[inline]
-    fn is_dead_address(&self) -> *const u8 {
-        self.networked(|networked| networked.base_player.is_dead)
-    }
-
-    #[inline]
     pub fn flags(&self) -> PlayerFlags {
         unsafe {
-            let flags = self
-                .networked(|networked| networked.player.flags)
-                .read_unaligned();
+            let flags = self.flags_ref().read_unaligned();
 
             PlayerFlags::new(flags)
         }
@@ -288,34 +283,22 @@ impl EntityRepr {
 
     #[inline]
     pub fn has_helmet(&self) -> bool {
-        unsafe {
-            self.networked(|networked| networked.player.has_helmet)
-                .read_unaligned()
-        }
+        unsafe { self.has_helmet_ref().read_unaligned() }
     }
 
     #[inline]
     pub fn is_defusing(&self) -> bool {
-        unsafe {
-            self.networked(|networked| networked.player.is_defusing)
-                .read_unaligned()
-        }
+        unsafe { self.is_defusing_ref().read_unaligned() }
     }
 
     #[inline]
     pub fn is_scoped(&self) -> bool {
-        unsafe {
-            self.networked(|networked| networked.player.is_scoped)
-                .read_unaligned()
-        }
+        unsafe { self.is_scoped_ref().read_unaligned() }
     }
 
     #[inline]
     pub fn lower_body_yaw(&self) -> i32 {
-        unsafe {
-            self.networked(|networked| networked.player.lower_body_yaw)
-                .read_unaligned()
-        }
+        unsafe { self.lower_body_yaw_ref().read_unaligned() }
     }
 
     #[inline]
@@ -368,10 +351,7 @@ impl EntityRepr {
 
     #[inline]
     pub fn velocity(&self) -> Vec3 {
-        unsafe {
-            self.networked(|networked| networked.base_player.velocity)
-                .read_unaligned()
-        }
+        unsafe { self.velocity_ref().read_unaligned() }
     }
 }
 
