@@ -2,7 +2,7 @@ use crate::{Networked, State};
 use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
-use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable, Team};
+use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, PlayerFlags, Renderable, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
 use std::marker::PhantomData;
@@ -274,7 +274,7 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn flags(&self) -> i32 {
+    pub fn flags(&self) -> PlayerFlags {
         *self.networked(|networked| networked.player.flags)
     }
 

@@ -2,7 +2,7 @@ use crate::{Networked, State};
 use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
-use elysium_sdk::entity::{MoveKind, ObserverMode, Team};
+use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
 use repr::EntityRepr;
@@ -92,7 +92,7 @@ pub trait Player: Entity {
     fn eye_pos(&self) -> Vec3;
 
     /// The player's state flags.
-    fn flags(&self) -> i32;
+    fn flags(&self) -> PlayerFlags;
 
     /// Whether the player has a helmet.
     fn has_helmet(&self) -> bool;
