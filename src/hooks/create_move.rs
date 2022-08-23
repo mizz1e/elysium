@@ -77,7 +77,7 @@ fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
 }
 
 #[inline]
-unsafe fn do_create_move(command: &mut Command, local: &Entity, send_packet: &mut bool) {
+unsafe fn do_create_move(command: &mut Command, local: EntityRef<'_>, send_packet: &mut bool) {
     let state = State::get();
     let vars = state.vars.as_ref().unwrap();
     let mut local_vars = &mut state.local;

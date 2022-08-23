@@ -85,10 +85,10 @@ vtable_validate! {
 }
 
 #[repr(C)]
-pub struct EntityRepr {
+pub(super) struct EntityRepr {
     vtable: &'static VTable,
-    pub renderable: Renderable,
-    pub networkable: Networkable,
+    renderable: Renderable,
+    networkable: Networkable,
 }
 
 object_validate! {
@@ -373,11 +373,6 @@ impl EntityRepr {
                 .read_unaligned()
         }
     }
-
-    #[inline]
-    pub fn velocity_magnitude(&self) -> f32 {
-        self.velocity().magnitude()
-    }
 }
 
 // fog
@@ -489,6 +484,27 @@ mod exposure {
         end: Bound<u16>,
     }
 
+    #[inline]
+    fn map_bound(bound: Bound<f32>) -> Option<f32> {
+        match bound {
+            Bound::Included(bound) => Some(bound),
+            Bound::Excluded(bound) => Some(bound - 1),
+            Bound::Unbounded => None,
+        }
+    }
+
+    impl Exposure {
+        #[inline]
+        pub(super) fn start(&self) -> Option<f32> {
+            map_bound(self.start)
+        }
+
+        #[inline]
+        pub(super) fn end(&self) -> Option<f32> {
+            map_bound(self.end)
+        }
+    }
+
     impl<R> From<R> for Exposure
     where
         R: RangeBounds<u16>,
@@ -505,6 +521,18 @@ mod exposure {
 
 // tonemap
 impl EntityRepr {
+    networked!(enable_max_exposure: bool = tonemap.enable_max_exposure);
+    networked_mut!(enable_max_exposure_mut: bool = tonemap.enable_max_exposure);
+
+    networked!(enable_min_exposure: bool = tonemap.enable_min_exposure);
+    networked_mut!(enable_min_exposure_mut: bool = tonemap.enable_min_exposure);
+
+    networked!(max_exposure: f32 = tonemap.max_exposure);
+    networked_mut!(max_exposure_mut: f32 = tonemap.max_exposure);
+
+    networked!(min_exposure: f32 = tonemap.min_exposure);
+    networked_mut!(min_exposure_mut: f32 = tonemap.min_exposure);
+
     /// Returns the tonemap's bloom effect setting.
     #[inline]
     pub fn bloom(&self) -> Option<f32> {
@@ -524,21 +552,10 @@ impl EntityRepr {
     #[inline]
     pub fn exposure(&self) -> Option<Exposure> {
         unsafe {
-            let min_enabled = self
-                .networked(|networked| networked.tonemap.enable_min_exposure)
-                .read_unaligned();
-
-            let max_enabled = self
-                .networked(|networked| networked.tonemap.enable_max_exposure)
-                .read_unaligned();
-
-            let min = self
-                .networked(|networked| networked.tonemap.min_exposure)
-                .read_unaligned();
-
-            let max = self
-                .networked(|networked| networked.tonemap.max_exposure)
-                .read_unaligned();
+            let min_enabled = self.enable_min_exposure().read_unaligned();
+            let max_enabled = self.enable_max_exposure().read_unaligned();
+            let min = self.min_exposure().read_unaligned();
+            let max = self.max_exposure().read_unaligned();
 
             match (min_enabled, max_enabled) {
                 (true, true) => Some(Exposure::from(min..=max)),
@@ -567,21 +584,12 @@ impl EntityRepr {
 
     /// Sets the tonemap's bloom effect setting.
     #[inline]
-    pub fn set_exposure<R: RangeBounds<u16>>(&mut self, exposure: Option<R>) {
-        fn map_bound(bound: Bound<u16>) -> Option<i32> {
-            match bound {
-                Bound::Included(bound) => Some(bound as i32),
-                Bound::Excluded(bound) => Some(bound.saturating_sub(1) as i32),
-                Bound::Unbounded => None,
-            }
-        }
-
-        let maybe_exposure = exposure.map(Exposure::from);
-        let (start, end) = match maybe_exposure {
+    pub fn set_exposure<R: RangeBounds<f32>>(&mut self, exposure: Option<R>) {
+        let exposure = exposure.map(Exposure::from);
+        let (start, end) = match eexposure {
             Some(exposure) => {
-                let Exposure { start, end } = exposure.map(Exposure::from);
-                let start = map_bound(start);
-                let end = map_bound(end);
+                let start = exposure.start();
+                let end = exposure.end();
 
                 (start, end)
             }
@@ -589,20 +597,18 @@ impl EntityRepr {
         };
 
         unsafe {
-            self.networked_mut(|networked| networked.tonemap.enable_min_exposure)
+            if let Some(start) = start {
+                self.min_exposure_mut().write_unaligned(start);
+            }
+
+            if let Some(end) = end {
+                self.max_exposure_mut().write_unaligned(end);
+            }
+
+            self.enable_min_exposure_mut()
                 .write_unaligned(start.is_some());
-
-            self.networked_mut(|networked| networked.tonemap.enable_max_exposure)
+            self.enable_max_exposure_mut()
                 .write_unaligned(end.is_some());
-
-            let start = start.unwrap_or(0);
-            let end = end.unwrap_or(i32::MAX);
-
-            self.networked_mut(|networked| networked.tonemap.min_exposure)
-                .write_unaligned(start);
-
-            self.networked_mut(|networked| networked.tonemap.max_exposure)
-                .write_unaligned(end);
         }
     }
 }

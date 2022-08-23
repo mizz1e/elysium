@@ -85,11 +85,11 @@ pub trait Player: Entity {
     /// Returns the damage modifier for the provided hit group and ratio.
     fn damage_modifier(&self, group: HitGroup, ratio: f32) -> f32;
 
+    /// The player's eye offset (from the player's origin).
+    fn eye_offset(&self) -> Vec3;
+
     /// The player's eye origin.
     fn eye_origin(&self) -> Vec3;
-
-    /// The player's eye position.
-    fn eye_pos(&self) -> Vec3;
 
     /// The player's state flags.
     fn flags(&self) -> PlayerFlags;
@@ -124,11 +124,11 @@ pub trait Player: Entity {
     /// The player's velocity.
     fn velocity(&self) -> Vec3;
 
+    /// The magnitude of the player's velocity.
+    fn velocity_magnitude(&self) -> Vec3;
+
     /// The player's view angle.
     fn view_angle(&self) -> Vec3;
-
-    /// The player's view offset.
-    fn view_offset(&self) -> Vec3;
 }
 
 /// Tonemap methods.
@@ -183,6 +183,9 @@ macro_rules! def_ent {
                 }
             }
 
+            impl<'a> sealed::Sealed for $ident<'a> {}
+
+            // all entities implement entity
             impl<'a> Entity for $ident<'a> {
                 #[inline]
                 fn attachment(&self, index: i32) -> Option<Vec3> {
@@ -284,6 +287,103 @@ impl<'a> Fog for FogRef<'a> {
     #[inline]
     fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
         self.as_repr_mut().set_rgba(rgba);
+    }
+}
+
+impl<'a> Player for PlayerRef<'a> {
+    #[inline]
+    fn active_weapon(&self) -> Option<WeaponRef> {
+        self.as_repr().active_weapon()
+    }
+
+    #[inline]
+    fn aim_punch(&self) -> Vec3 {
+        self.as_repr().aim_punch()
+    }
+
+    #[inline]
+    fn armor_value(&self) -> i32 {
+        self.as_repr().armor_value()
+    }
+
+    #[inline]
+    fn damage_modifier(&self, group: HitGroup, ratio: f32) -> f32 {
+        self.as_repr().damage_modifier(group, ratio)
+    }
+
+    #[inline]
+    fn eye_offset(&self) -> Vec3 {
+        self.as_repr().eye_offset()
+    }
+
+    #[inline]
+    fn eye_origin(&self) -> Vec3 {
+        self.as_repr().eye_origin()
+    }
+
+    #[inline]
+    fn flags(&self) -> PlayerFlags {
+        self.as_repr().flags()
+    }
+
+    #[inline]
+    fn has_helmet(&self) -> bool {
+        self.as_repr().has_helmet()
+    }
+
+    #[inline]
+    fn is_defusing(&self) -> bool {
+        self.as_repr().is_defusing()
+    }
+
+    #[inline]
+    fn is_scoped(&self) -> bool {
+        self.as_repr().is_scoped()
+    }
+
+    #[inline]
+    fn lower_body_yaw(&self) -> i32 {
+        self.as_repr().lower_body_yaw()
+    }
+
+    #[inline]
+    fn move_kind(&self) -> MoveKind {
+        self.as_repr().move_kind()
+    }
+
+    #[inline]
+    fn observer_mode(&self) -> ObserverMode {
+        self.as_repr().observer_mode()
+    }
+
+    #[inline]
+    fn observer_target(&self) -> Option<EntityRef> {
+        self.as_repr().observer_target()
+    }
+
+    #[inline]
+    unsafe fn set_view_angle(&mut self, angle: Vec3) {
+        self.as_repr().set_view_angle(angle)
+    }
+
+    #[inline]
+    fn team(&self) -> Team {
+        self.as_repr().team()
+    }
+
+    #[inline]
+    fn velocity(&self) -> Vec3 {
+        self.as_repr().velocity()
+    }
+
+    #[inline]
+    fn velocity_magnitude(&self) -> Vec3 {
+        self.velocity().magnitude()
+    }
+
+    #[inline]
+    fn view_angle(&self) -> Vec3 {
+        self.as_repr().view_angle()
     }
 }
 

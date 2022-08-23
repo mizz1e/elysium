@@ -222,3 +222,23 @@ fn iterate_table(this: &mut Networked, table: &'static Table, class: Class, base
         }
     }
 }
+
+#[macro_export]
+macro_rules! networked {
+    ($ident:ident: $ty:ty = $expr:expr) => {
+        #[inline]
+        fn $ident(&self) -> *const $ty {
+            self.networked(|networked| networked.$expr)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! networked_mut {
+    ($ident:ident: $ty:ty = $expr:expr) => {
+        #[inline]
+        fn $ident(&mut self) -> *mut $ty {
+            self.networked_mut(|networked| networked.$expr)
+        }
+    };
+}

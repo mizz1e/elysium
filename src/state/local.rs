@@ -18,7 +18,7 @@ pub struct Local {
     /// Local player's old yaw.
     pub old_yaw: f32,
     /// Reference to the local player.
-    pub player: *const Entity,
+    pub player: *const u8,
     /// Local player's shot angle (used for ragebot).
     pub shot_view_angle: Vec3,
     /// Whether the local player is in thirdperson or not.

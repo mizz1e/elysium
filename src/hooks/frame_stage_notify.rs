@@ -84,7 +84,12 @@ fn update_tonemap(entity: EntityRef) {
 }
 
 /// Thirdperson handling.
-fn update_thirdperson(globals: &Globals, input: &Input, local_vars: &mut Local, local: &Entity) {
+fn update_thirdperson(
+    globals: &Globals,
+    input: &Input,
+    local_vars: &mut Local,
+    local: EntityRef<'_>,
+) {
     let state = State::get();
 
     if input.thirdperson {
