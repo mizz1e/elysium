@@ -16,8 +16,6 @@ const IN_ATTACK: i32 = 1 << 0;
 const IN_BULLRUSH: i32 = 1 << 22;
 const IN_JUMP: i32 = 1 << 1;
 
-const ON_GROUND: i32 = 1 << 0;
-
 #[inline]
 fn get_dir(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
     let x = forward.x * movement.x + right.x * movement.y;
@@ -111,7 +109,7 @@ unsafe fn do_create_move(command: &mut Command, local: EntityRef<'_>, send_packe
 
     let do_attack = (command.state & IN_ATTACK) != 0;
     let do_jump = (command.state & IN_JUMP) != 0;
-    let on_ground = (local.flags() & ON_GROUND) != 0;
+    let on_ground = local.flags().on_ground();
 
     local_vars.was_attacking = do_attack;
     local_vars.was_on_ground = on_ground;

@@ -1,3 +1,4 @@
+use cake::num::Zero;
 use core::ops::{Add, Div, Mul, Rem, Sub};
 use core::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
 use core::ptr;
@@ -264,6 +265,11 @@ impl Vec3 {
     #[inline]
     pub const fn is_normal(self) -> bool {
         self.x.is_normal() && self.y.is_normal() && self.z.is_normal()
+    }
+
+    #[inline]
+    pub const fn is_zero(self) -> bool {
+        self.x.is_zero() && self.y.is_zero() && self.z.is_zero()
     }
 
     #[inline]

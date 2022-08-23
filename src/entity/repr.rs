@@ -103,16 +103,6 @@ impl EntityRepr {
     networked!(render_mode_address: u8 = base_entity.render_mode);
 
     #[inline]
-    fn as_ptr(&self) -> *const EntityRepr {
-        self.entity.as_ptr() as *const EntityRepr
-    }
-
-    #[inline]
-    fn as_mut_ptr(&mut self) -> *mut EntityRepr {
-        self.entity.as_ptr() as *mut EntityRepr
-    }
-
-    #[inline]
     pub fn networked<T, F>(&self, f: F) -> *const T
     where
         F: Fn(&Networked) -> usize,
@@ -207,15 +197,15 @@ impl EntityRepr {
 
 // player
 impl EntityRepr {
-    networked!(armor_ref: u8 = player.armor);
+    networked!(armor_ref: i32 = player.armor);
     networked!(flags_ref: i32 = player.flags);
-    networked!(has_helmet_ref: i32 = player.has_helmet);
+    networked!(has_helmet_ref: bool = player.has_helmet);
     networked!(is_dead_address: u8 = base_player.is_dead);
-    networked!(is_defusing_ref: i32 = player.is_defusing);
-    networked!(is_scoped_ref: i32 = player.is_scoped);
+    networked!(is_defusing_ref: bool = player.is_defusing);
+    networked!(is_scoped_ref: bool = player.is_scoped);
     networked!(lower_body_yaw_ref: i32 = player.lower_body_yaw);
-    networked!(view_offset_ref: u8 = base_player.view_offset);
-    networked!(velocity_ref: u8 = base_player.velocity);
+    networked!(view_offset_ref: Vec3 = base_player.view_offset);
+    networked!(velocity_ref: Vec3 = base_player.velocity);
 
     #[inline]
     pub fn aim_punch(&self) -> Vec3 {
@@ -234,23 +224,21 @@ impl EntityRepr {
 
     #[inline]
     pub fn eye_offset(&self) -> Vec3 {
-        unsafe {
-            let view_offset = self.view_offset().read_unaligned();
+        let view_offset = unsafe { self.view_offset_ref().read_unaligned() };
 
-            // zero view offset fix
-            if view_offset.is_zero() {
-                let z = if self.flags().ducking() { 46.0 } else { 64.0 };
+        // zero view offset fix
+        if view_offset.is_zero() {
+            let z = if self.flags().ducking() { 46.0 } else { 64.0 };
 
-                Vec3::from_xyz(0.0, 0.0, z)
-            } else {
-                view_offset
-            }
+            Vec3::from_xyz(0.0, 0.0, z)
+        } else {
+            view_offset
         }
     }
 
     #[inline]
     pub fn eye_origin(&self) -> Vec3 {
-        self.offset() + self.view_offset()
+        self.offset() + self.eye_offset()
     }
 
     // TODO: check if this is better than above
@@ -379,12 +367,6 @@ impl EntityRepr {
             self.networked(|networked| networked.fog.far_z)
                 .read_unaligned()
         }
-    }
-
-    /// Whether fog is enabled.
-    #[inline]
-    pub fn enabled(&self) -> bool {
-        unsafe {}
     }
 
     /// Returns the fog’s range (start and end distance).

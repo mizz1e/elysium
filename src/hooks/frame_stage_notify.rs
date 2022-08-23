@@ -62,25 +62,16 @@ fn update_vars(vars: &Vars, engine: &Engine) {
 }
 
 /// Override fog controller properties.
-fn update_fog(entity: EntityRef) {
-    *entity.is_enabled() = true;
-    *entity.start_distance() = 150.0;
-    *entity.end_distance() = 350.0;
-    *entity.far_z() = 10000.0;
-    *entity.density() = 0.1;
-    *entity.color_primary() = 0x0000FF;
-    *entity.color_secondary() = 0xFFFF00;
-    *entity.direction() = Vec3::from_xyz(1.0, 0.0, 0.0);
+fn update_fog(mut fog: FogRef<'_>) {
+    fog.set_clip_distance(10_000.0);
+    fog.set_range(Some(150.0..=350.0));
+    fog.set_rgba(0xFF, 0xFF, 0x00, 0.1);
 }
 
 /// Override tonemap controller properties.
-fn update_tonemap(entity: EntityRef) {
-    *entity.enable_bloom_scale() = true;
-    *entity.enable_min_exposure() = true;
-    *entity.enable_max_exposure() = true;
-    *entity.min_exposure() = 0.5;
-    *entity.max_exposure() = 0.5;
-    *entity.bloom_scale() = 2.0;
+fn update_tonemap(mut tonemap: TonemapRef<'_>) {
+    tonemap.set_bloom(Some(2.0));
+    tonemap.set_exposure(Some(0.5..=0.5));
 }
 
 /// Thirdperson handling.
@@ -88,28 +79,43 @@ fn update_thirdperson(
     globals: &Globals,
     input: &Input,
     local_vars: &mut Local,
-    local: EntityRef<'_>,
+    local: PlayerRef<'_>,
 ) {
     let state = State::get();
 
     if input.thirdperson {
+        let mut view_angle = local_vars.view_angle;
+
+        // roll isnt networked to others, so don't visualize it, either
+        view_angle.z = 0.0;
+
         // fix the local player's view_angle when in thirdperson
-        *local.view_angle() = local_vars.view_angle;
-        // other players can't see roll, so why should we?
-        local.view_angle().z = 0.0;
+        unsafe {
+            local.set_view_angle(view_angle);
+        }
     } else {
         // in cooperation with override_view, this will change the view model's position.
         if local_vars.visualize_shot != 0.0 {
             if local_vars.visualize_shot > globals.current_time {
-                *local.view_angle() = local_vars.shot_view_angle;
+                unsafe {
+                    local.set_view_angle(local_vars.shot_view_angle);
+                }
             } else {
-                *local.view_angle() = state.view_angle;
+                unsafe {
+                    local.set_view_angle(state.view_angle);
+                }
                 local_vars.visualize_shot = 0.0;
             }
         }
 
+        let mut view_angle = local.view_angle();
+
         // rotate view model
-        local.view_angle().z = -35.0;
+        view_angle.z = -35.0;
+
+        unsafe {
+            local.set_view_angle(view_angle);
+        }
     }
 }
 
@@ -147,35 +153,26 @@ unsafe fn update_entities(entity_list: &EntityList) {
     println!("{:?}", &entity_list.cache[..10]);
     println!("{:?}", entity_list.highest_entity_index());
 
-    for index in entity_list.player_range() {
-        let entity = entity_list.entity(index);
+    let player_iter = entity_list
+        .player_range()
+        .flat_map(|index| PlayerRef::from_raw(entity_list.entity(index)));
 
-        if entity.is_null() {
-            continue;
-        }
-
-        let entity = EntityRef::from_raw(entity.cast::<Entity>());
+    for player in player_iter {
         let mut bones = players[index as usize - 1].bones;
 
         entity.setup_bones(&mut bones[..128], 0x00000100, time);
         entity.setup_bones(&mut bones[..128], 0x000FFF00, time);
     }
 
-    for index in entity_list.non_player_range() {
-        let entity = entity_list.entity(index);
+    let entity_iter = entity_list
+        .non_player_range()
+        .flat_map(|index| EntityRef::from_raw(entity_list.entity(index)));
 
-        if entity.is_null() {
-            continue;
-        }
-
-        let entity = EntityRef::from_raw(entity.cast::<Entity>());
-        let class = entity.client_class();
-
-        if class.is_null() {
-            continue;
-        }
-
-        let class = &*class.cast::<Class>();
+    for entity in entity_iter {
+        let class = match entity.client_class() {
+            Some(class) => class,
+            None => continue,
+        };
 
         match class.entity_id {
             EntityId::CEnvTonemapController => update_tonemap(entity),
@@ -229,7 +226,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     if local_vars.player.is_null() {
         local_vars.reset();
     } else {
-        let local = &*local_vars.player;
+        let local = PlayerRef::from_raw(local_vars.player).unwrap();
 
         input.thirdperson = !local.observer_mode().breaks_thirdperson() && local_vars.thirdperson.0;
 

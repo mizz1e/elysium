@@ -194,6 +194,7 @@ dependencies = [
 name = "elysium-math"
 version = "0.0.0"
 dependencies = [
+ "cake",
  "meth",
 ]
 
