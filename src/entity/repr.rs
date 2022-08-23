@@ -1,3 +1,4 @@
+use super::PlayerRef;
 use crate::{Networked, State};
 use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
@@ -187,7 +188,7 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn render_mode_address(&self) -> *const u8 {
+    fn render_mode_address(&self) -> *const u8 {
         self.networked(|networked| networked.base_entity.render_mode)
     }
 
@@ -210,8 +211,8 @@ impl EntityRepr {
 // player
 impl EntityRepr {
     #[inline]
-    pub fn team(&self) -> Team {
-        unsafe { (self.vtable.team)(self) }
+    pub fn aim_punch(&self) -> Vec3 {
+        unsafe { (self.vtable.aim_punch)(self) }
     }
 
     #[inline]
@@ -220,102 +221,40 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn eye_pos(&self) -> Vec3 {
-        unsafe { (self.vtable.eye_pos)(self) }
-    }
-
-    #[inline]
-    pub fn observer_mode(&self) -> ObserverMode {
-        unsafe { (self.vtable.observer_mode)(self) }
-    }
-
-    #[inline]
-    pub fn observer_target(&self) -> *const EntityRepr {
-        unsafe { (self.vtable.observer_target)(self) }
-    }
-
-    #[inline]
-    pub fn aim_punch(&self) -> Vec3 {
-        unsafe { (self.vtable.aim_punch)(self) }
-    }
-
-    #[inline]
-    pub fn move_kind(&self) -> MoveKind {
-        unsafe { *self.render_mode_address().byte_add(1).cast() }
-    }
-
-    #[inline]
-    fn is_dead_address(&self) -> *const u8 {
-        self.networked(|networked| networked.base_player.is_dead)
-    }
-
-    #[inline]
-    pub fn view_angle(&self) -> &mut Vec3 {
+    pub fn armor(&self) -> i32 {
         unsafe {
-            let view_angle_address = self.is_dead_address().byte_add(4) as *mut Vec3;
-
-            &mut *view_angle_address
+            self.networked(|networked| networked.player.armor)
+                .read_unaligned()
         }
     }
 
     #[inline]
-    pub fn velocity(&self) -> Vec3 {
-        *self.networked(|networked| networked.base_player.velocity)
-    }
+    pub fn eye_offset(&self) -> Vec3 {
+        unsafe {
+            let view_offset = self
+                .networked(|networked| networked.base_player.view_offset)
+                .read_unaligned();
 
-    #[inline]
-    pub fn view_offset(&self) -> Vec3 {
-        *self.networked(|networked| networked.base_player.view_offset)
-    }
+            // zero view offset fix
+            if view_offset.is_zero() {
+                let z = if self.flags().ducking() { 46.0 } else { 64.0 };
 
-    #[inline]
-    pub fn armor(&self) -> i32 {
-        *self.networked(|networked| networked.player.armor)
-    }
-
-    #[inline]
-    pub fn flags(&self) -> PlayerFlags {
-        *self.networked(|networked| networked.player.flags)
-    }
-
-    #[inline]
-    pub fn has_helmet(&self) -> bool {
-        *self.networked(|networked| networked.player.has_helmet)
-    }
-
-    #[inline]
-    pub fn is_defusing(&self) -> bool {
-        *self.networked(|networked| networked.player.is_defusing)
-    }
-
-    #[inline]
-    pub fn is_scoped(&self) -> bool {
-        *self.networked(|networked| networked.player.is_scoped)
-    }
-
-    #[inline]
-    pub fn lby(&self) -> i32 {
-        *self.networked(|networked| networked.player.lower_body_yaw)
+                Vec3::from_xyz(0.0, 0.0, z)
+            } else {
+                view_offset
+            }
+        }
     }
 
     #[inline]
     pub fn eye_origin(&self) -> Vec3 {
-        let origin = self.origin();
-        let view_offset = self.view_offset();
+        self.offset() + self.view_offset()
+    }
 
-        let z = if self.flags() & (1 << 1) != 0 {
-            46.0
-        } else {
-            64.0
-        };
-
-        let view_offset = if view_offset == Vec3::zero() {
-            Vec3::from_xyz(0.0, 0.0, z)
-        } else {
-            view_offset
-        };
-
-        origin + view_offset
+    // TODO: check if this is better than above
+    #[inline]
+    pub fn eye_origin_alt(&self) -> Vec3 {
+        unsafe { (self.vtable.eye_pos)(self) }
     }
 
     #[inline]
@@ -329,6 +268,115 @@ impl EntityRepr {
         }
 
         modifier
+    }
+
+    #[inline]
+    fn is_dead_address(&self) -> *const u8 {
+        self.networked(|networked| networked.base_player.is_dead)
+    }
+
+    #[inline]
+    pub fn flags(&self) -> PlayerFlags {
+        unsafe {
+            let flags = self
+                .networked(|networked| networked.player.flags)
+                .read_unaligned();
+
+            PlayerFlags::new(flags)
+        }
+    }
+
+    #[inline]
+    pub fn has_helmet(&self) -> bool {
+        unsafe {
+            self.networked(|networked| networked.player.has_helmet)
+                .read_unaligned()
+        }
+    }
+
+    #[inline]
+    pub fn is_defusing(&self) -> bool {
+        unsafe {
+            self.networked(|networked| networked.player.is_defusing)
+                .read_unaligned()
+        }
+    }
+
+    #[inline]
+    pub fn is_scoped(&self) -> bool {
+        unsafe {
+            self.networked(|networked| networked.player.is_scoped)
+                .read_unaligned()
+        }
+    }
+
+    #[inline]
+    pub fn lower_body_yaw(&self) -> i32 {
+        unsafe {
+            self.networked(|networked| networked.player.lower_body_yaw)
+                .read_unaligned()
+        }
+    }
+
+    #[inline]
+    pub fn observer_mode(&self) -> ObserverMode {
+        unsafe { (self.vtable.observer_mode)(self) }
+    }
+
+    #[inline]
+    pub fn observer_target(&self) -> Option<PlayerRef> {
+        unsafe {
+            let observer = (self.vtable.observer_target)(self);
+
+            PlayerRef::from_raw(observer)
+        }
+    }
+
+    #[inline]
+    pub fn move_kind(&self) -> MoveKind {
+        unsafe {
+            self.render_mode_address()
+                .byte_add(1)
+                .cast()
+                .read_unaligned()
+        }
+    }
+
+    #[inline]
+    pub unsafe fn set_view_angle(&mut self, angle: Vec3) {
+        self.is_dead_address()
+            .byte_add(4)
+            .cast::<Vec3>()
+            .cast_mut()
+            .write_unaligned(angle)
+    }
+
+    #[inline]
+    pub fn team(&self) -> Team {
+        unsafe { (self.vtable.team)(self) }
+    }
+
+    #[inline]
+    pub fn view_angle(&self) -> Vec3 {
+        unsafe {
+            self.is_dead_address()
+                .byte_add(4)
+                .cast::<Vec3>()
+                .read_unaligned()
+        }
+    }
+
+    #[inline]
+    pub fn velocity(&self) -> Vec3 {
+        unsafe {
+            self.networked(|networked| networked.base_player.velocity)
+                .read_unaligned()
+        }
+    }
+
+    #[inline]
+    pub fn velocity_magnitude(&self) -> f32 {
+        self.velocity().magnitude()
     }
 }
 
