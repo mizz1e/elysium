@@ -13,3 +13,12 @@ mod matrix3x4;
 mod vec2;
 mod vec3;
 mod vec4_aligned;
+
+/// Sanitize a float.
+///
+/// Returns 0.0 if `value` is non-finite.
+pub fn sanitize_f32(value: f32) -> f32 {
+    value.is_finite()
+        .then(|| value)
+        .unwrap_or_default()
+}
