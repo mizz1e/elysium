@@ -79,8 +79,7 @@ pub trait Fog<'a>: Entity<'a> {
 
     /// Set the fog's clip distance (far-Z).
     ///
-    /// A value of 0.0 will disable the clip distance.
-    /// Non-finite or negative distance will be treated as 0.0.
+    /// Non-finite, negative or zero will disable the clip distance.
     fn set_clip_distance(&mut self, distance: f32);
 
     /// Set the fog's range (start and end distance).
