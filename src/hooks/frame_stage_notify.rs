@@ -1,9 +1,8 @@
+use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, TonemapRef};
 use crate::state::Local;
-use crate::{Entity, EntityRef, State};
-use elysium_math::Vec3;
-use elysium_sdk::client::Class;
+use crate::State;
 use elysium_sdk::convar::Vars;
-use elysium_sdk::entity::{DataUpdateKind, EntityId};
+use elysium_sdk::entity::EntityId;
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces};
 
 fn update_vars(vars: &Vars, engine: &Engine) {
@@ -65,7 +64,7 @@ fn update_vars(vars: &Vars, engine: &Engine) {
 fn update_fog(mut fog: FogRef<'_>) {
     fog.set_clip_distance(10_000.0);
     fog.set_range(Some(150.0..=350.0));
-    fog.set_rgba(0xFF, 0xFF, 0x00, 0.1);
+    fog.set_rgba((0xFF, 0xFF, 0x00, 0.1));
 }
 
 /// Override tonemap controller properties.
@@ -79,7 +78,7 @@ fn update_thirdperson(
     globals: &Globals,
     input: &Input,
     local_vars: &mut Local,
-    local: PlayerRef<'_>,
+    mut local: PlayerRef<'_>,
 ) {
     let state = State::get();
 
@@ -155,13 +154,13 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
     let player_iter = entity_list
         .player_range()
-        .flat_map(|index| PlayerRef::from_raw(entity_list.entity(index)));
+        .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
 
-    for player in player_iter {
+    for (index, player) in player_iter {
         let mut bones = players[index as usize - 1].bones;
 
-        entity.setup_bones(&mut bones[..128], 0x00000100, time);
-        entity.setup_bones(&mut bones[..128], 0x000FFF00, time);
+        player.setup_bones(&mut bones[..128], 0x00000100, time);
+        player.setup_bones(&mut bones[..128], 0x000FFF00, time);
     }
 
     let entity_iter = entity_list
@@ -175,8 +174,8 @@ unsafe fn update_entities(entity_list: &EntityList) {
         };
 
         match class.entity_id {
-            EntityId::CEnvTonemapController => update_tonemap(entity),
-            EntityId::CFogController => update_fog(entity),
+            EntityId::CEnvTonemapController => update_tonemap(entity.cast_tonemap()),
+            EntityId::CFogController => update_fog(entity.cast_fog()),
             EntityId::CPrecipitation => println!("got rain"),
             _ => {}
         }

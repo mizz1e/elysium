@@ -1,10 +1,8 @@
-use crate::{Networked, State};
-use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::model::Model;
-use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
+use elysium_sdk::HitGroup;
 use repr::EntityRepr;
 use std::marker::PhantomData;
 use std::ops::{RangeBounds, RangeInclusive};
@@ -22,32 +20,50 @@ mod sealed {
 pub trait Entity: sealed::Sealed {
     fn attachment(&self, index: i32) -> Option<Vec3>;
 
-    /// the entity's class
+    /// Cast this reference to an entity reference.
+    unsafe fn cast_entity(&self) -> EntityRef<'_>;
+
+    /// Cast this reference to a fog reference.
+    unsafe fn cast_fog(&self) -> FogRef<'_>;
+
+    /// Cast this reference to a player reference.
+    unsafe fn cast_player(&self) -> PlayerRef<'_>;
+
+    /// Cast this reference to a tonemap reference.
+    unsafe fn cast_tonemap(&self) -> TonemapRef<'_>;
+
+    /// Cast this reference to a weapon reference.
+    unsafe fn cast_weapon(&self) -> WeaponRef<'_>;
+
+    /// The entity's class.
     fn client_class(&self) -> Option<&Class>;
 
-    /// the entity's health
+    /// The entity's health.
     fn health(&self) -> i32;
 
-    /// is this entity alive
+    /// Is this entity alive?
     fn is_alive(&self) -> bool;
 
     /// is the entity dormant
     fn is_dormant(&self) -> bool;
 
-    /// is this entity a player
+    /// Is this entity a player?
     fn is_player(&self) -> bool;
 
-    /// is this entity a weapon
+    /// Is this entity a weapon?
     fn is_weapon(&self) -> bool;
 
-    /// the entity's index
+    /// The entity's index within the entity list.
     fn index(&self) -> i32;
 
-    /// the entity's model
+    /// The entity's model.
     fn model(&self) -> Option<&Model>;
 
-    /// the entity's origin
+    /// The entity's origin.
     fn origin(&self) -> Vec3;
+
+    /// Setup bones for this entity.
+    fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool;
 }
 
 /// Fog methods.
@@ -74,7 +90,7 @@ pub trait Fog: Entity {
 /// Player methods.
 pub trait Player: Entity {
     /// The player's active weapon.
-    fn active_weapon(&self) -> Option<WeaponRef>;
+    fn active_weapon(&self) -> Option<WeaponRef<'_>>;
 
     /// The player's aim punch.
     fn aim_punch(&self) -> Vec3;
@@ -112,11 +128,11 @@ pub trait Player: Entity {
     /// The player's observing mode.
     fn observer_mode(&self) -> ObserverMode;
 
-    /// The player's observer target.
-    fn observer_target(&self) -> Option<EntityRef>;
+    /// The player's observer target player.
+    fn observer_target(&self) -> Option<PlayerRef<'_>>;
 
     /// Set the player's view angle.
-    fn set_view_angle(&mut self, angle: Vec3);
+    unsafe fn set_view_angle(&mut self, angle: Vec3);
 
     /// The player's team.
     fn team(&self) -> Team;
@@ -125,7 +141,7 @@ pub trait Player: Entity {
     fn velocity(&self) -> Vec3;
 
     /// The magnitude of the player's velocity.
-    fn velocity_magnitude(&self) -> Vec3;
+    fn velocity_magnitude(&self) -> f32;
 
     /// The player's view angle.
     fn view_angle(&self) -> Vec3;
@@ -143,7 +159,7 @@ pub trait Tonemap: Entity {
     fn set_bloom(&mut self, scale: Option<f32>);
 
     /// Sets the tonemap's exposure effect setting.
-    fn set_exposure<R: RangeBounds<u16>>(&mut self, exposure: Option<R>);
+    fn set_exposure<R: RangeBounds<f32>>(&mut self, exposure: Option<R>);
 }
 
 /// Weapon methods.
@@ -166,20 +182,28 @@ macro_rules! def_ent {
             impl<'a> $ident<'a> {
                 #[inline]
                 pub unsafe fn from_raw(entity: *const u8) -> Option<Self> {
-                    let entity = NonNull::new(entity)?;
+                    let entity = NonNull::new(entity as _)?;
                     let _phantom = PhantomData;
 
                     Some(Self { entity, _phantom })
                 }
 
                 #[inline]
+                pub unsafe fn from_raw_unchecked(entity: *const u8) -> Self {
+                    let entity = NonNull::new_unchecked(entity as _);
+                    let _phantom = PhantomData;
+
+                    Self { entity, _phantom }
+                }
+
+                #[inline]
                 fn as_repr(&self) -> &'a EntityRepr {
-                    self.entity.as_ref()
+                    unsafe { self.entity.as_ref() }
                 }
 
                 #[inline]
                 fn as_repr_mut(&mut self) -> &'a mut EntityRepr {
-                    self.entity.as_mut()
+                    unsafe { self.entity.as_mut() }
                 }
             }
 
@@ -190,6 +214,31 @@ macro_rules! def_ent {
                 #[inline]
                 fn attachment(&self, index: i32) -> Option<Vec3> {
                     self.as_repr().attachment(index)
+                }
+
+                #[inline]
+                unsafe fn cast_entity(&self) -> EntityRef<'_> {
+                    EntityRef::from_raw_unchecked(self.entity.as_ptr() as _)
+                }
+
+                #[inline]
+                unsafe fn cast_fog(&self) -> FogRef<'_> {
+                    FogRef::from_raw_unchecked(self.entity.as_ptr() as _)
+                }
+
+                #[inline]
+                unsafe fn cast_player(&self) -> PlayerRef<'_> {
+                    PlayerRef::from_raw_unchecked(self.entity.as_ptr() as _)
+                }
+
+                #[inline]
+                unsafe fn cast_tonemap(&self) -> TonemapRef<'_> {
+                    TonemapRef::from_raw_unchecked(self.entity.as_ptr() as _)
+                }
+
+                #[inline]
+                unsafe fn cast_weapon(&self) -> WeaponRef<'_> {
+                    WeaponRef::from_raw_unchecked(self.entity.as_ptr() as _)
                 }
 
                 #[inline]
@@ -235,6 +284,11 @@ macro_rules! def_ent {
                 #[inline]
                 fn origin(&self) -> Vec3 {
                     self.as_repr().origin()
+                }
+
+                #[inline]
+                fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool {
+                    self.as_repr().setup_bones(bones, mask, time)
                 }
             }
         )*
@@ -292,7 +346,7 @@ impl<'a> Fog for FogRef<'a> {
 
 impl<'a> Player for PlayerRef<'a> {
     #[inline]
-    fn active_weapon(&self) -> Option<WeaponRef> {
+    fn active_weapon(&self) -> Option<WeaponRef<'_>> {
         self.as_repr().active_weapon()
     }
 
@@ -357,13 +411,13 @@ impl<'a> Player for PlayerRef<'a> {
     }
 
     #[inline]
-    fn observer_target(&self) -> Option<EntityRef> {
+    fn observer_target(&self) -> Option<PlayerRef<'_>> {
         self.as_repr().observer_target()
     }
 
     #[inline]
     unsafe fn set_view_angle(&mut self, angle: Vec3) {
-        self.as_repr().set_view_angle(angle)
+        self.as_repr_mut().set_view_angle(angle)
     }
 
     #[inline]
@@ -377,7 +431,7 @@ impl<'a> Player for PlayerRef<'a> {
     }
 
     #[inline]
-    fn velocity_magnitude(&self) -> Vec3 {
+    fn velocity_magnitude(&self) -> f32 {
         self.velocity().magnitude()
     }
 
@@ -404,7 +458,7 @@ impl<'a> Tonemap for TonemapRef<'a> {
     }
 
     #[inline]
-    fn set_exposure<R: RangeBounds<u16>>(&mut self, exposure: Option<R>) {
+    fn set_exposure<E: Into<Exposure>>(&mut self, exposure: Option<E>) {
         self.as_repr_mut().set_exposure(exposure);
     }
 }

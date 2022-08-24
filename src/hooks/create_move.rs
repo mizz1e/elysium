@@ -1,4 +1,5 @@
-use crate::{Entity, EntityRef, State};
+use crate::entity::{Player, PlayerRef};
+use crate::State;
 use elysium_math::Vec3;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
@@ -75,7 +76,7 @@ fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
 }
 
 #[inline]
-unsafe fn do_create_move(command: &mut Command, local: EntityRef<'_>, send_packet: &mut bool) {
+unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packet: &mut bool) {
     let state = State::get();
     let vars = state.vars.as_ref().unwrap();
     let mut local_vars = &mut state.local;
@@ -122,7 +123,7 @@ unsafe fn do_create_move(command: &mut Command, local: EntityRef<'_>, send_packe
 
     let side = if command.command % 3 != 0 { 1.0 } else { -1.0 };
 
-    if (local.flags() & ON_GROUND) == 0 {
+    if !on_ground {
         let velocity = local.velocity();
         let magnitude = velocity.magnitude2d();
         let ideal_strafe = (15.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0);
@@ -222,7 +223,7 @@ pub unsafe extern "C" fn create_move(
         return false;
     }
 
-    let local = &*state.local.player;
+    let local = PlayerRef::from_raw(state.local.player).unwrap();
 
     // don't mess with input if you are spectating
     if local.observer_mode() != ObserverMode::None {

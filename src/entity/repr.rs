@@ -1,4 +1,4 @@
-use super::PlayerRef;
+use super::{PlayerRef, WeaponRef};
 use crate::{networked, networked_mut, Networked, State};
 use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
@@ -6,9 +6,9 @@ use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, PlayerFlags, Renderable, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
-use std::marker::PhantomData;
 use std::mem::MaybeUninit;
-use std::ops::{Bound, RangeBounds, RangeInclusive};
+use std::ops::RangeInclusive;
+use std::ptr;
 
 pub use exposure::Exposure;
 
@@ -103,7 +103,17 @@ impl EntityRepr {
     networked!(render_mode_address: u8 = base_entity.render_mode);
 
     #[inline]
-    pub fn networked<T, F>(&self, f: F) -> *const T
+    fn as_ptr(&self) -> *const u8 {
+        ptr::addr_of!(*self).cast()
+    }
+
+    #[inline]
+    fn as_mut_ptr(&mut self) -> *mut u8 {
+        ptr::addr_of_mut!(*self).cast()
+    }
+
+    #[inline]
+    fn networked<T, F>(&self, f: F) -> *const T
     where
         F: Fn(&Networked) -> usize,
     {
@@ -114,7 +124,7 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn networked_mut<T, F>(&mut self, f: F) -> *mut T
+    fn networked_mut<T, F>(&mut self, f: F) -> *mut T
     where
         F: Fn(&Networked) -> usize,
     {
@@ -136,7 +146,7 @@ impl EntityRepr {
 
     #[inline]
     pub fn client_class(&self) -> Option<&Class> {
-        self.networkable.client_class().cast().as_ref()
+        unsafe { self.networkable.client_class().cast::<Class>().as_ref() }
     }
 
     #[inline]
@@ -171,7 +181,7 @@ impl EntityRepr {
 
     #[inline]
     pub fn model(&self) -> Option<&Model> {
-        self.renderable.model().cast().as_ref()
+        unsafe { self.renderable.model().cast::<Model>().as_ref() }
     }
 
     #[inline]
@@ -197,7 +207,7 @@ impl EntityRepr {
 
 // player
 impl EntityRepr {
-    networked!(armor_ref: i32 = player.armor);
+    networked!(armor_value_ref: i32 = player.armor);
     networked!(flags_ref: i32 = player.flags);
     networked!(has_helmet_ref: bool = player.has_helmet);
     networked!(is_dead_address: u8 = base_player.is_dead);
@@ -213,13 +223,17 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn active_weapon(&self) -> *const EntityRepr {
-        unsafe { (self.vtable.active_weapon)(self) }
+    pub fn active_weapon(&self) -> Option<WeaponRef<'_>> {
+        unsafe {
+            let weapon = (self.vtable.active_weapon)(self);
+
+            WeaponRef::from_raw(weapon as _)
+        }
     }
 
     #[inline]
-    pub fn armor(&self) -> i32 {
-        unsafe { self.armor_ref().read_unaligned() }
+    pub fn armor_value(&self) -> i32 {
+        unsafe { self.armor_value_ref().read_unaligned() }
     }
 
     #[inline]
@@ -238,7 +252,7 @@ impl EntityRepr {
 
     #[inline]
     pub fn eye_origin(&self) -> Vec3 {
-        self.offset() + self.eye_offset()
+        self.origin() + self.eye_offset()
     }
 
     // TODO: check if this is better than above
@@ -251,7 +265,7 @@ impl EntityRepr {
     pub fn damage_modifier(&self, group: HitGroup, weapon_armor_ratio: f32) -> f32 {
         let mut modifier = group.damage_modifier();
 
-        if self.armor() > 0 {
+        if self.armor_value() > 0 {
             if group.is_head() && self.has_helmet() {
                 modifier *= weapon_armor_ratio * 0.5;
             }
@@ -299,7 +313,7 @@ impl EntityRepr {
         unsafe {
             let observer = (self.vtable.observer_target)(self);
 
-            PlayerRef::from_raw(observer)
+            PlayerRef::from_raw(observer as _)
         }
     }
 
@@ -308,7 +322,7 @@ impl EntityRepr {
         unsafe {
             self.render_mode_address()
                 .byte_add(1)
-                .cast()
+                .cast::<MoveKind>()
                 .read_unaligned()
         }
     }
@@ -345,28 +359,28 @@ impl EntityRepr {
 
 // fog
 impl EntityRepr {
-    networked!(rgb: bool = fog.color_primary);
-    networked_mut!(rgb_mut: bool = fog.color_primary);
+    networked!(rgb: i32 = fog.color_primary);
+    networked_mut!(rgb_mut: i32 = fog.color_primary);
 
-    networked!(density: bool = fog.color_primary);
-    networked_mut!(density_mut: bool = fog.color_primary);
+    networked!(density: f32 = fog.density);
+    networked_mut!(density_mut: f32 = fog.density);
+
+    networked!(far_z: f32 = fog.far_z);
+    networked_mut!(far_z_mut: f32 = fog.far_z);
 
     networked!(is_enabled: bool = fog.is_enabled);
     networked_mut!(is_enabled_mut: bool = fog.is_enabled);
 
-    networked!(start: bool = fog.start);
-    networked_mut!(start_mut: bool = fog.start);
+    networked!(start: f32 = fog.start);
+    networked_mut!(start_mut: f32 = fog.start);
 
-    networked!(end: bool = fog.end);
-    networked!(end_mut: bool = fog.end);
+    networked!(end: f32 = fog.end);
+    networked_mut!(end_mut: f32 = fog.end);
 
     /// Returns the fog’s clip distance (far-Z).
     #[inline]
     pub fn clip_distance(&self) -> f32 {
-        unsafe {
-            self.networked(|networked| networked.fog.far_z)
-                .read_unaligned()
-        }
+        unsafe { self.far_z().read_unaligned() }
     }
 
     /// Returns the fog’s range (start and end distance).
@@ -375,7 +389,6 @@ impl EntityRepr {
         unsafe {
             self.is_enabled().read_unaligned().then(|| {
                 let start = self.start().read_unaligned();
-
                 let end = self.end().read_unaligned();
 
                 start..=end
@@ -388,9 +401,7 @@ impl EntityRepr {
     pub fn rgba(&self) -> (u8, u8, u8, f32) {
         unsafe {
             let rgb = self.rgb().read_unaligned();
-
             let alpha = self.density().read_unaligned();
-
             let [r, g, b, _] = rgb.to_ne_bytes();
 
             (r, g, b, alpha)
@@ -400,36 +411,35 @@ impl EntityRepr {
     /// Set the fog’s clip distance (far-Z).
     #[inline]
     pub fn set_clip_distance(&mut self, distance: f32) {
-        unsafe {
-            self.networked_mut(|networked| networked.fog.far_z)
-                .write_unaligned(distance)
-        }
+        unsafe { self.far_z_mut().write_unaligned(distance) }
     }
 
     /// Set the fog’s range (start and end distance).
     #[inline]
-    pub fn set_range(&self, range: Option<RangeInclusive<f32>>) {
+    pub fn set_range(&mut self, range: Option<RangeInclusive<f32>>) {
         unsafe {
-            self.enabled_mut().write_unaligned(range.is_some());
+            let enabled = range
+                .inspect(|range| {
+                    let start = range.start();
+                    let end = range.end();
 
-            if let Some(range) = range {
-                let RangeInclusive { start, end } = range;
+                    self.start_mut().write_unaligned(*start);
+                    self.end_mut().write_unaligned(*end);
+                })
+                .is_some();
 
-                self.start_mut().write_unaligned(start);
-                self.end_mut().write_unaligned(end);
-            }
+            self.is_enabled_mut().write_unaligned(enabled);
         }
     }
 
     /// Set the fog’s color (rgb) and density (alpha).
     #[inline]
-    pub fn set_rgba(&self, rgba: (u8, u8, u8, f32)) {
+    pub fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
         let (r, g, b, alpha) = rgba;
         let rgb = i32::from_ne_bytes([r, g, b, 0]);
 
         unsafe {
             self.rgb_mut().write_unaligned(rgb);
-
             self.density_mut().write_unaligned(alpha);
         }
     }
@@ -441,15 +451,15 @@ mod exposure {
 
     #[derive(Clone, Copy)]
     pub struct Exposure {
-        start: Bound<u16>,
-        end: Bound<u16>,
+        start: Bound<f32>,
+        end: Bound<f32>,
     }
 
     #[inline]
     fn map_bound(bound: Bound<f32>) -> Option<f32> {
         match bound {
             Bound::Included(bound) => Some(bound),
-            Bound::Excluded(bound) => Some(bound - 1),
+            Bound::Excluded(bound) => Some(bound - 1.0),
             Bound::Unbounded => None,
         }
     }
@@ -468,7 +478,7 @@ mod exposure {
 
     impl<R> From<R> for Exposure
     where
-        R: RangeBounds<u16>,
+        R: RangeBounds<f32>,
     {
         #[inline]
         fn from(range: R) -> Self {
@@ -504,9 +514,9 @@ impl EntityRepr {
     #[inline]
     pub fn bloom(&self) -> Option<f32> {
         unsafe {
-            let enabled: bool = self.enable_bloom_scale().read_unaligned();
-
-            enabled.then(|| self.bloom_scale().read_unaligned())
+            self.enable_bloom_scale()
+                .read_unaligned()
+                .then(|| self.bloom_scale().read_unaligned())
         }
     }
 
@@ -531,12 +541,10 @@ impl EntityRepr {
     /// Returns the tonemap's bloom effect setting.
     #[inline]
     pub fn set_bloom(&mut self, scale: Option<f32>) {
-        let enabled = scale.is_some();
-
         unsafe {
-            if let Some(scale) = scale {
-                self.bloom_scale_mut().write_unaligned(scale);
-            }
+            let enabled = scale
+                .inspect(|scale| self.bloom_scale_mut().write_unaligned(*scale))
+                .is_some();
 
             self.enable_bloom_scale_mut().write_unaligned(enabled);
         }
@@ -544,8 +552,8 @@ impl EntityRepr {
 
     /// Sets the tonemap's bloom effect setting.
     #[inline]
-    pub fn set_exposure<R: RangeBounds<f32>>(&mut self, exposure: Option<R>) {
-        let exposure = exposure.map(Exposure::from);
+    pub fn set_exposure<E: Into<Exposure>>(&mut self, exposure: Option<E>) {
+        let exposure = exposure.map(Into::into);
         let (start, end) = match exposure {
             Some(exposure) => {
                 let start = exposure.start();
@@ -557,44 +565,48 @@ impl EntityRepr {
         };
 
         unsafe {
-            if let Some(start) = start {
-                self.min_exposure_mut().write_unaligned(start);
-            }
-
-            if let Some(end) = end {
-                self.max_exposure_mut().write_unaligned(end);
-            }
+            let enable_min_exposure = start
+                .inspect(|start| self.min_exposure_mut().write_unaligned(*start))
+                .is_some();
 
             self.enable_min_exposure_mut()
-                .write_unaligned(start.is_some());
+                .write_unaligned(enable_min_exposure);
+
+            let enable_max_exposure = end
+                .inspect(|end| self.max_exposure_mut().write_unaligned(*end))
+                .is_some();
 
             self.enable_max_exposure_mut()
-                .write_unaligned(end.is_some());
+                .write_unaligned(enable_max_exposure);
         }
     }
 }
 
 // weapon
 impl EntityRepr {
+    networked!(magazine_ref: i32 = base_weapon.magazine);
+    networked!(next_attack_time_ref: f32 = base_weapon.next_attack_time);
+    networked!(revolver_cock_time_ref: f32 = weapon.revolver_cock_time);
+
     #[inline]
-    pub fn magazine(&self) -> Option<u16> {
-        let magazine: i32 = *self.networked(|networked| networked.base_weapon.magazine);
+    pub fn magazine(&self) -> Option<u32> {
+        let magazine: i32 = unsafe { self.magazine_ref().read_unaligned() };
 
         if magazine < 0 {
             None
         } else {
-            Some(magazine as u16)
+            Some(magazine as u32)
         }
     }
 
     #[inline]
-    pub fn next_attack_time(&self) -> &mut f32 {
-        self.networked(|networked| networked.base_weapon.next_attack_time)
+    pub fn next_attack_time(&self) -> f32 {
+        unsafe { self.next_attack_time_ref().read_unaligned() }
     }
 
     #[inline]
     pub fn revolver_cock_time(&self) -> Option<f32> {
-        let time: f32 = *self.networked(|networked| networked.weapon.revolver_cock_time);
+        let time: f32 = unsafe { self.revolver_cock_time_ref().read_unaligned() };
 
         if time > 3.4028235e+38 {
             None

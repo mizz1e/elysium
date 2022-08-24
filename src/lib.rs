@@ -1,11 +1,13 @@
 //#![deny(warnings)]
 #![feature(abi_thiscall)]
+#![feature(bound_map)]
 #![feature(const_ptr_offset_from)]
 #![feature(const_maybe_uninit_zeroed)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(mem_copy_fn)]
 #![feature(pointer_byte_offsets)]
+#![feature(result_option_inspect)]
 #![feature(sync_unsafe_cell)]
 #![feature(strict_provenance)]
 

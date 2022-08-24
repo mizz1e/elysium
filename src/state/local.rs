@@ -1,4 +1,3 @@
-use crate::Entity;
 use elysium_math::Vec3;
 use elysium_model::Bones;
 use std::ptr;

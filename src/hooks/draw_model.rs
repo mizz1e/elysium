@@ -1,5 +1,6 @@
+use crate::entity::{Entity, Player, PlayerRef};
 use crate::state::DrawModel;
-use crate::{Entity, EntityRef, State};
+use crate::State;
 use elysium_math::Matrix3x4;
 use elysium_sdk::entity::Team;
 use elysium_sdk::material::{Material, MaterialFlag};
@@ -48,11 +49,11 @@ pub unsafe extern "C" fn draw_model(
 
         if model_name.starts_with("models/player") {
             let entity_index = (*info).entity_index;
-            let entity = entity_list.entity(entity_index).cast::<Entity>();
-            let local = local_vars.player.as_ref().unwrap();
+            let entity = entity_list.entity(entity_index);
+            let local = PlayerRef::from_raw(local_vars.player).unwrap();
 
             if !entity.is_null() {
-                let entity = EntityRef::from_raw(entity);
+                let entity = PlayerRef::from_raw(entity).unwrap();
 
                 match entity.team() {
                     Team::Counter => gold.set_rgba([0.0, 0.5, 1.0, 0.9]),
