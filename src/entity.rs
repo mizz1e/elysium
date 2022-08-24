@@ -69,6 +69,8 @@ pub trait Entity<'a>: sealed::Sealed + 'a {
 /// Fog methods.
 pub trait Fog<'a>: Entity<'a> {
     /// Returns the fog's clip distance (far-Z).
+    ///
+    /// A value of 0.0 will disable the clip distance.
     fn clip_distance(&self) -> f32;
 
     /// Returns the fog's range (start and end distance).
@@ -156,13 +158,13 @@ pub trait Player<'a>: Entity<'a> {
 /// Tonemap methods.
 pub trait Tonemap<'a>: Entity<'a> {
     /// Returns the tonemap's bloom effect setting.
-    fn bloom(&self) -> Option<f32>;
+    fn bloom(&self) -> f32;
 
     /// Returns the tonemap's exposure effect setting.
     fn exposure(&self) -> Option<Exposure>;
 
     /// Returns the tonemap's bloom effect setting.
-    fn set_bloom(&mut self, scale: Option<f32>);
+    fn set_bloom(&mut self, scale: f32);
 
     /// Sets the tonemap's exposure effect setting.
     fn set_exposure<R: RangeBounds<f32>>(&mut self, exposure: Option<R>);
@@ -449,7 +451,7 @@ impl<'a> Player<'a> for PlayerRef<'a> {
 
 impl<'a> Tonemap<'a> for TonemapRef<'a> {
     #[inline]
-    fn bloom(&self) -> Option<f32> {
+    fn bloom(&self) -> f32 {
         self.as_repr().bloom()
     }
 
@@ -459,7 +461,7 @@ impl<'a> Tonemap<'a> for TonemapRef<'a> {
     }
 
     #[inline]
-    fn set_bloom(&mut self, bloom: Option<f32>) {
+    fn set_bloom(&mut self, bloom: f32) {
         self.as_repr_mut().set_bloom(bloom);
     }
 

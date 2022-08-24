@@ -6,6 +6,7 @@ macro_rules! object_validate {
     )*) => {
         #[allow(dead_code)]
         #[allow(invalid_value)]
+        #[cfg(debug_assertions)]
         const OBJECT_VALIDATION: () = {
             let object: $type = unsafe { core::mem::MaybeUninit::uninit().assume_init() };
 
@@ -41,6 +42,7 @@ macro_rules! vtable_validate {
     )*) => {
         #[allow(dead_code)]
         #[allow(invalid_value)]
+        #[cfg(debug_assertions)]
         const VTABLE_VALIDATION: () = {
             let vtable: VTable = unsafe { core::mem::MaybeUninit::uninit().assume_init() };
 

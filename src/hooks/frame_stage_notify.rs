@@ -62,15 +62,15 @@ fn update_vars(vars: &Vars, engine: &Engine) {
 
 /// Override fog controller properties.
 fn update_fog(mut fog: FogRef<'_>) {
-    fog.set_clip_distance(10_000.0);
+    fog.set_clip_distance(0.0);
     fog.set_range(Some(150.0..=350.0));
-    fog.set_rgba((0xFF, 0xFF, 0x00, 0.1));
+    fog.set_rgba((0xFF, 0x00, 0x00, 0.2));
 }
 
 /// Override tonemap controller properties.
 fn update_tonemap(mut tonemap: TonemapRef<'_>) {
-    tonemap.set_bloom(Some(2.0));
-    tonemap.set_exposure(Some(0.5..=0.5));
+    tonemap.set_bloom(2.0);
+    tonemap.set_exposure(Some(0.2..=0.2));
 }
 
 /// Thirdperson handling.
@@ -227,7 +227,9 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     } else {
         let local = PlayerRef::from_raw(local_vars.player).unwrap();
 
-        input.thirdperson = !local.observer_mode().breaks_thirdperson() && local_vars.thirdperson.0;
+        input.thirdperson = !local.observer_mode().breaks_thirdperson()
+            && local_vars.thirdperson.0
+            && !local.is_scoped();
 
         match frame {
             Frame::RenderStart => {

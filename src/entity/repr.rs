@@ -402,7 +402,7 @@ impl EntityRepr {
         unsafe {
             let rgb = self.rgb().read_unaligned();
             let alpha = self.density().read_unaligned();
-            let [_, r, g, b] = rgb.to_ne_bytes();
+            let [r, g, b, _] = rgb.to_ne_bytes();
 
             (r, g, b, alpha)
         }
@@ -436,7 +436,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
         let (r, g, b, alpha) = rgba;
-        let rgb = i32::from_ne_bytes([0, r, g, b]);
+        let rgb = i32::from_ne_bytes([r, g, b, 0]);
 
         unsafe {
             self.rgb_mut().write_unaligned(rgb);
@@ -512,11 +512,12 @@ impl EntityRepr {
 
     /// Returns the tonemap's bloom effect setting.
     #[inline]
-    pub fn bloom(&self) -> Option<f32> {
+    pub fn bloom(&self) -> f32 {
         unsafe {
             self.enable_bloom_scale()
                 .read_unaligned()
                 .then(|| self.bloom_scale().read_unaligned())
+                .unwrap_or_default()
         }
     }
 
@@ -540,13 +541,10 @@ impl EntityRepr {
 
     /// Returns the tonemap's bloom effect setting.
     #[inline]
-    pub fn set_bloom(&mut self, scale: Option<f32>) {
+    pub fn set_bloom(&mut self, scale: f32) {
         unsafe {
-            let enabled = scale
-                .inspect(|scale| self.bloom_scale_mut().write_unaligned(*scale))
-                .is_some();
-
-            self.enable_bloom_scale_mut().write_unaligned(enabled);
+            self.bloom_scale_mut().write_unaligned(scale);
+            self.enable_bloom_scale_mut().write_unaligned(scale != 0.0);
         }
     }
 
