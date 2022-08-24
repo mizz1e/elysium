@@ -31,7 +31,7 @@ pub struct Command {
     pub view_angle: Vec3,
     pub aim_direction: Vec3,
     pub movement: Vec3,
-    pub state: i32,
+    state: i32,
     pub impulse: u8,
     pub weapon_select: i32,
     pub weapon_subtype: i32,
