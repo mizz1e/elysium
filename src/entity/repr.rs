@@ -56,7 +56,7 @@ struct VTable {
     muzzle_attachment_index_3rd: unsafe extern "thiscall" fn(this: *const EntityRepr) -> i32,
     _pad18: VTablePad<13>,
     inaccuracy: unsafe extern "thiscall" fn(this: *const EntityRepr) -> f32,
-    update_accuracy_penalty: unsafe extern "thiscall" fn(this: *const EntityRepr),
+    update_accuracy_penalty: unsafe extern "thiscall" fn(this: *mut EntityRepr),
 }
 
 vtable_validate! {
@@ -631,8 +631,8 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn weapon_data(&self) -> *const WeaponInfo {
-        unsafe { (self.vtable.weapon_data)(self) }
+    pub fn weapon_data(&self) -> Option<&WeaponInfo> {
+        unsafe { (self.vtable.weapon_data)(self).as_ref() }
     }
 
     #[inline]
@@ -651,7 +651,7 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn update_accuracy_penalty(&self) {
+    pub fn update_accuracy_penalty(&mut self) {
         unsafe { (self.vtable.update_accuracy_penalty)(self) }
     }
 

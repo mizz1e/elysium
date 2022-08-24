@@ -132,6 +132,12 @@ pub trait Player: Entity {
     fn observer_target(&self) -> Option<PlayerRef<'_>>;
 
     /// Set the player's view angle.
+    ///
+    /// # Safety
+    ///
+    /// Modifying the view angle of a player via networked variables may have unintended side
+    /// effects! Be sure to reset it to the original value during
+    /// [`Frame::RenderEnd`](elysium_sdk::Frame::RenderEnd).
     unsafe fn set_view_angle(&mut self, angle: Vec3);
 
     /// The player's team.

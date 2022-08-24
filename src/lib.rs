@@ -20,18 +20,17 @@ use std::ptr;
 use std::{mem, thread};
 
 pub use controls::Controls;
-pub use entity::{Entity, EntityRef};
 pub use menu::Menu;
 pub use networked::Networked;
 pub use scene::Scene;
 pub use state::State;
 
 mod controls;
-mod entity;
 mod menu;
 mod scene;
 
 pub mod assets;
+pub mod entity;
 pub mod hooks;
 pub mod library;
 pub mod networked;
