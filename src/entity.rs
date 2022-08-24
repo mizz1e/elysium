@@ -69,8 +69,6 @@ pub trait Entity<'a>: sealed::Sealed + 'a {
 /// Fog methods.
 pub trait Fog<'a>: Entity<'a> {
     /// Returns the fog's clip distance (far-Z).
-    ///
-    /// A value of 0.0 will disable the clip distance.
     fn clip_distance(&self) -> f32;
 
     /// Returns the fog's range (start and end distance).
@@ -80,12 +78,19 @@ pub trait Fog<'a>: Entity<'a> {
     fn rgba(&self) -> (u8, u8, u8, f32);
 
     /// Set the fog's clip distance (far-Z).
+    ///
+    /// A value of 0.0 will disable the clip distance.
+    /// Non-finite or negative distance will be treated as 0.0.
     fn set_clip_distance(&mut self, distance: f32);
 
     /// Set the fog's range (start and end distance).
+    ///
+    /// Non-finite or negative bounds will be treated as 0.0.
     fn set_range(&mut self, distance: Option<RangeInclusive<f32>>);
 
     /// Set the fog's color (rgb) and density (alpha).
+    ///
+    /// Non-finite or negative alpha will be treated as 0.0.
     fn set_rgba(&mut self, rgba: (u8, u8, u8, f32));
 }
 
@@ -164,10 +169,14 @@ pub trait Tonemap<'a>: Entity<'a> {
     fn exposure(&self) -> Option<Exposure>;
 
     /// Returns the tonemap's bloom effect setting.
+    ///
+    /// Non-finite or negative scale will be treated as 0.0.
     fn set_bloom(&mut self, scale: f32);
 
     /// Sets the tonemap's exposure effect setting.
-    fn set_exposure<R: RangeBounds<f32>>(&mut self, exposure: Option<R>);
+    ///
+    /// Non-finite or negative bounds will be treated as 0.0.
+    fn set_exposure<B: Into<Exposure>>(&mut self, exposure: Option<E>);
 }
 
 /// Weapon methods.
