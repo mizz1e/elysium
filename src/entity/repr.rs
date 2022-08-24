@@ -543,6 +543,9 @@ impl EntityRepr {
     #[inline]
     pub fn set_bloom(&mut self, scale: f32) {
         unsafe {
+            // prevent invalid bloom scale values
+            let scale = scale.is_finite().then(|| scale.max(0.0)).unwrap_or_default();
+
             self.bloom_scale_mut().write_unaligned(scale);
             self.enable_bloom_scale_mut().write_unaligned(scale != 0.0);
         }
@@ -554,8 +557,21 @@ impl EntityRepr {
         let exposure = exposure.map(Into::into);
         let (start, end) = match exposure {
             Some(exposure) => {
+                // we do this for two reasons
+                // - prevent invalid exposure values
+                // - prevent 0.0 which implies disabling exposure
                 let start = exposure.start();
+                let start = start
+                    .is_finite()
+                    .then(|| start)
+                    .unwrap_or_default()
+                    .max(0.0001);
+
                 let end = exposure.end();
+                let end = end.is_finite()
+                    .then(|| end)
+                    .unwrap_or_default()
+                    .max(0.0001);
 
                 (start, end)
             }
