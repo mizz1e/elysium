@@ -420,8 +420,9 @@ impl EntityRepr {
         unsafe {
             let enabled = range
                 .inspect(|range| {
-                    let start = range.start();
-                    let end = range.end();
+                    // prevent invalid and negative values
+                    let start = elysium_math::sanitize_f32(range.start()).max(0.0);
+                    let end = elysium_math::sanitize_f32(range.end()).max(0.0);
 
                     self.start_mut().write_unaligned(*start);
                     self.end_mut().write_unaligned(*end);
@@ -436,6 +437,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
         let (r, g, b, alpha) = rgba;
+        let alpha = elysium_math::sanitize_f32(alpha);
         let rgb = i32::from_ne_bytes([r, g, b, 0]);
 
         unsafe {
@@ -543,7 +545,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_bloom(&mut self, scale: f32) {
         unsafe {
-            // prevent invalid bloom scale values
+            // prevent invalid ane negative bloom scale values
             let scale = elysium_math::sanitize_f32(scale).max(0.0);
 
             self.bloom_scale_mut().write_unaligned(scale);
@@ -558,7 +560,7 @@ impl EntityRepr {
         let (start, end) = match exposure {
             Some(exposure) => {
                 // we do this for two reasons
-                // - prevent invalid exposure values
+                // - prevent invalid and negative exposure values
                 // - prevent 0.0 which implies disabling exposure
                 let start = elysium_math::sanitize_f32(exposure.start()).max(0.0001);
                 let end = elysium_math::sanitize_f32(exposure.end()).max(0.0001);
