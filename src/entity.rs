@@ -17,26 +17,26 @@ mod sealed {
 }
 
 /// Entity methods.
-pub trait Entity: sealed::Sealed {
+pub trait Entity<'a>: sealed::Sealed + 'a {
     fn attachment(&self, index: i32) -> Option<Vec3>;
 
     /// Cast this reference to an entity reference.
-    unsafe fn cast_entity(&self) -> EntityRef<'_>;
+    unsafe fn cast_entity(self) -> EntityRef<'a>;
 
     /// Cast this reference to a fog reference.
-    unsafe fn cast_fog(&self) -> FogRef<'_>;
+    unsafe fn cast_fog(self) -> FogRef<'a>;
 
     /// Cast this reference to a player reference.
-    unsafe fn cast_player(&self) -> PlayerRef<'_>;
+    unsafe fn cast_player(self) -> PlayerRef<'a>;
 
     /// Cast this reference to a tonemap reference.
-    unsafe fn cast_tonemap(&self) -> TonemapRef<'_>;
+    unsafe fn cast_tonemap(self) -> TonemapRef<'a>;
 
     /// Cast this reference to a weapon reference.
-    unsafe fn cast_weapon(&self) -> WeaponRef<'_>;
+    unsafe fn cast_weapon(self) -> WeaponRef<'a>;
 
     /// The entity's class.
-    fn client_class(&self) -> Option<&Class>;
+    fn client_class(&self) -> Option<&'a Class>;
 
     /// The entity's health.
     fn health(&self) -> i32;
@@ -57,7 +57,7 @@ pub trait Entity: sealed::Sealed {
     fn index(&self) -> i32;
 
     /// The entity's model.
-    fn model(&self) -> Option<&Model>;
+    fn model(&self) -> Option<&'a Model>;
 
     /// The entity's origin.
     fn origin(&self) -> Vec3;
@@ -67,7 +67,7 @@ pub trait Entity: sealed::Sealed {
 }
 
 /// Fog methods.
-pub trait Fog: Entity {
+pub trait Fog<'a>: Entity<'a> {
     /// Returns the fog's clip distance (far-Z).
     fn clip_distance(&self) -> f32;
 
@@ -88,9 +88,9 @@ pub trait Fog: Entity {
 }
 
 /// Player methods.
-pub trait Player: Entity {
+pub trait Player<'a>: Entity<'a> {
     /// The player's active weapon.
-    fn active_weapon(&self) -> Option<WeaponRef<'_>>;
+    fn active_weapon(&self) -> Option<WeaponRef<'a>>;
 
     /// The player's aim punch.
     fn aim_punch(&self) -> Vec3;
@@ -129,7 +129,7 @@ pub trait Player: Entity {
     fn observer_mode(&self) -> ObserverMode;
 
     /// The player's observer target player.
-    fn observer_target(&self) -> Option<PlayerRef<'_>>;
+    fn observer_target(&self) -> Option<PlayerRef<'a>>;
 
     /// Set the player's view angle.
     ///
@@ -154,7 +154,7 @@ pub trait Player: Entity {
 }
 
 /// Tonemap methods.
-pub trait Tonemap: Entity {
+pub trait Tonemap<'a>: Entity<'a> {
     /// Returns the tonemap's bloom effect setting.
     fn bloom(&self) -> Option<f32>;
 
@@ -169,7 +169,7 @@ pub trait Tonemap: Entity {
 }
 
 /// Weapon methods.
-pub trait Weapon: Entity {}
+pub trait Weapon<'a>: Entity<'a> {}
 
 macro_rules! def_ent {
     (
@@ -216,39 +216,39 @@ macro_rules! def_ent {
             impl<'a> sealed::Sealed for $ident<'a> {}
 
             // all entities implement entity
-            impl<'a> Entity for $ident<'a> {
+            impl<'a> Entity<'a> for $ident<'a> {
                 #[inline]
                 fn attachment(&self, index: i32) -> Option<Vec3> {
                     self.as_repr().attachment(index)
                 }
 
                 #[inline]
-                unsafe fn cast_entity(&self) -> EntityRef<'_> {
+                unsafe fn cast_entity(self) -> EntityRef<'a> {
                     EntityRef::from_raw_unchecked(self.entity.as_ptr() as _)
                 }
 
                 #[inline]
-                unsafe fn cast_fog(&self) -> FogRef<'_> {
+                unsafe fn cast_fog(self) -> FogRef<'a> {
                     FogRef::from_raw_unchecked(self.entity.as_ptr() as _)
                 }
 
                 #[inline]
-                unsafe fn cast_player(&self) -> PlayerRef<'_> {
+                unsafe fn cast_player(self) -> PlayerRef<'a> {
                     PlayerRef::from_raw_unchecked(self.entity.as_ptr() as _)
                 }
 
                 #[inline]
-                unsafe fn cast_tonemap(&self) -> TonemapRef<'_> {
+                unsafe fn cast_tonemap(self) -> TonemapRef<'a> {
                     TonemapRef::from_raw_unchecked(self.entity.as_ptr() as _)
                 }
 
                 #[inline]
-                unsafe fn cast_weapon(&self) -> WeaponRef<'_> {
+                unsafe fn cast_weapon(self) -> WeaponRef<'a> {
                     WeaponRef::from_raw_unchecked(self.entity.as_ptr() as _)
                 }
 
                 #[inline]
-                fn client_class(&self) -> Option<&Class> {
+                fn client_class(&self) -> Option<&'a Class> {
                     self.as_repr().client_class()
                 }
 
@@ -283,7 +283,7 @@ macro_rules! def_ent {
                 }
 
                 #[inline]
-                fn model(&self) -> Option<&Model> {
+                fn model(&self) -> Option<&'a Model> {
                     self.as_repr().model()
                 }
 
@@ -318,7 +318,7 @@ def_ent! {
     pub struct WeaponRef<'a>;
 }
 
-impl<'a> Fog for FogRef<'a> {
+impl<'a> Fog<'a> for FogRef<'a> {
     #[inline]
     fn clip_distance(&self) -> f32 {
         self.as_repr().clip_distance()
@@ -350,9 +350,9 @@ impl<'a> Fog for FogRef<'a> {
     }
 }
 
-impl<'a> Player for PlayerRef<'a> {
+impl<'a> Player<'a> for PlayerRef<'a> {
     #[inline]
-    fn active_weapon(&self) -> Option<WeaponRef<'_>> {
+    fn active_weapon(&self) -> Option<WeaponRef<'a>> {
         self.as_repr().active_weapon()
     }
 
@@ -417,7 +417,7 @@ impl<'a> Player for PlayerRef<'a> {
     }
 
     #[inline]
-    fn observer_target(&self) -> Option<PlayerRef<'_>> {
+    fn observer_target(&self) -> Option<PlayerRef<'a>> {
         self.as_repr().observer_target()
     }
 
@@ -447,7 +447,7 @@ impl<'a> Player for PlayerRef<'a> {
     }
 }
 
-impl<'a> Tonemap for TonemapRef<'a> {
+impl<'a> Tonemap<'a> for TonemapRef<'a> {
     #[inline]
     fn bloom(&self) -> Option<f32> {
         self.as_repr().bloom()

@@ -402,7 +402,7 @@ impl EntityRepr {
         unsafe {
             let rgb = self.rgb().read_unaligned();
             let alpha = self.density().read_unaligned();
-            let [r, g, b, _] = rgb.to_ne_bytes();
+            let [_, r, g, b] = rgb.to_ne_bytes();
 
             (r, g, b, alpha)
         }
@@ -436,7 +436,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
         let (r, g, b, alpha) = rgba;
-        let rgb = i32::from_ne_bytes([r, g, b, 0]);
+        let rgb = i32::from_ne_bytes([0, r, g, b]);
 
         unsafe {
             self.rgb_mut().write_unaligned(rgb);
