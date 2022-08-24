@@ -44,11 +44,13 @@ pub struct Command {
 }
 
 impl Command {
+    #[inline]
     const fn has(&self, flag: i32) -> bool {
         (self.state & flag) != 0
     }
 
-    pub const fn set(&mut self, flag: i32, value: bool) {
+    #[inline]
+    const fn set(&mut self, flag: i32, value: bool) {
         if value {
             self.state |= flag;
         } else {
@@ -56,42 +58,42 @@ impl Command {
         }
     }
 
-    pub const fn in_left(&self) -> bool {
-        self.has(IN_LEFT)
-    }
-
-    pub const fn in_right(&self) -> bool {
-        self.has(IN_RIGHT)
-    }
-
+    #[inline]
     pub const fn in_attack(&self) -> bool {
         self.has(IN_ATTACK)
     }
 
+    #[inline]
     pub const fn in_jump(&self) -> bool {
         self.has(IN_JUMP)
     }
 
+    #[inline]
     pub const fn in_duck(&self) -> bool {
         self.has(IN_DUCK)
     }
 
+    #[inline]
     pub const fn in_fast_duck(&self) -> bool {
         self.has(IN_BULLRUSH)
     }
 
+    #[inline]
     pub const fn attack(&mut self, value: bool) {
         self.set(IN_ATTACK, value)
     }
 
+    #[inline]
     pub const fn jump(&mut self, value: bool) {
         self.set(IN_JUMP, value)
     }
 
+    #[inline]
     pub const fn duck(&mut self, value: bool) {
         self.set(IN_DUCK, value)
     }
 
+    #[inline]
     pub const fn fast_duck(&mut self, value: bool) {
         self.set(IN_BULLRUSH, value);
     }

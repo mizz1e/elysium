@@ -6,17 +6,6 @@ use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
 use elysium_sdk::{Command, EntityList, HitGroup, Interfaces};
 use std::arch::asm;
 
-const IN_FORWARD: i32 = 1 << 3;
-const IN_BACKWARD: i32 = 1 << 4;
-
-// yes.
-const IN_LEFTWARD: i32 = 1 << 7;
-const IN_RIGHTWARD: i32 = 1 << 8;
-
-const IN_ATTACK: i32 = 1 << 0;
-const IN_BULLRUSH: i32 = 1 << 22;
-const IN_JUMP: i32 = 1 << 1;
-
 #[inline]
 fn get_dir(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
     let x = forward.x * movement.x + right.x * movement.y;
@@ -51,14 +40,6 @@ fn fix_movement(command: &mut Command, wish_angle: Vec3) {
     }
 }
 
-// TODO: find out how the fuck to fix the legs being spaz
-//
-// also seems like left/right doesnt work
-#[inline]
-fn leg_animation_walk(command: &mut Command) {
-    command.state ^= IN_FORWARD | IN_BACKWARD | IN_RIGHTWARD | IN_LEFTWARD;
-}
-
 #[inline]
 fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
     let delta = src - dst;
@@ -86,30 +67,12 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         return;
     }
 
-    /*println!("{:?}", local.team());
-
-    let weapon = local.active_weapon();
-
-    if !weapon.is_null() {
-        let weapon = &*weapon;
-
-        println!("next_attack_time = {:?}", weapon.next_attack_time());
-
-        let data = weapon.weapon_data();
-
-        if !data.is_null() {
-            let data = &*data;
-
-            println!("{data:?}");
-        }
-    }*/
-
     if local_vars.was_attacking {
-        command.state &= !IN_ATTACK;
+        command.attack(false);
     }
 
-    let do_attack = (command.state & IN_ATTACK) != 0;
-    let do_jump = (command.state & IN_JUMP) != 0;
+    let do_attack = command.in_attack();
+    let do_jump = command.in_jump();
     let on_ground = local.flags().on_ground();
 
     local_vars.was_attacking = do_attack;
@@ -117,7 +80,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     if do_jump {
         if !on_ground && !local_vars.was_on_ground {
-            command.state &= !IN_JUMP;
+            command.jump(false);
         }
     }
 
@@ -202,10 +165,9 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     }
 
     command.view_angle = command.view_angle.sanitize_angle();
-    command.state |= IN_BULLRUSH;
+    command.fast_duck(true);
 
     fix_movement(command, state.view_angle);
-    //leg_animation_walk(command);
 }
 
 /// `CreateMove` hook.
@@ -219,7 +181,7 @@ pub unsafe extern "C" fn create_move(
 
     (create_move_original)(this, input_sample_time, command);
 
-    if command.tick_count == 0 || state.local.player.is_null() {
+    if command.tick_count == 0 {
         return false;
     }
 
