@@ -326,7 +326,7 @@ impl EntityRepr {
     networked!(is_dead_address: u8 = base_player.is_dead);
     networked!(is_defusing_ref: bool = player.is_defusing);
     networked!(is_scoped_ref: bool = player.is_scoped);
-    networked!(lower_body_yaw_ref: i32 = player.lower_body_yaw);
+    networked!(lower_body_yaw_ref: f32 = player.lower_body_yaw);
     networked!(view_offset_ref: Vec3 = base_player.view_offset);
     networked!(velocity_ref: Vec3 = base_player.velocity);
 
@@ -424,7 +424,7 @@ impl EntityRepr {
 
     /// The player's lower body yaw.
     #[inline]
-    pub fn lower_body_yaw(&self) -> i32 {
+    pub fn lower_body_yaw(&self) -> f32 {
         unsafe { self.lower_body_yaw_ref().read_unaligned() }
     }
 
@@ -432,10 +432,13 @@ impl EntityRepr {
     #[inline]
     pub fn move_kind(&self) -> MoveKind {
         unsafe {
-            self.render_mode_address()
+            let kind = self
+                .render_mode_address()
                 .byte_add(1)
-                .cast::<MoveKind>()
-                .read_unaligned()
+                .cast::<i32>()
+                .read_unaligned();
+
+            MoveKind::from_raw(kind)
         }
     }
 

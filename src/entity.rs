@@ -3,6 +3,7 @@ use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::HitGroup;
+use std::fmt;
 use std::marker::PhantomData;
 use std::ops::RangeInclusive;
 use std::ptr::NonNull;
@@ -149,6 +150,13 @@ macro_rules! def_ent {
                     self.as_repr().setup_bones(bones, mask, time)
                 }
             }
+
+            impl<'a> fmt::Debug for $ident<'a> {
+                #[inline]
+                fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    fmt::Debug::fmt(&self.entity.as_ptr(), fmt)
+                }
+            }
         )*
     };
 }
@@ -254,7 +262,7 @@ impl<'a> Player<'a> for PlayerRef<'a> {
     }
 
     #[inline]
-    fn lower_body_yaw(&self) -> i32 {
+    fn lower_body_yaw(&self) -> f32 {
         self.as_repr().lower_body_yaw()
     }
 

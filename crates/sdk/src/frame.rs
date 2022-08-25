@@ -1,87 +1,74 @@
-/// argument passed to `FrameStageNotify`
+use core::mem;
+
+/// Argument passed to `FrameStageNotify`
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(i32)]
 pub enum Frame {
     #[doc(alias = "FRAME_UNDEFINED")]
     #[doc(alias = "UNDEFINED")]
-    Undefined,
+    Undefined = -1,
 
     #[doc(alias = "FRAME_START")]
     #[doc(alias = "START")]
-    Start,
+    Start = 0,
 
     #[doc(alias = "FRAME_NET_UPDATE_START")]
     #[doc(alias = "NET_UPDATE_START")]
-    UpdateStart,
+    UpdateStart = 1,
 
     #[doc(alias = "FRAME_NET_UPDATE_END")]
     #[doc(alias = "NET_UPDATE_END")]
-    UpdateEnd,
+    UpdateEnd = 4,
 
     #[doc(alias = "FRAME_NET_UPDATE_POST_DATA_UPDATE_START")]
     #[doc(alias = "NET_UPDATE_POST_DATA_UPDATE_START")]
-    PostDataStart,
+    PostDataStart = 2,
 
     #[doc(alias = "FRAME_NET_UPDATE_POST_DATA_UPDATE_END")]
     #[doc(alias = "NET_UPDATE_POST_DATA_UPDATE_END")]
-    PostDataEnd,
+    PostDataEnd = 3,
 
     #[doc(alias = "FRAME_RENDER_START")]
     #[doc(alias = "RENDER_START")]
-    RenderStart,
+    RenderStart = 5,
 
     #[doc(alias = "FRAME_RENDER_END")]
     #[doc(alias = "RENDER_END")]
-    RenderEnd,
+    RenderEnd = 6,
 
     #[doc(alias = "FRAME_NET_FULL_FRAME_UPDATE_ON_REMOVE")]
     #[doc(alias = "NET_FULL_FRAME_UPDATE_ON_REMOVE")]
-    FullFrameUpdateOnRemove,
+    FullFrameUpdateOnRemove = 7,
 }
 
 impl Frame {
-    /// Obtain a frame from a raw value.
+    /// Convert an integer representation to the enum.
     #[inline]
     pub const fn from_raw(frame: i32) -> Option<Self> {
-        let frame = match frame {
-            -1 => Frame::Undefined,
-            0 => Frame::Start,
-            1 => Frame::UpdateStart,
-            2 => Frame::PostDataStart,
-            3 => Frame::PostDataEnd,
-            4 => Frame::UpdateEnd,
-            5 => Frame::RenderStart,
-            6 => Frame::RenderEnd,
-            7 => Frame::FullFrameUpdateOnRemove,
-            _ => return None,
-        };
+        const START: i32 = Frame::Undefined.to_i32();
+        const END: i32 = Frame::FullFrameUpdateOnRemove.to_i32();
 
-        Some(frame)
+        if matches!(frame, START..=END) {
+            Some(unsafe { Self::from_raw_unchecked(frame) })
+        } else {
+            None
+        }
     }
 
-    /// Obtain a frame from a raw value. Without checking.
+    /// Convert an integer representation to the enum without checking.
     ///
     /// # Safety
     ///
     /// Caller must ensure `frame` is a valid variant.
     #[inline]
     pub const unsafe fn from_raw_unchecked(frame: i32) -> Self {
-        Self::from_raw(frame).unwrap_unchecked()
+        mem::transmute(frame)
     }
 
-    /// Turn this frame into it's raw value.
+    /// Returns the integer representation of the enum value.
     #[inline]
-    pub const fn into_raw(self) -> i32 {
-        match self {
-            Frame::Undefined => -1,
-            Frame::Start => 0,
-            Frame::UpdateStart => 1,
-            Frame::PostDataStart => 2,
-            Frame::PostDataEnd => 3,
-            Frame::UpdateEnd => 4,
-            Frame::RenderStart => 5,
-            Frame::RenderEnd => 6,
-            Frame::FullFrameUpdateOnRemove => 7,
-        }
+    pub const fn to_i32(self) -> i32 {
+        self as i32
     }
 
     /// Is either `UpdateStart`, `UpdateEnd`, `PostDataStart`, or `PostDataEnd`.

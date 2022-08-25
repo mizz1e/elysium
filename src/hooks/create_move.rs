@@ -74,19 +74,16 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     let do_attack = command.in_attack();
     let do_jump = command.in_jump();
     let on_ground = local.flags().on_ground();
+    let side = if command.command % 3 != 0 { 1.0 } else { -1.0 };
 
     local_vars.was_attacking = do_attack;
     local_vars.was_on_ground = on_ground;
 
-    if do_jump {
-        if !on_ground && !local_vars.was_on_ground {
+    if do_jump && !on_ground {
+        if !local_vars.was_on_ground {
             command.jump(false);
         }
-    }
 
-    let side = if command.command % 3 != 0 { 1.0 } else { -1.0 };
-
-    if !on_ground {
         let velocity = local.velocity();
         let magnitude = velocity.magnitude2d();
         let ideal_strafe = (15.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0);
@@ -186,6 +183,20 @@ pub unsafe extern "C" fn create_move(
     }
 
     let local = PlayerRef::from_raw(state.local.player).unwrap();
+
+    println!("active_weapon = {:?}", local.active_weapon());
+    println!("aim_punch = {:?}", local.aim_punch());
+    println!("armor_value = {:?}", local.armor_value());
+    //println!("damage_modifier = {:?}", local.damage_modifier());
+    println!("eye_offset = {:?}", local.eye_offset());
+    println!("eye_origin = {:?}", local.eye_origin());
+    println!("flags = {:?}", local.flags());
+    println!("has_helmet = {:?}", local.has_helmet());
+    println!("is_defusing = {:?}", local.is_defusing());
+    println!("is_scoped = {:?}", local.is_scoped());
+    println!("lower_body_yaw = {:?}", local.lower_body_yaw());
+    println!("move_kind = {:?}", local.move_kind());
+    println!("observer_mode = {:?}", local.observer_mode());
 
     // don't mess with input if you are spectating
     if local.observer_mode() != ObserverMode::None {

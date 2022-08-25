@@ -148,10 +148,6 @@ unsafe fn update_entities(entity_list: &EntityList) {
     let globals = state.globals.as_ref().unwrap();
     let time = globals.current_time;
 
-    println!("{:?}", &entity_list.list[..10]);
-    println!("{:?}", &entity_list.cache[..10]);
-    println!("{:?}", entity_list.highest_entity_index());
-
     let player_iter = entity_list
         .player_range()
         .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
@@ -199,7 +195,10 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     let vars = state.vars.as_ref().unwrap();
     let local_vars = &mut state.local;
     let is_menu_open = state.menu_open.0;
-    let frame = Frame::from_raw_unchecked(frame);
+    let frame = match Frame::from_raw(frame) {
+        Some(frame) => frame,
+        None => panic!("unexpected frame variant: {frame:?}"),
+    };
 
     state.view_angle = engine.view_angle();
 
@@ -240,5 +239,5 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         }
     }
 
-    (frame_stage_notify_original)(this, frame.into_raw());
+    (frame_stage_notify_original)(this, frame.to_i32());
 }
