@@ -420,12 +420,11 @@ impl EntityRepr {
         unsafe {
             let enabled = range
                 .inspect(|range| {
-                    // prevent invalid and negative values
-                    let start = elysium_math::sanitize_f32(range.start()).max(0.0);
-                    let end = elysium_math::sanitize_f32(range.end()).max(0.0);
+                    let start = elysium_math::to_finite(*range.start(), 0.0).max(0.0);
+                    let end = elysium_math::to_finite(*range.end(), 0.0).max(start);
 
-                    self.start_mut().write_unaligned(*start);
-                    self.end_mut().write_unaligned(*end);
+                    self.start_mut().write_unaligned(start);
+                    self.end_mut().write_unaligned(end);
                 })
                 .is_some();
 
@@ -437,7 +436,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
         let (r, g, b, alpha) = rgba;
-        let alpha = elysium_math::sanitize_f32(alpha);
+        let alpha = elysium_math::to_finite(alpha, 0.0).max(0.0);
         let rgb = i32::from_ne_bytes([r, g, b, 0]);
 
         unsafe {
@@ -457,24 +456,36 @@ mod exposure {
         end: Bound<f32>,
     }
 
-    #[inline]
-    fn map_bound(bound: Bound<f32>) -> Option<f32> {
-        match bound {
-            Bound::Included(bound) => Some(bound),
-            Bound::Excluded(bound) => Some(bound - 1.0),
-            Bound::Unbounded => None,
+    impl Exposure {
+        /// Returns sanitized bounds.
+        #[inline]
+        pub(super) fn to_tuple(self) -> (f32, f32) {
+            const MIN_EXPOSURE: f32 = 0.0001;
+
+            fn map(bound: Bound<f32>) -> f32 {
+                let value = match bound {
+                    Bound::Included(value) => value,
+                    Bound::Excluded(value) => value,
+                    Bound::Unbounded => MIN_EXPOSURE,
+                };
+
+                let value = elysium_math::to_finite(value, MIN_EXPOSURE);
+                let value = value.max(MIN_EXPOSURE);
+
+                value
+            }
+
+            let start = map(self.start);
+            let end = map(self.end).max(start);
+
+            (start, end)
         }
     }
 
-    impl Exposure {
+    impl Default for Exposure {
         #[inline]
-        pub(super) fn start(&self) -> Option<f32> {
-            map_bound(self.start)
-        }
-
-        #[inline]
-        pub(super) fn end(&self) -> Option<f32> {
-            map_bound(self.end)
+        fn default() -> Self {
+            Self::from(0.5..=0.5)
         }
     }
 
@@ -545,8 +556,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_bloom(&mut self, scale: f32) {
         unsafe {
-            // prevent invalid ane negative bloom scale values
-            let scale = elysium_math::sanitize_f32(scale).max(0.0);
+            let scale = elysium_math::to_finite(scale, 0.0).max(0.0);
 
             self.bloom_scale_mut().write_unaligned(scale);
             self.enable_bloom_scale_mut().write_unaligned(scale != 0.0);
@@ -556,34 +566,14 @@ impl EntityRepr {
     /// Sets the tonemap's bloom effect setting.
     #[inline]
     pub fn set_exposure<E: Into<Exposure>>(&mut self, exposure: Option<E>) {
-        let exposure = exposure.map(Into::into);
-        let (start, end) = match exposure {
-            Some(exposure) => {
-                // we do this for two reasons
-                // - prevent invalid and negative exposure values
-                // - prevent 0.0 which implies disabling exposure
-                let start = elysium_math::sanitize_f32(exposure.start()).max(0.0001);
-                let end = elysium_math::sanitize_f32(exposure.end()).max(0.0001);
-
-                (start, end)
-            }
-            None => (None, None),
-        };
+        let (start, end) = exposure.map(Into::into).unwrap_or_default().to_tuple();
 
         unsafe {
-            let enable_min_exposure = start
-                .inspect(|start| self.min_exposure_mut().write_unaligned(*start))
-                .is_some();
+            self.min_exposure_mut().write_unaligned(start);
+            self.max_exposure_mut().write_unaligned(end);
 
-            self.enable_min_exposure_mut()
-                .write_unaligned(enable_min_exposure);
-
-            let enable_max_exposure = end
-                .inspect(|end| self.max_exposure_mut().write_unaligned(*end))
-                .is_some();
-
-            self.enable_max_exposure_mut()
-                .write_unaligned(enable_max_exposure);
+            self.enable_min_exposure_mut().write(true);
+            self.enable_max_exposure_mut().write(true);
         }
     }
 }
