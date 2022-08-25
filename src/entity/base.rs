@@ -37,7 +37,7 @@ pub trait Entity<'a>: Sealed + 'a {
     /// Is this entity alive?
     fn is_alive(&self) -> bool;
 
-    /// is the entity dormant
+    /// Is the entity dormant?
     fn is_dormant(&self) -> bool;
 
     /// Is this entity a player?

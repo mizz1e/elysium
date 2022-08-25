@@ -35,7 +35,7 @@ pub trait Player<'a>: Entity<'a> {
     /// Whether the player is scoped.
     fn is_scoped(&self) -> bool;
 
-    /// The player's lower body vaw.
+    /// The player's lower body yaw.
     fn lower_body_yaw(&self) -> i32;
 
     /// The player's movement type.

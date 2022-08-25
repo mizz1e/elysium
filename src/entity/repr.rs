@@ -144,46 +144,55 @@ impl EntityRepr {
         }
     }
 
+    /// The entity's class.
     #[inline]
     pub fn client_class(&self) -> Option<&Class> {
         unsafe { self.networkable.client_class().cast::<Class>().as_ref() }
     }
 
+    /// The entity's health.
     #[inline]
     pub fn health(&self) -> i32 {
         unsafe { (self.vtable.health)(self) }
     }
 
+    /// Is this entity alive?
     #[inline]
     pub fn is_alive(&self) -> bool {
         unsafe { (self.vtable.is_alive)(self) }
     }
 
+    /// Is the entity dormant?
     #[inline]
     pub fn is_dormant(&self) -> bool {
         self.networkable.is_dormant()
     }
 
+    /// Is this entity a player?
     #[inline]
     pub fn is_player(&self) -> bool {
         unsafe { (self.vtable.is_player)(self) }
     }
 
+    /// Is this entity a weapon?
     #[inline]
     pub fn is_weapon(&self) -> bool {
         unsafe { (self.vtable.is_weapon)(self) }
     }
 
+    /// The entity's index within the entity list.
     #[inline]
     pub fn index(&self) -> i32 {
         self.networkable.index()
     }
 
+    /// The entity's model.
     #[inline]
     pub fn model(&self) -> Option<&Model> {
         unsafe { self.renderable.model().cast::<Model>().as_ref() }
     }
 
+    /// The entity's origin.
     #[inline]
     pub fn origin(&self) -> Vec3 {
         unsafe { *(self.vtable.origin)(self) }
@@ -194,6 +203,7 @@ impl EntityRepr {
         unsafe { (self.vtable.set_model_index)(self, index) }
     }
 
+    /// Setup bones for this entity.
     #[inline]
     pub fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool {
         self.renderable.setup_bones(bones, mask, time)
@@ -202,158 +212,6 @@ impl EntityRepr {
     #[inline]
     pub fn should_draw(&self) -> bool {
         self.renderable.should_draw()
-    }
-}
-
-// player
-impl EntityRepr {
-    networked!(armor_value_ref: i32 = player.armor);
-    networked!(flags_ref: i32 = player.flags);
-    networked!(has_helmet_ref: bool = player.has_helmet);
-    networked!(is_dead_address: u8 = base_player.is_dead);
-    networked!(is_defusing_ref: bool = player.is_defusing);
-    networked!(is_scoped_ref: bool = player.is_scoped);
-    networked!(lower_body_yaw_ref: i32 = player.lower_body_yaw);
-    networked!(view_offset_ref: Vec3 = base_player.view_offset);
-    networked!(velocity_ref: Vec3 = base_player.velocity);
-
-    #[inline]
-    pub fn aim_punch(&self) -> Vec3 {
-        unsafe { (self.vtable.aim_punch)(self) }
-    }
-
-    #[inline]
-    pub fn active_weapon(&self) -> Option<WeaponRef<'_>> {
-        unsafe {
-            let weapon = (self.vtable.active_weapon)(self);
-
-            WeaponRef::from_raw(weapon as _)
-        }
-    }
-
-    #[inline]
-    pub fn armor_value(&self) -> i32 {
-        unsafe { self.armor_value_ref().read_unaligned() }
-    }
-
-    #[inline]
-    pub fn eye_offset(&self) -> Vec3 {
-        let view_offset = unsafe { self.view_offset_ref().read_unaligned() };
-
-        // zero view offset fix
-        if view_offset.is_zero() {
-            let z = if self.flags().ducking() { 46.0 } else { 64.0 };
-
-            Vec3::from_xyz(0.0, 0.0, z)
-        } else {
-            view_offset
-        }
-    }
-
-    #[inline]
-    pub fn eye_origin(&self) -> Vec3 {
-        self.origin() + self.eye_offset()
-    }
-
-    // TODO: check if this is better than above
-    #[inline]
-    pub fn eye_origin_alt(&self) -> Vec3 {
-        unsafe { (self.vtable.eye_pos)(self) }
-    }
-
-    #[inline]
-    pub fn damage_modifier(&self, group: HitGroup, weapon_armor_ratio: f32) -> f32 {
-        let mut modifier = group.damage_modifier();
-
-        if self.armor_value() > 0 {
-            if group.is_head() && self.has_helmet() {
-                modifier *= weapon_armor_ratio * 0.5;
-            }
-        }
-
-        modifier
-    }
-
-    #[inline]
-    pub fn flags(&self) -> PlayerFlags {
-        unsafe {
-            let flags = self.flags_ref().read_unaligned();
-
-            PlayerFlags::new(flags)
-        }
-    }
-
-    #[inline]
-    pub fn has_helmet(&self) -> bool {
-        unsafe { self.has_helmet_ref().read_unaligned() }
-    }
-
-    #[inline]
-    pub fn is_defusing(&self) -> bool {
-        unsafe { self.is_defusing_ref().read_unaligned() }
-    }
-
-    #[inline]
-    pub fn is_scoped(&self) -> bool {
-        unsafe { self.is_scoped_ref().read_unaligned() }
-    }
-
-    #[inline]
-    pub fn lower_body_yaw(&self) -> i32 {
-        unsafe { self.lower_body_yaw_ref().read_unaligned() }
-    }
-
-    #[inline]
-    pub fn observer_mode(&self) -> ObserverMode {
-        unsafe { (self.vtable.observer_mode)(self) }
-    }
-
-    #[inline]
-    pub fn observer_target(&self) -> Option<PlayerRef> {
-        unsafe {
-            let observer = (self.vtable.observer_target)(self);
-
-            PlayerRef::from_raw(observer as _)
-        }
-    }
-
-    #[inline]
-    pub fn move_kind(&self) -> MoveKind {
-        unsafe {
-            self.render_mode_address()
-                .byte_add(1)
-                .cast::<MoveKind>()
-                .read_unaligned()
-        }
-    }
-
-    #[inline]
-    pub unsafe fn set_view_angle(&mut self, angle: Vec3) {
-        self.is_dead_address()
-            .byte_add(4)
-            .cast::<Vec3>()
-            .cast_mut()
-            .write_unaligned(angle)
-    }
-
-    #[inline]
-    pub fn team(&self) -> Team {
-        unsafe { (self.vtable.team)(self) }
-    }
-
-    #[inline]
-    pub fn view_angle(&self) -> Vec3 {
-        unsafe {
-            self.is_dead_address()
-                .byte_add(4)
-                .cast::<Vec3>()
-                .read_unaligned()
-        }
-    }
-
-    #[inline]
-    pub fn velocity(&self) -> Vec3 {
-        unsafe { self.velocity_ref().read_unaligned() }
     }
 }
 
@@ -377,13 +235,17 @@ impl EntityRepr {
     networked!(end: f32 = fog.end);
     networked_mut!(end_mut: f32 = fog.end);
 
-    /// Returns the fog’s clip distance (far-Z).
+    /// Returns the clip distance (far-Z).
+    ///
+    /// Distance is relative to the local players position.
     #[inline]
     pub fn clip_distance(&self) -> f32 {
         unsafe { self.far_z().read_unaligned() }
     }
 
-    /// Returns the fog’s range (start and end distance).
+    /// Returns the distance range (start and end distance).
+    ///
+    /// Distance is relative to the local players position.
     #[inline]
     pub fn range(&self) -> Option<RangeInclusive<f32>> {
         unsafe {
@@ -396,7 +258,7 @@ impl EntityRepr {
         }
     }
 
-    /// Returns the fog’s color (rgb) and density (alpha).
+    /// Returns the color (rgb) and density (alpha).
     #[inline]
     pub fn rgba(&self) -> (u8, u8, u8, f32) {
         unsafe {
@@ -408,13 +270,21 @@ impl EntityRepr {
         }
     }
 
-    /// Set the fog’s clip distance (far-Z).
+    /// Set the clip distance (far-Z).
+    ///
+    /// A non-finite, negative or zero value will disable the clip distance.
+    ///
+    /// Distance is relative to the local players position.
     #[inline]
     pub fn set_clip_distance(&mut self, distance: f32) {
         unsafe { self.far_z_mut().write_unaligned(distance) }
     }
 
-    /// Set the fog’s range (start and end distance).
+    /// Set the distance range (start and end distance).
+    ///
+    /// Non-finite or negative bounds will be treated as 0.0.
+    ///
+    /// Distance is relative to the local players position.
     #[inline]
     pub fn set_range(&mut self, range: Option<RangeInclusive<f32>>) {
         unsafe {
@@ -432,7 +302,9 @@ impl EntityRepr {
         }
     }
 
-    /// Set the fog’s color (rgb) and density (alpha).
+    /// Set the color (rgb) and density (alpha).
+    ///
+    /// Non-finite or negative alpha will be treated as 0.0.
     #[inline]
     pub fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
         let (r, g, b, alpha) = rgba;
@@ -442,6 +314,183 @@ impl EntityRepr {
         unsafe {
             self.rgb_mut().write_unaligned(rgb);
             self.density_mut().write_unaligned(alpha);
+        }
+    }
+}
+
+// player
+impl EntityRepr {
+    networked!(armor_value_ref: i32 = player.armor);
+    networked!(flags_ref: i32 = player.flags);
+    networked!(has_helmet_ref: bool = player.has_helmet);
+    networked!(is_dead_address: u8 = base_player.is_dead);
+    networked!(is_defusing_ref: bool = player.is_defusing);
+    networked!(is_scoped_ref: bool = player.is_scoped);
+    networked!(lower_body_yaw_ref: i32 = player.lower_body_yaw);
+    networked!(view_offset_ref: Vec3 = base_player.view_offset);
+    networked!(velocity_ref: Vec3 = base_player.velocity);
+
+    /// The player's active weapon.
+    #[inline]
+    pub fn active_weapon(&self) -> Option<WeaponRef<'_>> {
+        unsafe {
+            let weapon = (self.vtable.active_weapon)(self);
+
+            WeaponRef::from_raw(weapon as _)
+        }
+    }
+
+    /// The player's aim punch.
+    #[inline]
+    pub fn aim_punch(&self) -> Vec3 {
+        unsafe { (self.vtable.aim_punch)(self) }
+    }
+
+    /// The player's armor value.
+    #[inline]
+    pub fn armor_value(&self) -> i32 {
+        unsafe { self.armor_value_ref().read_unaligned() }
+    }
+
+    /// Returns the damage modifier for the provided hit group and ratio.
+    #[inline]
+    pub fn damage_modifier(&self, group: HitGroup, weapon_armor_ratio: f32) -> f32 {
+        let mut modifier = group.damage_modifier();
+
+        if self.armor_value() > 0 {
+            if group.is_head() && self.has_helmet() {
+                modifier *= weapon_armor_ratio * 0.5;
+            }
+        }
+
+        modifier
+    }
+
+    /// The player's eye offset (from the player's origin).
+    #[inline]
+    pub fn eye_offset(&self) -> Vec3 {
+        let view_offset = unsafe { self.view_offset_ref().read_unaligned() };
+
+        // zero view offset fix
+        if view_offset.is_zero() {
+            let z = if self.flags().ducking() { 46.0 } else { 64.0 };
+
+            Vec3::from_xyz(0.0, 0.0, z)
+        } else {
+            view_offset
+        }
+    }
+
+    /// The player's eye origin.
+    #[inline]
+    pub fn eye_origin(&self) -> Vec3 {
+        self.origin() + self.eye_offset()
+    }
+
+    // TODO: check if this is better than above
+    /// The player's eye origin.
+    #[inline]
+    pub fn eye_origin_alt(&self) -> Vec3 {
+        unsafe { (self.vtable.eye_pos)(self) }
+    }
+
+    /// The player's state flags.
+    #[inline]
+    pub fn flags(&self) -> PlayerFlags {
+        unsafe {
+            let flags = self.flags_ref().read_unaligned();
+
+            PlayerFlags::new(flags)
+        }
+    }
+
+    /// Whether the player has a helmet.
+    #[inline]
+    pub fn has_helmet(&self) -> bool {
+        unsafe { self.has_helmet_ref().read_unaligned() }
+    }
+
+    /// Whether the player is defusing a bomb.
+    #[inline]
+    pub fn is_defusing(&self) -> bool {
+        unsafe { self.is_defusing_ref().read_unaligned() }
+    }
+
+    /// Whether the player is scoped.
+    #[inline]
+    pub fn is_scoped(&self) -> bool {
+        unsafe { self.is_scoped_ref().read_unaligned() }
+    }
+
+    /// The player's lower body yaw.
+    #[inline]
+    pub fn lower_body_yaw(&self) -> i32 {
+        unsafe { self.lower_body_yaw_ref().read_unaligned() }
+    }
+
+    /// The player's movement type.
+    #[inline]
+    pub fn move_kind(&self) -> MoveKind {
+        unsafe {
+            self.render_mode_address()
+                .byte_add(1)
+                .cast::<MoveKind>()
+                .read_unaligned()
+        }
+    }
+
+    /// The player's observing mode.
+    #[inline]
+    pub fn observer_mode(&self) -> ObserverMode {
+        unsafe { (self.vtable.observer_mode)(self) }
+    }
+
+    /// The player's observer target player.
+    #[inline]
+    pub fn observer_target(&self) -> Option<PlayerRef> {
+        unsafe {
+            let observer = (self.vtable.observer_target)(self);
+
+            PlayerRef::from_raw(observer as _)
+        }
+    }
+
+    /// Set the player's view angle.
+    ///
+    /// # Safety
+    ///
+    /// Modifying the view angle of a player via networked variables may have unintended side
+    /// effects! Be sure to reset it to the original value during
+    /// [`Frame::RenderEnd`](elysium_sdk::Frame::RenderEnd).
+    #[inline]
+    pub unsafe fn set_view_angle(&mut self, angle: Vec3) {
+        self.is_dead_address()
+            .byte_add(4)
+            .cast::<Vec3>()
+            .cast_mut()
+            .write_unaligned(angle)
+    }
+
+    /// The player's team.
+    #[inline]
+    pub fn team(&self) -> Team {
+        unsafe { (self.vtable.team)(self) }
+    }
+
+    /// The player's velocity.
+    #[inline]
+    pub fn velocity(&self) -> Vec3 {
+        unsafe { self.velocity_ref().read_unaligned() }
+    }
+
+    /// The player's view angle.
+    #[inline]
+    pub fn view_angle(&self) -> Vec3 {
+        unsafe {
+            self.is_dead_address()
+                .byte_add(4)
+                .cast::<Vec3>()
+                .read_unaligned()
         }
     }
 }
@@ -523,7 +572,7 @@ impl EntityRepr {
     networked!(min_exposure: f32 = tonemap.min_exposure);
     networked_mut!(min_exposure_mut: f32 = tonemap.min_exposure);
 
-    /// Returns the tonemap's bloom effect setting.
+    /// Returns the bloom effect scale.
     #[inline]
     pub fn bloom(&self) -> f32 {
         unsafe {
@@ -534,7 +583,7 @@ impl EntityRepr {
         }
     }
 
-    /// Returns the tonemap's bloom effect setting.
+    /// Returns the exposure range.
     #[inline]
     pub fn exposure(&self) -> Option<Exposure> {
         unsafe {
@@ -552,7 +601,9 @@ impl EntityRepr {
         }
     }
 
-    /// Returns the tonemap's bloom effect setting.
+    /// Set the bloom effect scale.
+    ///
+    /// Non-finite or negative scale will be treated as 0.0.
     #[inline]
     pub fn set_bloom(&mut self, scale: f32) {
         unsafe {
@@ -563,7 +614,9 @@ impl EntityRepr {
         }
     }
 
-    /// Sets the tonemap's bloom effect setting.
+    /// Set the exposure range.
+    ///
+    /// Non-finite or negative bounds will be treated as 0.0.
     #[inline]
     pub fn set_exposure<E: Into<Exposure>>(&mut self, exposure: Option<E>) {
         let (start, end) = exposure.map(Into::into).unwrap_or_default().to_tuple();
