@@ -264,6 +264,11 @@ impl EntityRepr {
     pub fn rgba(&self) -> Srgba {
         let rgb = unsafe { self.rgb().read_unaligned() as u32 };
         let alpha = unsafe { self.density().read_unaligned() };
+
+        // why is this bgr??
+        let [b, g, r, _] = rgb.to_ne_bytes();
+        let rgb = u32::from_ne_bytes([r, g, b, 0]);
+
         let srgb: Srgb<f32> = Srgb::from(rgb).into_format();
 
         srgb.with_alpha(alpha)
@@ -309,6 +314,10 @@ impl EntityRepr {
         let (rgb, alpha) = srgba.into().split();
         let rgb: Srgb<u8> = rgb.into_format();
         let rgb: u32 = rgb.into();
+
+        // why is this bgr??
+        let [b, g, r, _] = rgb.to_ne_bytes();
+        let rgb = u32::from_ne_bytes([r, g, b, 0]);
 
         unsafe {
             self.rgb_mut().write_unaligned(rgb as i32);
