@@ -202,7 +202,7 @@ pub unsafe extern "C" fn create_move(
 
     let local = PlayerRef::from_raw(state.local.player).unwrap();
 
-    println!("active_weapon = {:?}", local.active_weapon());
+    /*println!("active_weapon = {:?}", local.active_weapon());
     println!("aim_punch = {:?}", local.aim_punch());
     println!("armor_value = {:?}", local.armor_value());
     //println!("damage_modifier = {:?}", local.damage_modifier());
@@ -214,7 +214,7 @@ pub unsafe extern "C" fn create_move(
     println!("is_scoped = {:?}", local.is_scoped());
     println!("lower_body_yaw = {:?}", local.lower_body_yaw());
     println!("move_kind = {:?}", local.move_kind());
-    println!("observer_mode = {:?}", local.observer_mode());
+    println!("observer_mode = {:?}", local.observer_mode());*/
 
     // don't mess with input if you are spectating
     if local.observer_mode() != ObserverMode::None {
