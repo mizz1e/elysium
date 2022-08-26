@@ -6,6 +6,7 @@ use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, PlayerFlags, Renderable, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
+use palette::{Pixel, Srgb, Srgba, WithAlpha};
 use std::mem::MaybeUninit;
 use std::ops::RangeInclusive;
 use std::ptr;
@@ -260,14 +261,12 @@ impl EntityRepr {
 
     /// Returns the color (rgb) and density (alpha).
     #[inline]
-    pub fn rgba(&self) -> (u8, u8, u8, f32) {
-        unsafe {
-            let rgb = self.rgb().read_unaligned();
-            let alpha = self.density().read_unaligned();
-            let [r, g, b, _] = rgb.to_ne_bytes();
+    pub fn rgba(&self) -> Srgba {
+        let rgb = unsafe { self.rgb().read_unaligned() as u32 };
+        let alpha = unsafe { self.density().read_unaligned() };
+        let srgb: Srgb<f32> = Srgb::from(rgb).into_format();
 
-            (r, g, b, alpha)
-        }
+        srgb.with_alpha(alpha)
     }
 
     /// Set the clip distance (far-Z).
@@ -306,13 +305,13 @@ impl EntityRepr {
     ///
     /// Non-finite or negative alpha will be treated as 0.0.
     #[inline]
-    pub fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
-        let (r, g, b, alpha) = rgba;
-        let alpha = elysium_math::to_finite(alpha, 0.0).max(0.0);
-        let rgb = i32::from_ne_bytes([r, g, b, 0]);
+    pub fn set_rgba(&mut self, srgba: impl Into<Srgba>) {
+        let (rgb, alpha) = srgba.into().split();
+        let rgb: Srgb<u8> = rgb.into_format();
+        let rgb: u32 = rgb.into();
 
         unsafe {
-            self.rgb_mut().write_unaligned(rgb);
+            self.rgb_mut().write_unaligned(rgb as i32);
             self.density_mut().write_unaligned(alpha);
         }
     }

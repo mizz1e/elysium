@@ -3,6 +3,7 @@ use elysium_math::Vec3;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
 use iced_glow::glow;
 use iced_native::{Point, Size};
+use palette::Srgba;
 use std::cell::SyncUnsafeCell;
 use std::ptr;
 
@@ -23,6 +24,21 @@ unsafe impl Sync for Wrap {}
 
 static SHARED: SyncUnsafeCell<Wrap> = SyncUnsafeCell::new(Wrap(NEW));
 
+const fn const_srgba(r: f32, g: f32, b: f32, a: f32) -> Srgba<f32> {
+    use palette::{rgb, Alpha};
+    use std::marker::PhantomData;
+
+    Alpha {
+        color: rgb::Rgb {
+            red: r,
+            green: g,
+            blue: b,
+            standard: PhantomData,
+        },
+        alpha: a,
+    }
+}
+
 const NEW: State = State {
     context: None,
     get_proc_address: None,
@@ -41,6 +57,10 @@ const NEW: State = State {
     materials: Materials::new(),
     send_packet: ptr::null_mut(),
     view_angle: Vec3::zero(),
+    fog: const_srgba(1.0, 0.0, 0.0, 0.2),
+    fog_start: 0.0,
+    fog_end: 0.0,
+    fog_clip: 0.0,
 };
 
 /// variables that need to be shared between hooks
@@ -79,6 +99,11 @@ pub struct State {
     pub send_packet: *mut bool,
     /// engine view_angle
     pub view_angle: Vec3,
+    /// fog colour
+    pub fog: Srgba,
+    pub fog_start: f32,
+    pub fog_end: f32,
+    pub fog_clip: f32,
 }
 
 impl State {

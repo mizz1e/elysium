@@ -3,6 +3,7 @@ use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::HitGroup;
+use palette::Srgba;
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops::RangeInclusive;
@@ -190,7 +191,7 @@ impl<'a> Fog<'a> for FogRef<'a> {
     }
 
     #[inline]
-    fn rgba(&self) -> (u8, u8, u8, f32) {
+    fn rgba(&self) -> Srgba {
         self.as_repr().rgba()
     }
 
@@ -205,8 +206,8 @@ impl<'a> Fog<'a> for FogRef<'a> {
     }
 
     #[inline]
-    fn set_rgba(&mut self, rgba: (u8, u8, u8, f32)) {
-        self.as_repr_mut().set_rgba(rgba);
+    fn set_rgba(&mut self, srgba: impl Into<Srgba>) {
+        self.as_repr_mut().set_rgba(srgba);
     }
 }
 

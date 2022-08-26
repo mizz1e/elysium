@@ -62,9 +62,11 @@ fn update_vars(vars: &Vars, engine: &Engine) {
 
 /// Override fog controller properties.
 fn update_fog(mut fog: FogRef<'_>) {
-    fog.set_clip_distance(0.0);
-    fog.set_range(Some(150.0..=350.0));
-    fog.set_rgba((0xFF, 0x00, 0x00, 0.2));
+    let state = State::get();
+
+    fog.set_clip_distance(state.clip_distance);
+    fog.set_range(Some(state.fog_start..=state.fog_end));
+    fog.set_rgba(state.fog);
 }
 
 /// Override tonemap controller properties.

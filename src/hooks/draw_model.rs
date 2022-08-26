@@ -57,7 +57,7 @@ pub unsafe extern "C" fn draw_model(
 
                 match entity.team() {
                     Team::Counter => gold.set_rgba([0.0, 0.5, 1.0, 0.9]),
-                    Team::Terrorist => gold.set_rgba([1.0, 1.0, 0.0, 0.9]),
+                    Team::Terrorist => gold.set_rgba([1.0, 0.0, 1.0, 0.9]),
                     _ => {}
                 }
             }
@@ -73,7 +73,7 @@ pub unsafe extern "C" fn draw_model(
             }
 
             gold.set_flag(MaterialFlag::IGNORE_Z, true);
-            gold.set_flag(MaterialFlag::WIREFRAME, true);
+            //gold.set_flag(MaterialFlag::WIREFRAME, true);
 
             draw_layer(
                 &*this,

@@ -1,4 +1,5 @@
 use super::Entity;
+use palette::Srgba;
 use std::ops::RangeInclusive;
 
 /// Fog methods.
@@ -13,8 +14,8 @@ pub trait Fog<'a>: Entity<'a> {
     /// Distance is relative to the local players position.
     fn range(&self) -> Option<RangeInclusive<f32>>;
 
-    /// Returns the color (rgb) and density (alpha).
-    fn rgba(&self) -> (u8, u8, u8, f32);
+    /// Returns the color.
+    fn rgba(&self) -> Srgba;
 
     /// Set the clip distance (far-Z).
     ///
@@ -30,8 +31,6 @@ pub trait Fog<'a>: Entity<'a> {
     /// Distance is relative to the local players position.
     fn set_range(&mut self, distance: Option<RangeInclusive<f32>>);
 
-    /// Set the color (rgb) and density (alpha).
-    ///
-    /// Non-finite or negative alpha will be treated as 0.0.
-    fn set_rgba(&mut self, rgba: (u8, u8, u8, f32));
+    /// Set the color.
+    fn set_rgba(&mut self, srgba: impl Into<Srgba>);
 }
