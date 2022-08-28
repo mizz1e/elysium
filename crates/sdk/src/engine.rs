@@ -22,22 +22,21 @@ pub struct PlayerInfo {
 #[repr(C)]
 struct VTable {
     _unknown0: VTablePad<5>,
-    get_screen_size:
+    screen_size:
         unsafe extern "thiscall" fn(this: *const Engine, width: *mut f32, height: *mut f32),
     _unknown1: VTablePad<2>,
-    get_player_info: unsafe extern "thiscall" fn(
+    player_info: unsafe extern "thiscall" fn(
         this: *const Engine,
         index: i32,
         player_info: *mut PlayerInfo,
     ) -> bool,
-    get_player_for_user_id:
-        unsafe extern "thiscall" fn(this: *const Engine, user_id: SteamId) -> i32,
+    player_for_user_id: unsafe extern "thiscall" fn(this: *const Engine, user_id: SteamId) -> i32,
     _unknown2: VTablePad<2>,
     local_player_index: unsafe extern "thiscall" fn(this: *const Engine) -> i32,
     _unknown3: VTablePad<5>,
     view_angle: unsafe extern "thiscall" fn(this: *const Engine, angle: *mut Vec3),
     set_view_angle: unsafe extern "thiscall" fn(this: *const Engine, angle: *const Vec3),
-    get_max_clients: unsafe extern "thiscall" fn(this: *const Engine) -> i32,
+    max_clients: unsafe extern "thiscall" fn(this: *const Engine) -> i32,
     _unknown4: VTablePad<5>,
     is_in_game: unsafe extern "thiscall" fn(this: *const Engine) -> bool,
     is_connected: unsafe extern "thiscall" fn(this: *const Engine) -> bool,
@@ -50,11 +49,11 @@ struct VTable {
     _unknown6: VTablePad<2>,
     world_to_screen_matrix: unsafe extern "thiscall" fn(this: *const Engine) -> *const Matrix3x4,
     _unknown7: VTablePad<5>,
-    get_bsp_tree_query: unsafe extern "thiscall" fn(this: *const Engine) -> *const (),
+    bsp_tree_query: unsafe extern "thiscall" fn(this: *const Engine) -> *const (),
     _unknown8: VTablePad<9>,
-    get_level_name: unsafe extern "thiscall" fn(this: *const Engine) -> *const u8,
+    level_name: unsafe extern "thiscall" fn(this: *const Engine) -> *const u8,
     _unknown9: VTablePad<24>,
-    get_network_channel: unsafe extern "thiscall" fn(this: *const Engine) -> *const NetworkChannel,
+    network_channel: unsafe extern "thiscall" fn(this: *const Engine) -> *const NetworkChannel,
     _unknown10: VTablePad<34>,
     execute_command: unsafe extern "thiscall" fn(
         this: *const Engine,
@@ -62,27 +61,26 @@ struct VTable {
         from_console_or_keybind: bool,
     ),
     _unknown11: VTablePad<72>,
-    get_steam_api_context:
-        unsafe extern "thiscall" fn(this: *const Engine) -> *const SteamAPIContext,
+    steam_api_context: unsafe extern "thiscall" fn(this: *const Engine) -> *const SteamAPIContext,
 }
 
 vtable_validate! {
-    get_screen_size => 5,
-    get_player_info => 8,
-    get_player_for_user_id => 9,
+    screen_size => 5,
+    player_info => 8,
+    player_for_user_id => 9,
     local_player_index => 12,
     view_angle => 18,
     set_view_angle => 19,
-    get_max_clients => 20,
+    max_clients => 20,
     is_in_game => 26,
     is_connected => 27,
     set_cull_box => 34,
     world_to_screen_matrix => 37,
-    get_bsp_tree_query => 43,
-    get_level_name => 53,
-    get_network_channel => 78,
+    bsp_tree_query => 43,
+    level_name => 53,
+    network_channel => 78,
     execute_command => 113,
-    get_steam_api_context => 186,
+    steam_api_context => 186,
 }
 
 /// engine interface
@@ -94,7 +92,7 @@ pub struct Engine {
 impl Engine {
     vtable_export! {
         /// returns the maximum amount of clients
-        get_max_clients() -> i32,
+        max_clients() -> i32,
 
         /// if in game
         is_in_game() -> bool,
@@ -103,10 +101,13 @@ impl Engine {
         is_connected() -> bool,
 
         /// returns the bsp tree
-        get_bsp_tree_query() -> *const (),
+        bsp_tree_query() -> *const (),
+    }
 
-        /// returns the network channel
-        get_network_channel() -> *const NetworkChannel,
+    /// returns the network channel
+    #[inline]
+    pub fn network_channel(&self) -> Option<&NetworkChannel> {
+        unsafe { (self.vtable.network_channel)(self).as_ref() }
     }
 
     /// returns the local player's index
@@ -117,12 +118,12 @@ impl Engine {
 
     /// returns the screen size
     #[inline]
-    pub fn get_screen_size(&self) -> (f32, f32) {
+    pub fn screen_size(&self) -> (f32, f32) {
         unsafe {
             let mut width = MaybeUninit::uninit();
             let mut height = MaybeUninit::uninit();
 
-            (self.vtable.get_screen_size)(self, width.as_mut_ptr(), height.as_mut_ptr());
+            (self.vtable.screen_size)(self, width.as_mut_ptr(), height.as_mut_ptr());
 
             (width.assume_init(), height.assume_init())
         }
@@ -130,10 +131,10 @@ impl Engine {
 
     /// get player info for the player at `index`
     #[inline]
-    pub fn get_player_info(&self, index: i32) -> Option<PlayerInfo> {
+    pub fn player_info(&self, index: i32) -> Option<PlayerInfo> {
         unsafe {
             let mut player_info = MaybeUninit::uninit();
-            let exists = (self.vtable.get_player_info)(self, index, player_info.as_mut_ptr());
+            let exists = (self.vtable.player_info)(self, index, player_info.as_mut_ptr());
 
             if exists {
                 Some(player_info.assume_init())
@@ -145,9 +146,9 @@ impl Engine {
 
     /// get player index by `user_id`
     #[inline]
-    pub fn get_player_for_user_id(&self, user_id: SteamId) -> Option<i32> {
+    pub fn player_for_user_id(&self, user_id: SteamId) -> Option<i32> {
         unsafe {
-            let index = (self.vtable.get_player_for_user_id)(self, user_id);
+            let index = (self.vtable.player_for_user_id)(self, user_id);
 
             Some(index)
         }
@@ -185,9 +186,9 @@ impl Engine {
 
     /// returns the current level name
     #[inline]
-    pub fn get_level_name(&self) -> &str {
+    pub fn level_name(&self) -> &str {
         unsafe {
-            let address = (self.vtable.get_level_name)(self);
+            let address = (self.vtable.level_name)(self);
 
             ffi::str_from_ptr(address)
         }

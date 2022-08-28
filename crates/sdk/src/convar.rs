@@ -137,7 +137,7 @@ where
 }
 
 macro_rules! vars {
-    ($($name:ident: $type:ty => $string:literal),*) => {
+    ($($name:ident: $type:ty = $string:literal),*) => {
         /// config variable name
         #[allow(non_camel_case_types)]
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -231,54 +231,74 @@ macro_rules! vars {
 }
 
 vars! {
-    alien_blood: bool => "violence_ablood",
-    allow_developer: bool => "sv_max_allowed_developer",
-    auto_help: bool => "cl_autohelp",
-    cheats: bool => "sv_cheats",
-    csm: bool => "cl_csm_enabled",
-    csm_shadows: bool => "cl_csm_shadows",
-    decals: bool => "r_drawdecals",
-    do_interp: bool => "cl_interpolate",
-    engine_sleep: bool => "engine_no_focus_sleep",
-    fast_render: bool => "cl_skipslowpath",
-    ffa: bool => "mp_teammates_are_enemies",
-    feet_shadows: bool => "cl_foot_contact_shadows",
-    freeze_cam: bool => "cl_disablefreezecam",
-    gravity: f32 => "sv_gravity",
-    horizontal_speed: f32 => "cl_sidespeed",
-    html_motd: bool => "cl_disablehtmlmotd",
-    hud: bool => "cl_drawhud",
-    human_blood: bool => "violence_hblood",
-    interp: f32 => "cl_interp",
-    interp_ratio: f32 => "cl_interp_ratio",
-    jiggle_bones: bool => "r_jiggle_bones",
-    lag_comp: f32 => "cl_lagcompensation",
-    developer: bool => "developer",
-    max_interp_ratio: f32 => "sv_client_max_interp_ratio",
-    max_lag_comp: f32 => "sv_maxunlag",
-    min_interp_ratio: f32 => "sv_client_min_interp_ratio",
-    model_stats: i32 => "r_drawmodelstatsoverlay",
-    panorama_blur: bool => "@panorama_disable_blur",
-    physics_timescale: f32 => "cl_phys_timescale",
-    prop_shadows: bool => "cl_csm_static_prop_shadows",
-    rain: bool => "r_drawrain",
-    recoil_scale: f32 => "weapon_recoil_scale",
-    ragdoll_gravity: f32 => "cl_ragdoll_gravity",
-    ropes: bool => "r_drawropes",
-    rope_shadows: bool => "cl_csm_rope_shadows",
-    shadows: bool => "r_shadows",
-    show_grenade_path: bool => "cl_grenadepreview",
-    show_help: bool => "cl_showhelp",
-    show_impacts: bool => "sv_showimpacts",
-    sprites: bool => "r_drawsprites",
-    skybox3d: bool => "r_3dsky",
-    sprite_shadows: bool => "cl_csm_sprite_shadows",
-    translucent_renderables: bool => "r_drawtranslucentrenderables",
-    translucent_world: bool => "r_drawtranslucentworld",
-    update_rate: f32 => "cl_updaterate",
-    underwater_overlay: bool => "r_drawunderwateroverlay",
-    vertical_speed: f32 => "cl_forwardspeed",
-    viewmodel_shadows: bool => "cl_csm_viewmodel_shadows",
-    water_fog: bool => "fog_enable_water_fog",
-    world_shadows: bool => "cl_csm_world_shadows"
+    alien_blood: bool = "violence_ablood",
+    allow_developer: bool = "sv_max_allowed_developer",
+    auto_help: bool = "cl_autohelp",
+
+    cheats: bool = "sv_cheats",
+    csm: bool = "cl_csm_enabled",
+    csm_shadows: bool = "cl_csm_shadows",
+
+    decals: bool = "r_drawdecals",
+    do_interp: bool = "cl_interpolate",
+
+    engine_sleep: bool = "engine_no_focus_sleep",
+
+    fast_render: bool = "cl_skipslowpath",
+    ffa: bool = "mp_teammates_are_enemies",
+    feet_shadows: bool = "cl_foot_contact_shadows",
+    freeze_cam: bool = "cl_disablefreezecam",
+
+    gravity: f32 = "sv_gravity",
+
+    horizontal_speed: f32 = "cl_sidespeed",
+    html_motd: bool = "cl_disablehtmlmotd",
+    hud: bool = "cl_drawhud",
+    human_blood: bool = "violence_hblood",
+
+    interp: f32 = "cl_interp",
+    interp_ratio: f32 = "cl_interp_ratio",
+    interp_ratio_min: f32 = "sv_client_min_interp_ratio",
+    interp_ratio_max: f32 = "sv_client_max_interp_ratio",
+
+    jiggle_bones: bool = "r_jiggle_bones",
+
+    lag_comp: f32 = "cl_lagcompensation",
+
+    developer: bool = "developer",
+
+    max_commands: i32 = "sv_maxusrcmdprocessticks",
+    model_stats: i32 = "r_drawmodelstatsoverlay",
+
+    panorama_blur: bool = "@panorama_disable_blur",
+    physics_timescale: f32 = "cl_phys_timescale",
+    prop_shadows: bool = "cl_csm_static_prop_shadows",
+
+    rain: bool = "r_drawrain",
+    recoil_scale: f32 = "weapon_recoil_scale",
+    ragdoll_gravity: f32 = "cl_ragdoll_gravity",
+    ropes: bool = "r_drawropes",
+    rope_shadows: bool = "cl_csm_rope_shadows",
+
+    shadows: bool = "r_shadows",
+    show_grenade_path: bool = "cl_grenadepreview",
+    show_help: bool = "cl_showhelp",
+    show_impacts: bool = "sv_showimpacts",
+    sprites: bool = "r_drawsprites",
+    skybox3d: bool = "r_3dsky",
+    sprite_shadows: bool = "cl_csm_sprite_shadows",
+
+    translucent_renderables: bool = "r_drawtranslucentrenderables",
+    translucent_world: bool = "r_drawtranslucentworld",
+
+    unlag_max: f32 = "sv_maxunlag",
+    update_rate: f32 = "cl_updaterate",
+    update_rate_max: f32 = "sv_maxupdaterate",
+    underwater_overlay: bool = "r_drawunderwateroverlay",
+
+    vertical_speed: f32 = "cl_forwardspeed",
+    viewmodel_shadows: bool = "cl_csm_viewmodel_shadows",
+
+    water_fog: bool = "fog_enable_water_fog",
+    world_shadows: bool = "cl_csm_world_shadows"
 }

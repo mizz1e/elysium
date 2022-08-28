@@ -1,5 +1,7 @@
+use crate::entity::{Player as _, PlayerRef};
 use crate::{Menu, Networked};
 use elysium_math::Vec3;
+use elysium_sdk::network::Flow;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
 use iced_glow::glow;
 use iced_native::{Point, Size};
@@ -61,6 +63,10 @@ const NEW: State = State {
     fog_start: 0.0,
     fog_end: 0.0,
     fog_clip: 0.0,
+    bloom: 0.0,
+    exposure_min: 0.5,
+    exposure_max: 0.5,
+    fake_lag: 1,
 };
 
 /// variables that need to be shared between hooks
@@ -104,6 +110,10 @@ pub struct State {
     pub fog_start: f32,
     pub fog_end: f32,
     pub fog_clip: f32,
+    pub bloom: f32,
+    pub exposure_min: f32,
+    pub exposure_max: f32,
+    pub fake_lag: u8,
 }
 
 impl State {
@@ -127,4 +137,41 @@ impl State {
     pub fn release_menu_toggle(&mut self) {
         self.menu_open.1 = false;
     }
+}
+
+pub fn is_record_valid(simulation_time: f32) -> Option<bool> {
+    let state = State::get();
+    let Interfaces { engine, .. } = state.interfaces.as_ref().unwrap();
+    let globals = state.globals.as_mut().unwrap();
+    let vars = state.vars.as_ref().unwrap();
+    let local_vars = &mut state.local;
+    let channel = engine.network_channel()?;
+    let local = unsafe { PlayerRef::from_raw(local_vars.player).unwrap() };
+    let unlag_max = vars.unlag_max.read();
+
+    // https://www.unknowncheats.me/forum/counterstrike-global-offensive/359885-fldeadtime-int.html
+    if simulation_time < globals.current_time - unlag_max {
+        return Some(false);
+    }
+
+    let interp = vars.interp.read();
+    let interp_ratio = vars.interp_ratio.read();
+    let interp_ratio_min = vars.interp_ratio_min.read();
+    let interp_ratio_max = vars.interp_ratio_max.read();
+    let interp_ratio = interp_ratio.clamp(interp_ratio_min, interp_ratio_max);
+
+    let update_rate = vars.update_rate.read();
+    let update_rate_max = vars.update_rate_max.read();
+    let update_rate = update_rate.max(update_rate_max);
+
+    let lerp = interp.max(interp_ratio / update_rate);
+
+    let delta = dbg!(channel.get_latency(Flow::Incoming))
+        + dbg!(channel.get_latency(Flow::Outgoing))
+        + lerp;
+    let delta = delta.clamp(0.0, unlag_max)
+        - globals.ticks_to_time(dbg!(local.tick_base()) as i32)
+        - simulation_time;
+
+    Some(delta.abs() <= unlag_max)
 }

@@ -35,7 +35,8 @@ pub struct Local {
     /// If the local player was attacking last tick.
     pub was_attacking: bool,
     /// If the local player was on the ground last tick.
-    pub was_on_ground: bool,
+    pub was_jumping: bool,
+    pub time: f32,
 }
 
 const NEW: Local = Local {
@@ -54,7 +55,8 @@ const NEW: Local = Local {
     visualize_shot: 0.0,
     weapon: ptr::null(),
     was_attacking: false,
-    was_on_ground: false,
+    was_jumping: false,
+    time: 0.0,
 };
 
 impl Local {

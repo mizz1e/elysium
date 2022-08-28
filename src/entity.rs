@@ -293,6 +293,11 @@ impl<'a> Player<'a> for PlayerRef<'a> {
     }
 
     #[inline]
+    fn tick_base(&self) -> u32 {
+        self.as_repr().tick_base()
+    }
+
+    #[inline]
     fn velocity(&self) -> Vec3 {
         self.as_repr().velocity()
     }

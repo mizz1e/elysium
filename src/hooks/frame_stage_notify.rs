@@ -1,6 +1,7 @@
 use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, TonemapRef};
 use crate::state::Local;
 use crate::State;
+use core::mem;
 use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::EntityId;
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces};
@@ -67,14 +68,14 @@ fn update_fog(mut fog: FogRef<'_>) {
     fog.set_clip_distance(state.fog_clip);
     fog.set_range(Some(state.fog_start..=state.fog_end));
     fog.set_rgba(state.fog);
-
-    println!("{:?}", fog.rgba());
 }
 
 /// Override tonemap controller properties.
 fn update_tonemap(mut tonemap: TonemapRef<'_>) {
-    tonemap.set_bloom(2.0);
-    tonemap.set_exposure(Some(0.2..=0.2));
+    let state = State::get();
+
+    tonemap.set_bloom(state.bloom);
+    tonemap.set_exposure(Some(state.exposure_min..=state.exposure_max));
 }
 
 /// Thirdperson handling.
@@ -151,13 +152,21 @@ unsafe fn update_entities(entity_list: &EntityList) {
     let players = &mut state.players;
     let globals = state.globals.as_ref().unwrap();
     let time = globals.current_time;
+    let local_vars = &state.local;
 
     let player_iter = entity_list
         .player_range()
         .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
 
     for (index, player) in player_iter {
-        let mut bones = players[index as usize - 1].bones;
+        let local = PlayerRef::from_raw(local_vars.player).unwrap();
+        /*let time = if local.index() == index {
+            state.local.time
+        } else {
+            time
+        };*/
+
+        let mut bones = players[(index as usize) - 1].bones;
 
         player.setup_bones(&mut bones[..128], 0x00000100, time);
         player.setup_bones(&mut bones[..128], 0x000FFF00, time);

@@ -6,7 +6,6 @@
 #![feature(array_methods)]
 #![feature(const_mut_refs)]
 #![feature(const_option_ext)]
-#![feature(const_ptr_offset_from)]
 #![feature(const_refs_to_cell)]
 #![feature(const_slice_from_raw_parts_mut)]
 #![feature(const_slice_index)]

@@ -1,7 +1,6 @@
 //#![deny(warnings)]
 #![feature(abi_thiscall)]
 #![feature(bound_map)]
-#![feature(const_ptr_offset_from)]
 #![feature(const_maybe_uninit_zeroed)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]

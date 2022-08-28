@@ -59,6 +59,9 @@ pub trait Player<'a>: Entity<'a> {
     /// The player's team.
     fn team(&self) -> Team;
 
+    /// The player's tick base.
+    fn tick_base(&self) -> u32;
+
     /// The player's velocity.
     fn velocity(&self) -> Vec3;
 

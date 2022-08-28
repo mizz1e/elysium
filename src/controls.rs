@@ -21,6 +21,13 @@ pub enum Message {
     FogEnd(f32),
     FogClip(f32),
 
+    Bloom(f32),
+
+    ExposureMin(f32),
+    ExposureMax(f32),
+
+    FakeLag(u8),
+
     None,
 }
 
@@ -52,6 +59,13 @@ impl Program for Controls {
             Message::FogEnd(value) => state.fog_end = value,
             Message::FogClip(value) => state.fog_clip = value,
 
+            Message::Bloom(value) => state.bloom = value,
+
+            Message::ExposureMin(value) => state.exposure_min = value,
+            Message::ExposureMax(value) => state.exposure_max = value,
+
+            Message::FakeLag(value) => state.fake_lag = value,
+
             _ => {}
         }
 
@@ -75,6 +89,17 @@ impl Program for Controls {
 
         const COMPONENT_RANGE: RangeInclusive<f32> = 0.0..=1.0;
         const FOG_RANGE: RangeInclusive<f32> = 0.0..=10_000.0;
+        const BLOOM_RANGE: RangeInclusive<f32> = 0.0..=5.0;
+        const EXPOSURE_RANGE: RangeInclusive<f32> = 0.0..=10.0;
+
+        // TODO: cl move client-side cap fix
+        // TODO: check sv_maxusrcmdprocessticks
+        const FAKE_LAG_RANGE: RangeInclusive<u8> = 0..=16;
+
+        let fake_lag = iced_native::row![
+            widget::text("Fake Lag"),
+            widget::slider(FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag),
+        ];
 
         let red = iced_native::row![
             widget::text("Fog red"),
@@ -111,8 +136,24 @@ impl Program for Controls {
             widget::slider(FOG_RANGE, state.fog_clip, Message::FogClip).step(0.01),
         ];
 
+        let bloom = iced_native::row![
+            widget::text("Bloom intensity"),
+            widget::slider(BLOOM_RANGE, state.bloom, Message::Bloom).step(0.01),
+        ];
+
+        let exposure_min = iced_native::row![
+            widget::text("Exposure min"),
+            widget::slider(EXPOSURE_RANGE, state.exposure_min, Message::ExposureMin).step(0.01),
+        ];
+
+        let exposure_max = iced_native::row![
+            widget::text("Exposure max"),
+            widget::slider(EXPOSURE_RANGE, state.exposure_max, Message::ExposureMax).step(0.01),
+        ];
+
         let content = iced_native::column![
             anti_aim,
+            fake_lag,
             thirdperson,
             red,
             green,
@@ -121,6 +162,9 @@ impl Program for Controls {
             fog_start,
             fog_end,
             fog_clip,
+            bloom,
+            exposure_min,
+            exposure_max,
         ]
         .spacing(15);
 
@@ -149,7 +193,7 @@ mod style {
 
     #[inline]
     pub fn menu(_theme: &Theme) -> container::Appearance {
-        background(Color::from_rgba8(0xEF, 0xD9, 0xC3, 1.0))
+        background(Color::from_rgba8(0x00, 0x00, 0x00, 0.7))
     }
 
     #[inline]

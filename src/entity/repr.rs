@@ -335,6 +335,7 @@ impl EntityRepr {
     networked!(is_defusing_ref: bool = player.is_defusing);
     networked!(is_scoped_ref: bool = player.is_scoped);
     networked!(lower_body_yaw_ref: f32 = player.lower_body_yaw);
+    networked!(tick_base_ref: u32 = base_player.tick_base);
     networked!(view_offset_ref: Vec3 = base_player.view_offset);
     networked!(velocity_ref: Vec3 = base_player.velocity);
 
@@ -486,6 +487,12 @@ impl EntityRepr {
     #[inline]
     pub fn team(&self) -> Team {
         unsafe { (self.vtable.team)(self) }
+    }
+
+    /// The player's tick base.
+    #[inline]
+    pub fn tick_base(&self) -> u32 {
+        unsafe { self.tick_base_ref().read_unaligned() }
     }
 
     /// The player's velocity.
