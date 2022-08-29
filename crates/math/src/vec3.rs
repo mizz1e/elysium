@@ -25,7 +25,7 @@ impl Vec3 {
     /// Create a new `Vec3` from x, y coordinates.
     #[inline]
     pub const fn from_xy(x: f32, y: f32) -> Vec3 {
-        Vec3 { x, y, z: 0.0 }
+        Vec3::from_xyz(x, y, 0.0)
     }
 
     /// Create a new `Vec3` from x, y, and z coordinates.
@@ -39,7 +39,7 @@ impl Vec3 {
     pub const fn from_xyzw(x: f32, y: f32, z: f32, w: f32) -> Vec3 {
         let _ = w;
 
-        Vec3 { x, y, z }
+        Vec3::from_xyz(x, y, z)
     }
 
     /// Create a new `Vec3` from an array.
@@ -47,7 +47,7 @@ impl Vec3 {
     pub const fn from_array(array: [f32; 3]) -> Vec3 {
         let [x, y, z] = array;
 
-        Vec3 { x, y, z }
+        Vec3::from_xyz(x, y, z)
     }
 
     #[inline]
@@ -58,6 +58,20 @@ impl Vec3 {
         let (y_sin, y_cos) = y.sin_cos();
 
         Vec3::from_xyz(x_cos * y_cos, x_cos * y_sin, -x_sin)
+    }
+
+    #[inline]
+    pub const fn from_tuple(tuple: (f32, f32, f32)) -> Vec3 {
+        let (x, y, z) = tuple;
+
+        Vec3::from_xyz(x, y, z)
+    }
+
+    #[inline]
+    pub const fn to_tuple(self) -> (f32, f32, f32) {
+        let Vec3 { x, y, z } = self;
+
+        (x, y, z)
     }
 
     #[inline]

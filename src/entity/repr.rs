@@ -517,6 +517,7 @@ mod exposure {
     use std::mem;
     use std::ops::{Bound, RangeBounds};
 
+    /// Tonemap exposure.
     #[derive(Clone, Copy)]
     pub struct Exposure {
         start: Bound<f32>,

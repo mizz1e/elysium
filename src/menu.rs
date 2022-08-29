@@ -6,7 +6,7 @@ use iced_native::clipboard::Null;
 use iced_native::program::State;
 use iced_native::{clipboard, renderer, Color, Debug, Event, Point};
 
-/// Menu state and rendering structures.
+/// UI rendering state.
 pub struct Menu {
     clipboard: Null,
     debug: Debug,

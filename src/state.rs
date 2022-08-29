@@ -1,3 +1,6 @@
+//! Shared global state variables.
+
+use crate::anti_aim::{Pitch, Roll, Yaw};
 use crate::entity::{Player as _, PlayerRef};
 use crate::{Menu, Networked};
 use elysium_math::Vec3;
@@ -67,6 +70,13 @@ const NEW: State = State {
     exposure_min: 0.5,
     exposure_max: 0.5,
     fake_lag: 1,
+    anti_untrusted: true,
+    pitch: Pitch::new(),
+    yaw: Yaw::new(),
+    roll: Roll::new(),
+    fake_pitch: Pitch::new(),
+    fake_yaw: Yaw::new(),
+    fake_roll: Roll::new(),
 };
 
 /// variables that need to be shared between hooks
@@ -114,6 +124,13 @@ pub struct State {
     pub exposure_min: f32,
     pub exposure_max: f32,
     pub fake_lag: u8,
+    pub anti_untrusted: bool,
+    pub pitch: Pitch,
+    pub yaw: Yaw,
+    pub roll: Roll,
+    pub fake_pitch: Pitch,
+    pub fake_yaw: Yaw,
+    pub fake_roll: Roll,
 }
 
 impl State {
@@ -139,6 +156,7 @@ impl State {
     }
 }
 
+/// Determine whether a player's position (in time) can be backtracked.
 pub fn is_record_valid(simulation_time: f32) -> Option<bool> {
     let state = State::get();
     let Interfaces { engine, .. } = state.interfaces.as_ref().unwrap();

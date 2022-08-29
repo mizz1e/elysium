@@ -1,3 +1,6 @@
+//! Entity traits and references.
+// TODO: move to elysium_sdk
+
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};

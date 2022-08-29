@@ -68,13 +68,14 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     let on_ground = local.flags().on_ground();
     let was_attacking = local_vars.was_attacking;
     let was_jumping = local_vars.was_jumping;
-    let side = if command.command % 3 != 0 { 1.0 } else { -1.0 };
+    let side = if command.command % 2 != 0 { 1.0 } else { -1.0 };
 
     local_vars.was_attacking = do_attack;
     local_vars.was_jumping = do_jump;
 
     if do_attack && was_attacking {
         command.attack(false);
+        local_vars.was_attacking = false;
     }
 
     if do_jump {
@@ -135,35 +136,28 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     }
 
     if state.local.anti_aim {
-        *send_packet = command.command % state.fake_lag as i32 == 0;
+        if state.fake_lag != 0 {
+            *send_packet = command.command % state.fake_lag as i32 == 0;
+        }
 
         // don't do anything fancy whilest on a ladder or noclipping
         if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
-            // 89.0 = down, -89.0 = up
-            let pitch = 89.0;
+            let (x, y, z) = command.view_angle.to_tuple();
+            let view_angle = if *send_packet {
+                let x = state.pitch.apply(x);
+                let y = state.yaw.apply(y);
+                let z = state.roll.apply(z);
 
-            // 180.0 for backwards
-            let yaw_base = 180.0;
+                (x, y, z)
+            } else {
+                let x = state.fake_pitch.apply(x);
+                let y = state.fake_yaw.apply(y);
+                let z = state.fake_roll.apply(z);
 
-            // roll base
-            let roll_base = 0.0;
+                (x, y, z)
+            };
 
-            // how much to jitter yaw
-            let jitter_yaw = 9.0;
-
-            // how much to jitter roll
-            let jitter_roll = 50.0;
-
-            // note: remember, desync isnt static, nor can it always be 58.0;
-            let desync = 58.0;
-
-            command.view_angle.x = pitch;
-            command.view_angle.y += yaw_base + jitter_yaw * side;
-            command.view_angle.z += roll_base + jitter_roll * side;
-
-            if !*send_packet {
-                command.view_angle.y += 270.0;
-            }
+            command.view_angle = Vec3::from_tuple(view_angle);
         }
     }
 
@@ -171,7 +165,6 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         command.view_angle = state.view_angle;
     }
 
-    command.view_angle = command.view_angle.sanitize_angle();
     command.fast_duck(true);
 
     /*match command.command % 14 {
@@ -187,6 +180,10 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     }*/
 
     fix_movement(command, state.view_angle);
+
+    if state.anti_untrusted {
+        command.view_angle = command.view_angle.sanitize_angle();
+    }
 }
 
 /// `CreateMove` hook.

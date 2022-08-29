@@ -1,3 +1,5 @@
+//! Assembly patterns within libraries.
+
 use elysium_pattern::Pattern;
 use elysium_sdk::LibraryKind;
 use link::Library;

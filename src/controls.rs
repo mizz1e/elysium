@@ -1,9 +1,12 @@
+use crate::anti_aim::{Pitch, RollModifierKind, YawModifierKind};
 use crate::State;
+use core::fmt;
 use core::ops::RangeInclusive;
 use iced_glow::Renderer;
 use iced_native::theme::Container;
 use iced_native::{widget, Command, Element, Length, Program};
 
+/// Iced UI controls.
 #[derive(Default)]
 pub struct Controls {}
 
@@ -11,6 +14,7 @@ pub struct Controls {}
 pub enum Message {
     AntiAim(bool),
     Thirdperson(bool),
+    AntiUntrusted(bool),
 
     FogRed(f32),
     FogGreen(f32),
@@ -27,6 +31,18 @@ pub enum Message {
     ExposureMax(f32),
 
     FakeLag(u8),
+
+    Pitch(Pitch),
+    Yaw(YawModifierKind),
+    YawBase(f32),
+    Roll(RollModifierKind),
+    RollBase(f32),
+
+    FakePitch(Pitch),
+    FakeYaw(YawModifierKind),
+    FakeYawBase(f32),
+    FakeRoll(RollModifierKind),
+    FakeRollBase(f32),
 
     None,
 }
@@ -48,6 +64,7 @@ impl Program for Controls {
 
         match message {
             Message::AntiAim(value) => state.local.anti_aim = value,
+            Message::AntiUntrusted(value) => state.anti_untrusted = value,
             Message::Thirdperson(value) => state.local.thirdperson.0 = value,
 
             Message::FogRed(value) => state.fog.color.red = value,
@@ -65,6 +82,14 @@ impl Program for Controls {
             Message::ExposureMax(value) => state.exposure_max = value,
 
             Message::FakeLag(value) => state.fake_lag = value,
+
+            Message::Pitch(value) => state.pitch = value,
+            Message::YawBase(value) => state.yaw.base = value,
+            Message::RollBase(value) => state.roll.base = value,
+
+            Message::FakePitch(value) => state.fake_pitch = value,
+            Message::FakeYawBase(value) => state.fake_yaw.base = value,
+            Message::FakeRollBase(value) => state.fake_roll.base = value,
 
             _ => {}
         }
@@ -91,10 +116,79 @@ impl Program for Controls {
         const FOG_RANGE: RangeInclusive<f32> = 0.0..=10_000.0;
         const BLOOM_RANGE: RangeInclusive<f32> = 0.0..=5.0;
         const EXPOSURE_RANGE: RangeInclusive<f32> = 0.0..=10.0;
+        const YAW_RANGE: RangeInclusive<f32> = -180.0..=180.0;
+        const ROLL_RANGE: RangeInclusive<f32> = -50.0..=50.0;
 
         // TODO: cl move client-side cap fix
         // TODO: check sv_maxusrcmdprocessticks
         const FAKE_LAG_RANGE: RangeInclusive<u8> = 0..=16;
+
+        const PITCH_OPTIONS: &[Pitch] = &[
+            Pitch::Default,
+            Pitch::Up,
+            Pitch::Zero,
+            Pitch::Down,
+            Pitch::FakeUp,
+            Pitch::FakeDown,
+            Pitch::Lisp,
+        ];
+
+        const YAW_OPTIONS: &[YawModifierKind] = &[
+            YawModifierKind::Default,
+            YawModifierKind::Legit,
+            YawModifierKind::Jitter,
+        ];
+
+        const ROLL_OPTIONS: &[RollModifierKind] =
+            &[RollModifierKind::Default, RollModifierKind::Jitter];
+
+        let pitch = iced_native::row![
+            widget::text("Pitch"),
+            widget::pick_list(PITCH_OPTIONS, Some(state.pitch), Message::Pitch),
+        ];
+
+        let yaw = iced_native::row![
+            widget::text("Yaw"),
+            widget::pick_list(YAW_OPTIONS, Some(state.yaw.modifier.kind()), Message::Yaw),
+        ];
+
+        let roll = iced_native::row![
+            widget::text("Roll"),
+            widget::pick_list(
+                ROLL_OPTIONS,
+                Some(state.roll.modifier.kind()),
+                Message::Roll
+            ),
+        ];
+
+        let fake_pitch = iced_native::row![
+            widget::text("Fake Pitch"),
+            widget::pick_list(PITCH_OPTIONS, Some(state.fake_pitch), Message::FakePitch),
+        ];
+
+        let fake_yaw = iced_native::row![
+            widget::text("Fake Yaw"),
+            widget::pick_list(
+                YAW_OPTIONS,
+                Some(state.fake_yaw.modifier.kind()),
+                Message::FakeYaw
+            ),
+        ];
+
+        let fake_roll = iced_native::row![
+            widget::text("Fake Roll"),
+            widget::pick_list(
+                ROLL_OPTIONS,
+                Some(state.fake_roll.modifier.kind()),
+                Message::FakeRoll
+            ),
+        ];
+
+        let anti_untrusted = widget::checkbox(
+            "Anti Untrusted",
+            state.anti_untrusted,
+            Message::AntiUntrusted,
+        );
 
         let fake_lag = iced_native::row![
             widget::text("Fake Lag"),
@@ -151,8 +245,39 @@ impl Program for Controls {
             widget::slider(EXPOSURE_RANGE, state.exposure_max, Message::ExposureMax).step(0.01),
         ];
 
+        let yaw_base = iced_native::row![
+            widget::text("Yaw Base"),
+            widget::slider(YAW_RANGE, state.yaw.base, Message::YawBase).step(1.0),
+        ];
+
+        let fake_yaw_base = iced_native::row![
+            widget::text("Fake Yaw Base"),
+            widget::slider(YAW_RANGE, state.fake_yaw.base, Message::FakeYawBase).step(1.0),
+        ];
+
+        let roll_base = iced_native::row![
+            widget::text("Roll Base"),
+            widget::slider(ROLL_RANGE, state.roll.base, Message::RollBase).step(1.0),
+        ];
+
+        let fake_roll_base = iced_native::row![
+            widget::text("Fake Roll Base"),
+            widget::slider(ROLL_RANGE, state.fake_roll.base, Message::FakeRollBase).step(1.0),
+        ];
+
         let content = iced_native::column![
             anti_aim,
+            pitch,
+            yaw,
+            yaw_base,
+            roll,
+            roll_base,
+            fake_pitch,
+            fake_yaw,
+            fake_yaw_base,
+            fake_roll,
+            fake_roll_base,
+            anti_untrusted,
             fake_lag,
             thirdperson,
             red,
@@ -167,6 +292,8 @@ impl Program for Controls {
             exposure_max,
         ]
         .spacing(15);
+
+        let content = widget::scrollable(content);
 
         let menu = widget::container(content)
             .width(Length::Units(800))

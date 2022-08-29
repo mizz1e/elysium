@@ -1,6 +1,7 @@
 use glow::HasContext;
 use iced_glow::{glow, Color};
 
+/// OpenGL effects to maybe apply someday?
 pub struct Scene {
     program: glow::Program,
     vertex_array: glow::VertexArray,

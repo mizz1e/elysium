@@ -1,3 +1,6 @@
+//! Shared library/module/interface loading.
+// TODO: update with similar code to https://github.com/elysian6969/csgo-launcher ui rebuild branch
+
 use daisy_chain::{Chain, ChainIter};
 use link::Library;
 use std::time::Duration;

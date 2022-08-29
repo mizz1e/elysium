@@ -21,6 +21,7 @@ unsafe fn draw_layer(
     this.reset_material();
 }
 
+/// `DrawModelExecute` hook.
 #[inline(never)]
 pub unsafe extern "C" fn draw_model(
     this: *const ModelRender,

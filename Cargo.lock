@@ -180,6 +180,7 @@ dependencies = [
  "libm",
  "link",
  "palette",
+ "rand",
  "sdl2-sys",
 ]
 

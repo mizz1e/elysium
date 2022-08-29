@@ -1,3 +1,6 @@
+//! Networked variables
+// TODO: move to elysium_sdk and hide implementation(?)
+
 use core::mem::MaybeUninit;
 use elysium_sdk::client::{Client, Table};
 use elysium_sdk::{Class, Entry};
@@ -223,6 +226,7 @@ fn iterate_table(this: &mut Networked, table: &'static Table, class: Class, base
     }
 }
 
+/// Generates a function to obtain a pointer to a networked variable.
 #[macro_export]
 macro_rules! networked {
     ($ident:ident: $ty:ty = $class:ident.$entry:ident) => {
@@ -233,6 +237,7 @@ macro_rules! networked {
     };
 }
 
+/// Generates a function to obtain a mutable pointer to a networked variable.
 #[macro_export]
 macro_rules! networked_mut {
     ($ident:ident: $ty:ty = $class:ident.$entry:ident) => {

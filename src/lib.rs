@@ -1,6 +1,7 @@
 //#![deny(warnings)]
 #![feature(abi_thiscall)]
 #![feature(bound_map)]
+#![feature(const_fn_floating_point_arithmetic)]
 #![feature(const_maybe_uninit_zeroed)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
@@ -28,6 +29,7 @@ mod controls;
 mod menu;
 mod scene;
 
+pub mod anti_aim;
 pub mod assets;
 pub mod entity;
 pub mod hooks;
