@@ -10,6 +10,7 @@ pub struct Local {
     pub aim_punch_angle: Vec3,
     /// Local player's bones.
     pub bones: Bones,
+    pub fake_bones: Bones,
     /// Local player's current health.
     pub health: i32,
     /// Local player's current magazine ammo.
@@ -43,6 +44,7 @@ const NEW: Local = Local {
     anti_aim: false,
     aim_punch_angle: Vec3::zero(),
     bones: Bones::zero(),
+    fake_bones: Bones::zero(),
     health: 0,
     magazine_ammo: 0,
     old_yaw: 0.0,

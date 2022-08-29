@@ -160,11 +160,10 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
     for (index, player) in player_iter {
         let local = PlayerRef::from_raw(local_vars.player).unwrap();
-        /*let time = if local.index() == index {
-            state.local.time
-        } else {
-            time
-        };*/
+
+        if local.index() == index {
+            continue;
+        }
 
         let mut bones = players[(index as usize) - 1].bones;
 

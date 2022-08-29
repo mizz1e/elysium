@@ -71,20 +71,43 @@ pub unsafe extern "C" fn draw_model(
                 if state.view_angle.x < 0.0 {
                     gold.set_alpha(0.05);
                 }
+
+                gold.set_rgba([1.0, 0.0, 1.0, 0.9]);
+
+                draw_layer(
+                    &*this,
+                    context,
+                    draw_state,
+                    info,
+                    local_vars.fake_bones.as_ptr(),
+                    &draw_model_original,
+                    gold,
+                );
+
+                gold.set_rgba([0.0, 0.5, 1.0, 0.9]);
+
+                draw_layer(
+                    &*this,
+                    context,
+                    draw_state,
+                    info,
+                    local_vars.bones.as_ptr(),
+                    &draw_model_original,
+                    gold,
+                );
+            } else {
+                gold.set_flag(MaterialFlag::IGNORE_Z, true);
+
+                draw_layer(
+                    &*this,
+                    context,
+                    draw_state,
+                    info,
+                    bone_to_world,
+                    &draw_model_original,
+                    gold,
+                );
             }
-
-            gold.set_flag(MaterialFlag::IGNORE_Z, true);
-            //gold.set_flag(MaterialFlag::WIREFRAME, true);
-
-            draw_layer(
-                &*this,
-                context,
-                draw_state,
-                info,
-                bone_to_world,
-                &draw_model_original,
-                gold,
-            );
 
             return;
         } else if model_name.starts_with("models/weapons/v_") {

@@ -1,4 +1,4 @@
-use crate::entity::{Player, PlayerRef};
+use crate::entity::{Entity, Player, PlayerRef};
 use crate::State;
 use elysium_math::Vec3;
 use elysium_sdk::convar::Vars;
@@ -61,6 +61,9 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     let state = State::get();
     let vars = state.vars.as_ref().unwrap();
     let mut local_vars = &mut state.local;
+    let Interfaces { entity_list, .. } = state.interfaces.as_ref().unwrap();
+    let globals = state.globals.as_ref().unwrap();
+    let players = &mut state.players;
 
     let do_attack = command.in_attack();
     let do_duck = command.in_duck();
@@ -161,6 +164,14 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         }
     }
 
+    let player_iter = entity_list
+        .player_range()
+        .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
+
+    for (index, player) in player_iter {
+        println!("{index} {player:?}");
+    }
+
     if do_attack {
         command.view_angle = state.view_angle;
     }
@@ -202,7 +213,7 @@ pub unsafe extern "C" fn create_move(
         return false;
     }
 
-    let local = PlayerRef::from_raw(state.local.player).unwrap();
+    let mut local = PlayerRef::from_raw(state.local.player).unwrap();
 
     /*println!("active_weapon = {:?}", local.active_weapon());
     println!("aim_punch = {:?}", local.aim_punch());
@@ -227,9 +238,28 @@ pub unsafe extern "C" fn create_move(
 
     do_create_move(command, local, send_packet);
 
+    let mut local = PlayerRef::from_raw(state.local.player).unwrap();
+    let time = globals.current_time;
+
     if *send_packet {
+        let mut bones = &mut state.local.bones;
+        let view_angle = local.view_angle();
+
+        local.set_view_angle(command.view_angle);
+        local.setup_bones(&mut bones[..128], 0x00000100, time);
+        local.setup_bones(&mut bones[..128], 0x000FFF00, time);
+        local.set_view_angle(view_angle);
+
         state.local.view_angle = command.view_angle;
         state.local.time = globals.current_time;
+    } else {
+        let mut bones = &mut state.local.fake_bones;
+        let view_angle = local.view_angle();
+
+        local.set_view_angle(command.view_angle);
+        local.setup_bones(&mut bones[..128], 0x00000100, time);
+        local.setup_bones(&mut bones[..128], 0x000FFF00, time);
+        local.set_view_angle(view_angle);
     }
 
     println!("{:?}", crate::state::is_record_valid(globals.current_time));
