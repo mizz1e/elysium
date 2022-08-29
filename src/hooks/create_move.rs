@@ -203,6 +203,13 @@ pub unsafe extern "C" fn create_move(
     input_sample_time: f32,
     command: &mut Command,
 ) -> bool {
+    let rbp: *mut *mut bool;
+
+    core::arch::asm!("mov {}, rbp", out(reg) rbp, options(nostack));
+
+    let send_packet = &mut *(*rbp).sub(24);
+
+    //
     let state = State::get();
     let create_move_original = state.hooks.create_move.unwrap();
     let globals = state.globals.as_ref().unwrap();
@@ -233,8 +240,6 @@ pub unsafe extern "C" fn create_move(
     if local.observer_mode() != ObserverMode::None {
         return false;
     }
-
-    let send_packet = &mut *cake::frame_address!().cast::<*mut bool>().read().sub(24);
 
     do_create_move(command, local, send_packet);
 
