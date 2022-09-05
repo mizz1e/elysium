@@ -1,101 +1,102 @@
 // https://github.com/HackerPolice/MissedIT/blob/master/src/SDK/INetChannel.h
 
-use crate::{ffi, object_validate, vtable_export, vtable_validate};
-use cake::ffi::BytePad;
-use core::marker::PhantomData;
-use core::mem::MaybeUninit;
+use crate::{object_validate, vtable_export, vtable_validate};
+use cake::ffi::{BytePad, CUtf8Str};
+use std::marker::PhantomData;
+use std::mem::MaybeUninit;
+use std::net::IpAddr;
+use std::str::FromStr;
 
 #[repr(C)]
 struct VTable {
-    get_name2: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const u8,
-    get_address: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const u8,
-    get_time: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    get_time_connected: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    get_buffer_len: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
-    get_data_rate: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
+    name2: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const libc::c_char,
+    address: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const libc::c_char,
+    time: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    time_connected: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    buffer_len: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
+    data_rate: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
     is_loopback: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
     is_timing_out: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
     is_playback: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
-    get_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_loss: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_choke: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_avg_packets: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    get_total_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
-    get_sequence_number:
-        unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
+    latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_loss: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_choke: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_packets: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    total_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
+    sequence_number: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
     is_valid_packet: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
     ) -> bool,
-    get_packet_time: unsafe extern "thiscall" fn(
+    packet_time: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
     ) -> f32,
-    get_packet_bytes: unsafe extern "thiscall" fn(
+    packet_bytes: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
         group: i32,
     ) -> i32,
-    get_stream_progress: unsafe extern "thiscall" fn(
+    stream_progress: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         recieved: *mut i32,
         total: *mut i32,
     ) -> bool,
-    get_time_since_last_received: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    get_command_interpolation_amount: unsafe extern "thiscall" fn(
+    time_since_last_received: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    command_interpolation_amount: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
     ) -> f32,
-    get_packet_response_latency: unsafe extern "thiscall" fn(
+    packet_response_latency: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
         latency: *mut i32,
         choke: *mut i32,
     ),
-    get_remote_frame_rate: unsafe extern "thiscall" fn(
+    remote_frame_rate: unsafe extern "thiscall" fn(
         this: *const NetworkChannel,
         frame_time: *mut f32,
         frame_time_standard_deviation: *mut f32,
     ),
-    get_timeout_seconds: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    get_name: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const u8,
+    timeout_seconds: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
+    name: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const libc::c_char,
 }
 
 vtable_validate! {
-    get_address => 1,
-    get_time => 2,
-    get_time_connected => 3,
-    get_buffer_len => 4,
-    get_data_rate => 5,
+    address => 1,
+    time => 2,
+    time_connected => 3,
+    buffer_len => 4,
+    data_rate => 5,
     is_loopback => 6,
     is_timing_out => 7,
     is_playback => 8,
-    get_latency => 9,
-    get_avg_latency => 10,
-    get_avg_loss => 11,
-    get_avg_choke => 12,
-    get_avg_data => 13,
-    get_avg_packets => 14,
-    get_total_data => 15,
-    get_sequence_number => 16,
+    latency => 9,
+    avg_latency => 10,
+    avg_loss => 11,
+    avg_choke => 12,
+    avg_data => 13,
+    avg_packets => 14,
+    total_data => 15,
+    sequence_number => 16,
     is_valid_packet => 17,
-    get_packet_time => 18,
-    get_packet_bytes => 19,
-    get_stream_progress => 20,
-    get_time_since_last_received => 21,
-    get_command_interpolation_amount => 22,
-    get_packet_response_latency => 23,
-    get_remote_frame_rate => 24,
-    get_timeout_seconds => 25,
-    get_name => 26,
+    packet_time => 18,
+    packet_bytes => 19,
+    stream_progress => 20,
+    time_since_last_received => 21,
+    command_interpolation_amount => 22,
+    packet_response_latency => 23,
+    remote_frame_rate => 24,
+    timeout_seconds => 25,
+    name => 26,
 }
 
 /// a network channel
@@ -123,16 +124,16 @@ pub enum Flow {
 impl NetworkChannel {
     vtable_export! {
         /// get current network time
-        get_time() -> f32,
+        time() -> f32,
 
         /// get connection time in seconds
-        get_time_connected() -> f32,
+        time_connected() -> f32,
 
         /// get packet history size
-        get_buffer_len() -> i32,
+        buffer_len() -> i32,
 
         /// outgoing data rate in bytes/second
-        get_data_rate() -> i32,
+        data_rate() -> i32,
 
         /// if loopback channel
         is_loopback() -> bool,
@@ -144,46 +145,46 @@ impl NetworkChannel {
         is_playback() -> bool,
 
         /// current latency (rtt), accurate but jittery
-        get_latency(flow: Flow) -> f32,
+        latency(flow: Flow) -> f32,
 
         /// average latency in seconds
-        get_avg_latency(flow: Flow) -> f32,
+        avg_latency(flow: Flow) -> f32,
 
         /// average packet loss (0 to 1)
-        get_avg_loss(flow: Flow) -> f32,
+        avg_loss(flow: Flow) -> f32,
 
         /// average packet choke (0 to 1)
-        get_avg_choke(flow: Flow) -> f32,
+        avg_choke(flow: Flow) -> f32,
 
         /// data flow in bytes/second
-        get_avg_data(flow: Flow) -> f32,
+        avg_data(flow: Flow) -> f32,
 
         /// average packets/second
-        get_avg_packets(flow: Flow) -> f32,
+        avg_packets(flow: Flow) -> f32,
 
         /// total flow in bytes
-        get_total_data(flow: Flow) -> i32,
+        total_data(flow: Flow) -> i32,
 
         /// last sent sequence number
-        get_sequence_number(flow: Flow) -> i32,
+        sequence_number(flow: Flow) -> i32,
 
         /// if packet was not lost/dropped/choked/flushed
         is_valid_packet(flow: Flow, frame_number: i32) -> bool,
 
         /// time when packet was sent
-        get_packet_time(flow: Flow, frame_number: i32) -> f32,
+        packet_time(flow: Flow, frame_number: i32) -> f32,
 
         /// group size of this packet
-        get_packet_bytes(flow: Flow, frame_number: i32, group: i32) -> i32,
+        packet_bytes(flow: Flow, frame_number: i32, group: i32) -> i32,
 
         /// get time since last recieved packet (in seconds)
-        get_time_since_last_received() -> f32,
+        time_since_last_received() -> f32,
 
         /// ???
-        get_command_interpolation_amount(flow: Flow, frame_number: i32) -> f32,
+        command_interpolation_amount(flow: Flow, frame_number: i32) -> f32,
 
         /// ???
-        get_packet_response_latency(
+        packet_response_latency(
             flow: Flow,
             frame_number: i32,
             latency: &mut i32,
@@ -191,68 +192,81 @@ impl NetworkChannel {
         ) -> (),
 
         /// ???
-        get_timeout_seconds() -> f32,
+        timeout_seconds() -> f32,
     }
 
-    /// get channel ip address as a string
+    /// The IP address this channel is connected to.
     #[inline]
-    pub fn get_address(&self) -> &str {
+    pub fn address(&self) -> Option<IpAddr> {
         unsafe {
-            let ptr = (self.vtable.get_address)(self);
+            let pointer = (self.vtable.address)(self);
 
-            ffi::str_from_ptr(ptr)
+            if pointer.is_null() {
+                return None;
+            }
+
+            let ip = CUtf8Str::from_ptr(pointer).as_str();
+
+            IpAddr::from_str(ip).ok()
         }
     }
 
-    /// tcp progress if transmitting
+    /// Returns the progress of a TCP transmit.
     #[inline]
-    pub fn get_stream_progress(&self, flow: Flow) -> Option<(i32, i32)> {
+    pub fn stream_progress(&self, flow: Flow) -> Option<(i32, i32)> {
         let mut received = MaybeUninit::uninit();
         let mut total = MaybeUninit::uninit();
 
         unsafe {
-            let in_progress = (self.vtable.get_stream_progress)(
+            let in_progress = (self.vtable.stream_progress)(
                 self,
                 flow,
                 received.as_mut_ptr(),
                 total.as_mut_ptr(),
             );
 
-            in_progress.then(|| (received.assume_init(), total.assume_init()))
+            in_progress.then(|| {
+                let received = MaybeUninit::assume_init(received);
+                let total = MaybeUninit::assume_init(total);
+
+                (received, total)
+            })
         }
     }
 
-    /// get channel name
+    /// Returns the remote frame rate.
     #[inline]
-    pub fn get_remote_frame_rate(&self) -> (f32, f32) {
-        let mut frame_time = MaybeUninit::uninit();
-        let mut frame_time_standard_deviation = MaybeUninit::uninit();
+    pub fn remote_frame_rate(&self) -> (f32, f32) {
+        let mut time = MaybeUninit::uninit();
+        let mut time_standard_deviation = MaybeUninit::uninit();
 
         unsafe {
-            (self.vtable.get_remote_frame_rate)(
+            (self.vtable.remote_frame_rate)(
                 self,
-                frame_time.as_mut_ptr(),
-                frame_time_standard_deviation.as_mut_ptr(),
+                time.as_mut_ptr(),
+                time_standard_deviation.as_mut_ptr(),
             );
 
-            (
-                frame_time.assume_init(),
-                frame_time_standard_deviation.assume_init(),
-            )
+            let time = MaybeUninit::assume_init(time);
+            let time_standard_deviation = MaybeUninit::assume_init(time_standard_deviation);
+
+            (time, time_standard_deviation)
         }
     }
 
-    /// get channel name
+    /// Get the network channel's name.
     #[inline]
-    pub fn get_name(&self) -> Option<&str> {
+    pub fn name(&self) -> Option<Box<str>> {
         unsafe {
-            let ptr = (self.vtable.get_name)(self);
+            let pointer = (self.vtable.name)(self);
 
-            if ptr.is_null() {
-                None
-            } else {
-                Some(ffi::str_from_ptr(ptr))
+            if pointer.is_null() {
+                return None;
             }
+
+            let name = CUtf8Str::from_ptr(pointer).as_str();
+
+            Some(Box::from(name))
         }
     }
 }

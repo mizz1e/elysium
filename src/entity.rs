@@ -337,3 +337,10 @@ impl<'a> Tonemap<'a> for TonemapRef<'a> {
         self.as_repr_mut().set_exposure(exposure);
     }
 }
+
+impl<'a> Weapon<'a> for WeaponRef<'a> {
+    #[inline]
+    fn next_attack_time(&self) -> f32 {
+        self.as_repr().next_attack_time()
+    }
+}

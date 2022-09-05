@@ -9,13 +9,14 @@
 #![feature(const_refs_to_cell)]
 #![feature(const_slice_from_raw_parts_mut)]
 #![feature(const_slice_index)]
-#![feature(const_str_from_utf8_unchecked_mut)]
 #![feature(const_trait_impl)]
 #![feature(const_try)]
+#![feature(cstr_from_bytes_until_nul)]
 #![feature(generic_const_exprs)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
+#![feature(sync_unsafe_cell)]
 
 pub use animation_layer::AnimationLayer;
 pub use animation_state::AnimationState;
@@ -23,8 +24,7 @@ pub use beam::{Beam, BeamInfo, ViewRenderBeams};
 pub use class::Class;
 pub use client::Client;
 pub use client_mode::ClientMode;
-pub use console::Console;
-pub use convar::Vars;
+pub use console::{Console, Var, VarKind, Vars};
 pub use engine::{Engine, PlayerInfo};
 pub use entity::EntityList;
 pub use entry::Entry;
@@ -38,7 +38,7 @@ pub use interfaces::{InterfaceKind, Interfaces, LibraryKind};
 pub use item_kind::ItemKind;
 pub use material::MaterialSystem;
 pub use network::{Flow, NetworkChannel};
-pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
+//pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
 pub use render::{OverrideKind, Render};
 pub use sound::{ActiveChannels, Channel};
 pub use steam::SteamAPIContext;
@@ -68,7 +68,7 @@ mod input_system;
 mod interfaces;
 mod item_kind;
 mod macros;
-mod panorama;
+//mod panorama;
 mod physics;
 mod render;
 mod sound;
@@ -84,7 +84,6 @@ mod view;
 mod weapon;
 
 pub mod client;
-pub mod convar;
 pub mod entity;
 pub mod ffi;
 pub mod id;

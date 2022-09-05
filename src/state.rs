@@ -1,6 +1,6 @@
 //! Shared global state variables.
 
-use crate::anti_aim::{Pitch, Roll, Yaw};
+use crate::anti_aim::AntiAim;
 use crate::entity::{Player as _, PlayerRef};
 use crate::{Menu, Networked};
 use elysium_math::Vec3;
@@ -46,7 +46,7 @@ const fn const_srgba(r: f32, g: f32, b: f32, a: f32) -> Srgba<f32> {
 
 const NEW: State = State {
     context: None,
-    get_proc_address: None,
+    proc_address: None,
     menu: None,
     menu_open: (false, false),
     cursor_position: Point::new(0.0, 0.0),
@@ -71,12 +71,8 @@ const NEW: State = State {
     exposure_max: 0.5,
     fake_lag: 1,
     anti_untrusted: true,
-    pitch: Pitch::new(),
-    yaw: Yaw::new(),
-    roll: Roll::new(),
-    fake_pitch: Pitch::new(),
-    fake_yaw: Yaw::new(),
-    fake_roll: Roll::new(),
+    anti_aim: AntiAim::new(),
+    last_command: 0,
 };
 
 /// variables that need to be shared between hooks
@@ -84,7 +80,7 @@ pub struct State {
     /// opengl context
     pub context: Option<glow::Context>,
     /// opengl get proc address
-    pub get_proc_address: Option<unsafe extern "C" fn(symbol: *const u8) -> *const u8>,
+    pub proc_address: Option<unsafe extern "C" fn(symbol: *const u8) -> *const u8>,
     /// menu context
     pub menu: Option<Menu>,
     /// first boolean determines whether the menu is visible, second prevents input from being
@@ -125,12 +121,8 @@ pub struct State {
     pub exposure_max: f32,
     pub fake_lag: u8,
     pub anti_untrusted: bool,
-    pub pitch: Pitch,
-    pub yaw: Yaw,
-    pub roll: Roll,
-    pub fake_pitch: Pitch,
-    pub fake_yaw: Yaw,
-    pub fake_roll: Roll,
+    pub anti_aim: AntiAim,
+    pub last_command: i32,
 }
 
 impl State {
@@ -184,9 +176,9 @@ pub fn is_record_valid(simulation_time: f32) -> Option<bool> {
 
     let lerp = interp.max(interp_ratio / update_rate);
 
-    let delta = dbg!(channel.get_latency(Flow::Incoming))
-        + dbg!(channel.get_latency(Flow::Outgoing))
-        + lerp;
+    let delta =
+        dbg!(channel.latency(Flow::Incoming)) + dbg!(channel.latency(Flow::Outgoing)) + lerp;
+
     let delta = delta.clamp(0.0, unlag_max)
         - globals.ticks_to_time(dbg!(local.tick_base()) as i32)
         - simulation_time;

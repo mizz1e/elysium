@@ -1,23 +1,16 @@
-use crate::entity::{Entity, Player, PlayerRef};
+use crate::entity::{Entity, Player, PlayerRef, Weapon};
 use crate::State;
 use elysium_math::Vec3;
-use elysium_sdk::convar::Vars;
+use elysium_model::Bones;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
 use elysium_sdk::{Command, EntityList, HitGroup, Interfaces};
 use std::arch::asm;
 
 #[inline]
-fn get_dir(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
-    let x = forward.x * movement.x + right.x * movement.y;
-    let y = forward.y * movement.x + right.y * movement.y;
-
-    Vec3::from_xy(x, y)
-}
-
-#[inline]
 fn fix_movement(command: &mut Command, wish_angle: Vec3) {
-    let (mut wish_forward, mut wish_right, _wish_up) = wish_angle.angle_vector();
-    let (mut curr_forward, mut curr_right, _curr_up) = command.view_angle.angle_vector();
+    let (mut wish_forward, mut wish_right, _wish_up) = wish_angle.sanitize_angle().angle_vector();
+    let (mut curr_forward, mut curr_right, _curr_up) =
+        command.view_angle.sanitize_angle().angle_vector();
 
     wish_forward.z = 0.0;
     wish_right.z = 0.0;
@@ -29,8 +22,8 @@ fn fix_movement(command: &mut Command, wish_angle: Vec3) {
     curr_forward = curr_forward.normalize();
     curr_right = curr_right.normalize();
 
-    let wish_dir = get_dir(command.movement, wish_forward, wish_right);
-    let curr_dir = get_dir(command.movement, curr_forward, curr_right);
+    let wish_dir = command.movement.dir(wish_forward, wish_right);
+    let curr_dir = command.movement.dir(curr_forward, curr_right);
 
     if wish_dir != curr_dir {
         let denom = curr_right.y * curr_forward.x - curr_right.x * curr_forward.y;
@@ -38,22 +31,6 @@ fn fix_movement(command: &mut Command, wish_angle: Vec3) {
         command.movement.x = (wish_dir.x * curr_right.y - wish_dir.y * curr_right.x) / denom;
         command.movement.y = (wish_dir.y * curr_forward.x - wish_dir.x * curr_forward.y) / denom;
     }
-}
-
-#[inline]
-fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
-    let delta = src - dst;
-    let hypot = (delta.x * delta.x + delta.y * delta.y).sqrt();
-
-    let x = (delta.z / hypot).atan().to_degrees();
-    let mut y = (delta.y / delta.x).atan().to_degrees();
-    let z = 0.0;
-
-    if delta.x >= 0.0 {
-        y += 180.0;
-    }
-
-    Vec3::from_xyz(x, y, z)
 }
 
 #[inline]
@@ -76,9 +53,17 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     local_vars.was_attacking = do_attack;
     local_vars.was_jumping = do_jump;
 
-    if do_attack && was_attacking {
-        command.attack(false);
-        local_vars.was_attacking = false;
+    if let Some(mut weapon) = local.active_weapon() {
+        weapon.set_next_attack_time(globals.current_time);
+    }
+
+    if do_attack {
+        if was_attacking {
+            command.attack(false);
+            local_vars.was_attacking = false;
+        } else {
+            local_vars.shift = 8;
+        }
     }
 
     if do_jump {
@@ -90,6 +75,10 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     }
 
     if !on_ground {
+        if state.fake_lag != 0 {
+            *send_packet = command.command % 14 as i32 == 0;
+        }
+
         // don't do anything fancy whilest on a ladder or noclipping
         if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
             let velocity = local.velocity();
@@ -138,30 +127,19 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         }
     }
 
-    if state.local.anti_aim {
-        if state.fake_lag != 0 {
-            *send_packet = command.command % state.fake_lag as i32 == 0;
-        }
+    let fake_lag = state.fake_lag;
 
-        // don't do anything fancy whilest on a ladder or noclipping
-        if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
-            let (x, y, z) = command.view_angle.to_tuple();
-            let view_angle = if *send_packet {
-                let x = state.pitch.apply(x);
-                let y = state.yaw.apply(y);
-                let z = state.roll.apply(z);
+    if fake_lag != 0 {
+        let fake_lag = fake_lag + 2;
 
-                (x, y, z)
-            } else {
-                let x = state.fake_pitch.apply(x);
-                let y = state.fake_yaw.apply(y);
-                let z = state.fake_roll.apply(z);
+        *send_packet = command.command % fake_lag as i32 == 0;
+    }
 
-                (x, y, z)
-            };
-
-            command.view_angle = Vec3::from_tuple(view_angle);
-        }
+    // don't do anything fancy whilest on a ladder or noclipping
+    if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
+        command.view_angle = state
+            .anti_aim
+            .apply(command.command % 2 == 0, command.view_angle);
     }
 
     let player_iter = entity_list
@@ -178,18 +156,6 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     command.fast_duck(true);
 
-    /*match command.command % 14 {
-        0..=7 => {
-            *send_packet = true;
-            command.duck(true);
-        }
-        7..=14 => {
-            *send_packet = false;
-            command.duck(false);
-        }
-        _ => {},
-    }*/
-
     fix_movement(command, state.view_angle);
 
     if state.anti_untrusted {
@@ -203,71 +169,68 @@ pub unsafe extern "C" fn create_move(
     input_sample_time: f32,
     command: &mut Command,
 ) -> bool {
-    let rbp: *mut *mut bool;
+    let return_address = cake::return_address!();
+    let send_packet = &mut *return_address.offset(24);
 
-    core::arch::asm!("mov {}, rbp", out(reg) rbp, options(nostack));
+    create_move_inner(command, send_packet);
 
-    let send_packet = &mut *(*rbp).sub(24);
+    false
+}
 
-    //
+unsafe fn create_move_inner(command: &mut Command, send_packet: &mut bool) -> Option<()> {
     let state = State::get();
-    let create_move_original = state.hooks.create_move.unwrap();
-    let globals = state.globals.as_ref().unwrap();
+    let create_move_original = state.hooks.create_move?;
+    let globals = state.globals.as_ref()?;
 
     (create_move_original)(this, input_sample_time, command);
 
     if command.tick_count == 0 {
-        return false;
+        return None;
     }
 
-    let mut local = PlayerRef::from_raw(state.local.player).unwrap();
-
-    /*println!("active_weapon = {:?}", local.active_weapon());
-    println!("aim_punch = {:?}", local.aim_punch());
-    println!("armor_value = {:?}", local.armor_value());
-    //println!("damage_modifier = {:?}", local.damage_modifier());
-    println!("eye_offset = {:?}", local.eye_offset());
-    println!("eye_origin = {:?}", local.eye_origin());
-    println!("flags = {:?}", local.flags());
-    println!("has_helmet = {:?}", local.has_helmet());
-    println!("is_defusing = {:?}", local.is_defusing());
-    println!("is_scoped = {:?}", local.is_scoped());
-    println!("lower_body_yaw = {:?}", local.lower_body_yaw());
-    println!("move_kind = {:?}", local.move_kind());
-    println!("observer_mode = {:?}", local.observer_mode());*/
+    let mut local_player = PlayerRef::from_raw(state.local.player)?;
 
     // don't mess with input if you are spectating
-    if local.observer_mode() != ObserverMode::None {
-        return false;
+    if local_player.observer_mode() != ObserverMode::None {
+        return None;
     }
 
-    do_create_move(command, local, send_packet);
+    do_create_move(command, local_player, send_packet);
 
-    let mut local = PlayerRef::from_raw(state.local.player).unwrap();
+    let mut local_player = PlayerRef::from_raw(state.local.player).unwrap();
     let time = globals.current_time;
 
-    if *send_packet {
-        let mut bones = &mut state.local.bones;
-        let view_angle = local.view_angle();
+    if command.command < state.last_command {
+        command.view_angle = Vec3::zero();
+    }
 
-        local.set_view_angle(command.view_angle);
-        local.setup_bones(&mut bones[..128], 0x00000100, time);
-        local.setup_bones(&mut bones[..128], 0x000FFF00, time);
-        local.set_view_angle(view_angle);
+    state.last_command = command.command;
+
+    let fake_lag = state.fake_lag;
+
+    if *send_packet && fake_lag != 0 {
+        let mut bones = &mut state.local.fake_bones;
+
+        load_bones(&local_player, command, bones);
+    } else {
+        let mut bones = &mut state.local.bones;
+
+        load_bones(&local_player, command, bones);
 
         state.local.view_angle = command.view_angle;
         state.local.time = globals.current_time;
-    } else {
-        let mut bones = &mut state.local.fake_bones;
-        let view_angle = local.view_angle();
-
-        local.set_view_angle(command.view_angle);
-        local.setup_bones(&mut bones[..128], 0x00000100, time);
-        local.setup_bones(&mut bones[..128], 0x000FFF00, time);
-        local.set_view_angle(view_angle);
     }
 
     println!("{:?}", crate::state::is_record_valid(globals.current_time));
 
-    false
+    None
+}
+
+fn load_bones(local_player: &PlayerRef<'_>, command: &Command, bones: &mut Bones) {
+    let view_angle = local_player.view_angle();
+
+    local_player.set_view_angle(command.view_angle);
+    local_player.setup_bones(&mut bones[..128], 0x00000100, time);
+    local_player.setup_bones(&mut bones[..128], 0x000FFF00, time);
+    local_player.set_view_angle(view_angle);
 }

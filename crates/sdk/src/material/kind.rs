@@ -1,4 +1,5 @@
-use core::ptr;
+use crate::ffi;
+use core::ffi::CStr;
 
 macro_rules! materials {
     ($($variant:ident => ($name:literal, $base:literal, $vdf:expr)),*) => {
@@ -9,71 +10,27 @@ macro_rules! materials {
         }
 
         impl MaterialKind {
-            #[inline]
-            const fn name_nul_str(&self) -> &'static str {
-                match self {
-                    $(MaterialKind::$variant => $name,)*
-                }
-            }
-
-            #[inline]
-            const fn base_nul_str(&self) -> &'static str {
-                match self {
-                    $(MaterialKind::$variant => $name,)*
-                }
-            }
-
-            #[inline]
-            const fn vdf_nul_str(&self) -> Option<&'static str> {
-                match self {
-                    $(MaterialKind::$variant => $vdf,)*
-                }
-            }
-
             /// Material name passed to `Material::new`.
             #[inline]
-            pub const fn name(&self) -> &'static str {
-                let string = self.name_nul_str();
-
-                unsafe { string.get_unchecked(0..string.len().saturating_sub(1)) }
-            }
-
-            /// Material name pointer passed to `Material::new`.
-            #[inline]
-            pub const fn name_ptr(&self) -> *const u8 {
-                self.name_nul_str().as_ptr()
+            pub const fn name(&self) -> &'static CStr {
+                match self {
+                    $(MaterialKind::$variant => ffi::const_cstr($name),)*
+                }
             }
 
             /// Base VDF/KeyValues object passed to the first argument of `KeyValues::fromString`.
             #[inline]
-            pub const fn base(&self) -> &'static str {
-                let string = self.base_nul_str();
-
-                unsafe { string.get_unchecked(0..string.len().saturating_sub(1)) }
-            }
-
-            /// Base VDF/KeyValues object pointer passed to the first argument of `KeyValues::fromString`.
-            #[inline]
-            pub const fn base_ptr(&self) -> *const u8 {
-                self.base_nul_str().as_ptr()
+            pub const fn base(&self) -> &'static CStr {
+                match self {
+                    $(MaterialKind::$variant => ffi::const_cstr($base),)*
+                }
             }
 
             /// VDF/KeyValues passed to the second argument of `KeyValues::fromString`.
             #[inline]
-            pub const fn vdf(&self) -> Option<&'static str> {
-                let string = self.vdf_nul_str()?;
-
-                Some(unsafe {
-                    string.get_unchecked(0..string.len().saturating_sub(1))
-                })
-            }
-
-            /// VDF/KeyValues pointer passed to the second argument of `KeyValues::fromString`.
-            #[inline]
-            pub const fn vdf_ptr(&self) -> *const u8 {
-                match self.vdf_nul_str() {
-                    Some(vdf) => vdf.as_ptr(),
-                    None => ptr::null(),
+            pub const fn vdf(&self) -> Option<&'static CStr> {
+                match self {
+                    $(MaterialKind::$variant => ffi::const_cstr_opt($vdf),)*
                 }
             }
         }

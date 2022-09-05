@@ -18,16 +18,16 @@ struct VTable {
     _pad0: VTablePad<83>,
     create: unsafe extern "thiscall" fn(
         this: *const MaterialSystem,
-        name: *const u8,
+        name: *const libc::c_char,
         vdf: *const Vdf,
-    ) -> *const u8,
+    ) -> *const Material,
     find: unsafe extern "thiscall" fn(
         this: *const MaterialSystem,
-        name: *const u8,
-        texture_group: *const u8,
+        name: *const libc::c_char,
+        group: *const libc::c_char,
         complain: bool,
-        complain_prefix: *const u8,
-    ) -> *const u8,
+        complain_prefix: *const libc::c_char,
+    ) -> *const Material,
 }
 
 vtable_validate! {
@@ -42,28 +42,25 @@ pub struct MaterialSystem {
 
 impl MaterialSystem {
     #[inline]
-    pub fn create<S>(&self, name: S, vdf: &Vdf) -> *const u8
+    pub fn create<S>(&self, name: S, vdf: &Vdf) -> Option<&'static Material>
     where
         S: AsRef<OsStr>,
     {
-        let cstr = ffi::osstr_to_cstr_cow(name);
-        let ptr = ffi::cstr_cow_as_ptr(cstr.as_ref());
-
-        unsafe { (self.vtable.create)(self, ptr, vdf) }
+        ffi::with_cstr_os_str(name, |name| unsafe {
+            (self.vtable.create)(self, name.as_ptr(), vdf).as_ref()
+        })
     }
 
     #[inline]
-    pub fn find<S, T>(&self, name: &str, texture_group: &str) -> *const u8
+    pub fn find<S, T>(&self, name: S, group: T) -> Option<&'static Material>
     where
         S: AsRef<OsStr>,
         T: AsRef<OsStr>,
     {
-        let cstr = ffi::osstr_to_cstr_cow(name);
-        let name = ffi::cstr_cow_as_ptr(cstr.as_ref());
-
-        let cstr = ffi::osstr_to_cstr_cow(texture_group);
-        let texture_group = ffi::cstr_cow_as_ptr(cstr.as_ref());
-
-        unsafe { (self.vtable.find)(self, name, texture_group, true, ptr::null()) }
+        ffi::with_cstr_os_str(name, |name| {
+            ffi::with_cstr_os_str(group, |group| unsafe {
+                (self.vtable.find)(self, name.as_ptr(), group.as_ptr(), true, ptr::null()).as_ref()
+            })
+        })
     }
 }

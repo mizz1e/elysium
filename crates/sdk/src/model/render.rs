@@ -37,23 +37,26 @@ pub struct ModelRender {
 
 impl ModelRender {
     #[inline]
-    fn _override_material(
-        &self,
-        material: *const Material,
-        override_kind: i32,
-        material_index: i32,
-    ) {
+    fn _override_material(&mut self, material: *const Material) {
+        let override_kind = 0;
+        let material_index = -1;
+
         unsafe { (self.vtable.override_material)(self, material, override_kind, material_index) }
     }
 
     #[inline]
-    pub fn override_material(&self, material: &Material, override_kind: i32, material_index: i32) {
-        self._override_material(material, override_kind, material_index)
+    pub fn override_material(
+        &mut self,
+        material: &Material,
+        override_kind: i32,
+        material_index: i32,
+    ) {
+        self._override_material(material)
     }
 
     #[inline]
-    pub fn reset_material(&self) {
-        self._override_material(ptr::null(), 0, -1)
+    pub fn reset_material(&mut self) {
+        self._override_material(ptr::null())
     }
 
     #[inline]

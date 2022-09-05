@@ -1,10 +1,62 @@
-use crate::anti_aim::{Pitch, RollModifierKind, YawModifierKind};
+use crate::anti_aim::Pitch;
 use crate::State;
-use core::fmt;
 use core::ops::RangeInclusive;
 use iced_glow::Renderer;
 use iced_native::theme::Container;
 use iced_native::{widget, Command, Element, Length, Program};
+
+mod extra_widget {
+    use iced_native::{renderer, text, widget};
+    use num_traits::FromPrimitive;
+    use std::borrow::Cow;
+    use std::fmt::Display;
+    use std::ops::RangeInclusive;
+
+    pub fn slider<'a, T, Message, Renderer>(
+        label: impl Display,
+        range: RangeInclusive<T>,
+        value: T,
+        on_change: impl Fn(T) -> Message + 'a,
+    ) -> widget::Row<'a, Message, Renderer>
+    where
+        T: Copy + Display + From<u8> + FromPrimitive + Into<f64> + PartialOrd + 'a,
+        Message: Clone + 'a,
+        Renderer: renderer::Renderer + text::Renderer + 'a,
+        Renderer::Theme: widget::slider::StyleSheet + widget::text::StyleSheet,
+    {
+        let label = format!("{label} ({value})");
+        let text = widget::text(label);
+        let slider = widget::slider(range, value, on_change);
+
+        iced_native::row![text, slider]
+    }
+
+    pub fn pick_list<'a, Message, Renderer, T>(
+        label: impl ToString,
+        options: impl Into<Cow<'a, [T]>>,
+        selected: Option<T>,
+        on_selected: impl Fn(T) -> Message + 'a,
+    ) -> widget::Row<'a, Message, Renderer>
+    where
+        T: Clone + Eq + ToString + 'static,
+        [T]: ToOwned<Owned = Vec<T>>,
+        Message: 'a,
+        Renderer: text::Renderer + 'a,
+        Renderer::Theme: widget::pick_list::StyleSheet + widget::text::StyleSheet,
+    {
+        let text = widget::text(label);
+        let pick_list = widget::pick_list(options, selected, on_selected);
+
+        iced_native::row![text, pick_list]
+    }
+}
+
+fn hex_color(string: String) -> Message {
+    match u32::from_str_radix(&string, 16) {
+        Ok(value) => Message::FogColor(value),
+        Err(_error) => Message::None,
+    }
+}
 
 /// Iced UI controls.
 #[derive(Default)]
@@ -12,14 +64,10 @@ pub struct Controls {}
 
 #[derive(Clone, Debug)]
 pub enum Message {
-    AntiAim(bool),
     Thirdperson(bool),
     AntiUntrusted(bool),
 
-    FogRed(f32),
-    FogGreen(f32),
-    FogBlue(f32),
-    FogAlpha(f32),
+    FogColor(u32),
 
     FogStart(f32),
     FogEnd(f32),
@@ -32,17 +80,11 @@ pub enum Message {
 
     FakeLag(u8),
 
+    AntiAim(bool),
     Pitch(Pitch),
-    Yaw(YawModifierKind),
-    YawBase(f32),
-    Roll(RollModifierKind),
-    RollBase(f32),
-
-    FakePitch(Pitch),
-    FakeYaw(YawModifierKind),
-    FakeYawBase(f32),
-    FakeRoll(RollModifierKind),
-    FakeRollBase(f32),
+    YawOffset(f32),
+    YawJitter(bool),
+    Roll(bool),
 
     None,
 }
@@ -63,14 +105,8 @@ impl Program for Controls {
         let state = State::get();
 
         match message {
-            Message::AntiAim(value) => state.local.anti_aim = value,
             Message::AntiUntrusted(value) => state.anti_untrusted = value,
-            Message::Thirdperson(value) => state.local.thirdperson.0 = value,
-
-            Message::FogRed(value) => state.fog.color.red = value,
-            Message::FogGreen(value) => state.fog.color.green = value,
-            Message::FogBlue(value) => state.fog.color.blue = value,
-            Message::FogAlpha(value) => state.fog.alpha = value,
+            Message::Thirdperson(value) => state.local.thirdperson.enabled = value,
 
             Message::FogStart(value) => state.fog_start = value,
             Message::FogEnd(value) => state.fog_end = value,
@@ -83,13 +119,11 @@ impl Program for Controls {
 
             Message::FakeLag(value) => state.fake_lag = value,
 
-            Message::Pitch(value) => state.pitch = value,
-            Message::YawBase(value) => state.yaw.base = value,
-            Message::RollBase(value) => state.roll.base = value,
-
-            Message::FakePitch(value) => state.fake_pitch = value,
-            Message::FakeYawBase(value) => state.fake_yaw.base = value,
-            Message::FakeRollBase(value) => state.fake_roll.base = value,
+            Message::AntiAim(value) => state.anti_aim.enabled = value,
+            Message::Pitch(value) => state.anti_aim.pitch = value,
+            Message::YawJitter(value) => state.anti_aim.yaw_jitter = value,
+            Message::YawOffset(value) => state.anti_aim.yaw_offset = value,
+            Message::Roll(value) => state.anti_aim.roll = value,
 
             _ => {}
         }
@@ -100,198 +134,70 @@ impl Program for Controls {
     #[inline]
     fn view(&self) -> Element<'_, Self::Message, Self::Renderer> {
         let state = State::get();
-        let anti_aim = widget::checkbox("Anti-Aim", state.local.anti_aim, Message::AntiAim);
-
-        // this does work, if you have a local player, whilest in the main menu it would seem
-        // broken!
-        //
-        // TODO: rework thirdperson code into user choice, current state, and input lock
-        let thirdperson = widget::checkbox(
-            "Thirdperson",
-            state.local.thirdperson.0,
-            Message::Thirdperson,
-        );
 
         const COMPONENT_RANGE: RangeInclusive<f32> = 0.0..=1.0;
         const FOG_RANGE: RangeInclusive<f32> = 0.0..=10_000.0;
         const BLOOM_RANGE: RangeInclusive<f32> = 0.0..=5.0;
         const EXPOSURE_RANGE: RangeInclusive<f32> = 0.0..=10.0;
         const YAW_RANGE: RangeInclusive<f32> = -180.0..=180.0;
-        const ROLL_RANGE: RangeInclusive<f32> = -50.0..=50.0;
 
         // TODO: cl move client-side cap fix
         // TODO: check sv_maxusrcmdprocessticks
         const FAKE_LAG_RANGE: RangeInclusive<u8> = 0..=16;
 
-        const PITCH_OPTIONS: &[Pitch] = &[
-            Pitch::Default,
-            Pitch::Up,
-            Pitch::Zero,
-            Pitch::Down,
-            Pitch::FakeUp,
-            Pitch::FakeDown,
-            Pitch::Lisp,
+        const PITCH_OPTIONS: &[Pitch] = &[Pitch::Default, Pitch::Up, Pitch::Down];
+
+        let mut content = widget::Column::new();
+        let anti_aim = widget::checkbox("Anti-Aim", state.anti_aim.enabled, Message::AntiAim);
+
+        content = content.push(anti_aim);
+
+        if state.anti_aim.enabled {
+            let pitch = extra_widget::pick_list(
+                "Pitch",
+                PITCH_OPTIONS,
+                Some(state.anti_aim.pitch),
+                Message::Pitch,
+            );
+
+            let yaw_jitter =
+                widget::checkbox("Yaw Jitter", state.anti_aim.yaw_jitter, Message::YawJitter);
+
+            let yaw_offset = extra_widget::slider(
+                "Yaw Offset",
+                YAW_RANGE,
+                state.anti_aim.yaw_offset,
+                Message::YawOffset,
+            );
+
+            let roll = widget::checkbox("Roll", state.anti_aim.roll, Message::Roll);
+
+            content = content
+                .push(pitch)
+                .push(yaw_jitter)
+                .push(yaw_offset)
+                .push(roll);
+        }
+
+        let fake_lag =
+            extra_widget::slider("Fake Lag", FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag);
+
+        let fog_color = iced_native::row![
+            widget::text("Fog Color"),
+            widget::text_input("FF0000FA", "00000000", hex_color),
         ];
 
-        const YAW_OPTIONS: &[YawModifierKind] = &[
-            YawModifierKind::Default,
-            YawModifierKind::Legit,
-            YawModifierKind::Jitter,
-        ];
-
-        const ROLL_OPTIONS: &[RollModifierKind] =
-            &[RollModifierKind::Default, RollModifierKind::Jitter];
-
-        let pitch = iced_native::row![
-            widget::text("Pitch"),
-            widget::pick_list(PITCH_OPTIONS, Some(state.pitch), Message::Pitch),
-        ];
-
-        let yaw = iced_native::row![
-            widget::text("Yaw"),
-            widget::pick_list(YAW_OPTIONS, Some(state.yaw.modifier.kind()), Message::Yaw),
-        ];
-
-        let roll = iced_native::row![
-            widget::text("Roll"),
-            widget::pick_list(
-                ROLL_OPTIONS,
-                Some(state.roll.modifier.kind()),
-                Message::Roll
-            ),
-        ];
-
-        let fake_pitch = iced_native::row![
-            widget::text("Fake Pitch"),
-            widget::pick_list(PITCH_OPTIONS, Some(state.fake_pitch), Message::FakePitch),
-        ];
-
-        let fake_yaw = iced_native::row![
-            widget::text("Fake Yaw"),
-            widget::pick_list(
-                YAW_OPTIONS,
-                Some(state.fake_yaw.modifier.kind()),
-                Message::FakeYaw
-            ),
-        ];
-
-        let fake_roll = iced_native::row![
-            widget::text("Fake Roll"),
-            widget::pick_list(
-                ROLL_OPTIONS,
-                Some(state.fake_roll.modifier.kind()),
-                Message::FakeRoll
-            ),
-        ];
-
-        let anti_untrusted = widget::checkbox(
-            "Anti Untrusted",
-            state.anti_untrusted,
-            Message::AntiUntrusted,
+        let thirdperson = widget::checkbox(
+            "Thirdperson",
+            state.local.thirdperson.enabled,
+            Message::Thirdperson,
         );
 
-        let fake_lag = iced_native::row![
-            widget::text("Fake Lag"),
-            widget::slider(FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag),
-        ];
-
-        let red = iced_native::row![
-            widget::text("Fog red"),
-            widget::slider(COMPONENT_RANGE, state.fog.color.red, Message::FogRed).step(0.01),
-        ];
-
-        let green = iced_native::row![
-            widget::text("Fog green"),
-            widget::slider(COMPONENT_RANGE, state.fog.color.green, Message::FogGreen).step(0.01),
-        ];
-
-        let blue = iced_native::row![
-            widget::text("Fog blue"),
-            widget::slider(COMPONENT_RANGE, state.fog.color.blue, Message::FogBlue).step(0.01),
-        ];
-
-        let alpha = iced_native::row![
-            widget::text("Fog alpha"),
-            widget::slider(COMPONENT_RANGE, state.fog.alpha, Message::FogAlpha).step(0.01),
-        ];
-
-        let fog_start = iced_native::row![
-            widget::text("Fog start distance"),
-            widget::slider(FOG_RANGE, state.fog_start, Message::FogStart).step(0.01),
-        ];
-
-        let fog_end = iced_native::row![
-            widget::text("Fog end distance"),
-            widget::slider(FOG_RANGE, state.fog_end, Message::FogEnd).step(0.01),
-        ];
-
-        let fog_clip = iced_native::row![
-            widget::text("Fog clip distance"),
-            widget::slider(FOG_RANGE, state.fog_clip, Message::FogClip).step(0.01),
-        ];
-
-        let bloom = iced_native::row![
-            widget::text("Bloom intensity"),
-            widget::slider(BLOOM_RANGE, state.bloom, Message::Bloom).step(0.01),
-        ];
-
-        let exposure_min = iced_native::row![
-            widget::text("Exposure min"),
-            widget::slider(EXPOSURE_RANGE, state.exposure_min, Message::ExposureMin).step(0.01),
-        ];
-
-        let exposure_max = iced_native::row![
-            widget::text("Exposure max"),
-            widget::slider(EXPOSURE_RANGE, state.exposure_max, Message::ExposureMax).step(0.01),
-        ];
-
-        let yaw_base = iced_native::row![
-            widget::text("Yaw Base"),
-            widget::slider(YAW_RANGE, state.yaw.base, Message::YawBase).step(1.0),
-        ];
-
-        let fake_yaw_base = iced_native::row![
-            widget::text("Fake Yaw Base"),
-            widget::slider(YAW_RANGE, state.fake_yaw.base, Message::FakeYawBase).step(1.0),
-        ];
-
-        let roll_base = iced_native::row![
-            widget::text("Roll Base"),
-            widget::slider(ROLL_RANGE, state.roll.base, Message::RollBase).step(1.0),
-        ];
-
-        let fake_roll_base = iced_native::row![
-            widget::text("Fake Roll Base"),
-            widget::slider(ROLL_RANGE, state.fake_roll.base, Message::FakeRollBase).step(1.0),
-        ];
-
-        let content = iced_native::column![
-            anti_aim,
-            pitch,
-            yaw,
-            yaw_base,
-            roll,
-            roll_base,
-            fake_pitch,
-            fake_yaw,
-            fake_yaw_base,
-            fake_roll,
-            fake_roll_base,
-            anti_untrusted,
-            fake_lag,
-            thirdperson,
-            red,
-            green,
-            blue,
-            alpha,
-            fog_start,
-            fog_end,
-            fog_clip,
-            bloom,
-            exposure_min,
-            exposure_max,
-        ]
-        .spacing(15);
+        content = content
+            .push(fake_lag)
+            .push(fog_color)
+            .push(thirdperson)
+            .spacing(15);
 
         let content = widget::scrollable(content);
 

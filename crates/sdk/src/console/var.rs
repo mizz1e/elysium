@@ -1,5 +1,6 @@
-use crate::UtlVec;
+use crate::{ffi, UtlVec};
 use cake::ffi::{BytePad, VTablePad};
+use core::ffi::CStr;
 use core::fmt;
 use core::marker::PhantomData;
 
@@ -8,7 +9,7 @@ mod sealed {
 
     pub trait Sealed: Sized {
         fn read(var: &Var<Self>) -> Self;
-        fn write(self, var: &Var<Self>);
+        fn write(self, var: &mut Var<Self>);
     }
 
     impl Sealed for f32 {
@@ -18,7 +19,7 @@ mod sealed {
         }
 
         #[inline]
-        fn write(self, var: &Var<f32>) {
+        fn write(self, var: &mut Var<f32>) {
             var.write_f32(self)
         }
     }
@@ -30,7 +31,7 @@ mod sealed {
         }
 
         #[inline]
-        fn write(self, var: &Var<i32>) {
+        fn write(self, var: &mut Var<i32>) {
             var.write_i32(self)
         }
     }
@@ -42,7 +43,7 @@ mod sealed {
         }
 
         #[inline]
-        fn write(self, var: &Var<bool>) {
+        fn write(self, var: &mut Var<bool>) {
             var.write_i32(self as i32)
         }
     }
@@ -59,10 +60,10 @@ impl Kind for bool {}
 struct VTable<T> {
     _pad0: VTablePad<15>,
     read_f32: unsafe extern "thiscall" fn(this: *const Var<T>) -> f32,
-    write_f32: unsafe extern "thiscall" fn(this: *const Var<T>, value: f32),
+    write_f32: unsafe extern "thiscall" fn(this: *mut Var<T>, value: f32),
     _pad1: VTablePad<1>,
     read_i32: unsafe extern "thiscall" fn(this: *const Var<T>) -> i32,
-    write_i32: unsafe extern "thiscall" fn(this: *const Var<T>, value: i32),
+    write_i32: unsafe extern "thiscall" fn(this: *mut Var<T>, value: i32),
 }
 
 /// config variable
@@ -104,7 +105,7 @@ impl<T> Var<T> {
     }
 
     #[inline]
-    fn write_f32(&self, value: f32) {
+    fn write_f32(&mut self, value: f32) {
         unsafe { ((*self.vtable).write_f32)(self, value) }
     }
 
@@ -114,7 +115,7 @@ impl<T> Var<T> {
     }
 
     #[inline]
-    fn write_i32(&self, value: i32) {
+    fn write_i32(&mut self, value: i32) {
         unsafe { ((*self.vtable).write_i32)(self, value) }
     }
 }
@@ -131,7 +132,7 @@ where
 
     /// write `value` to the config variable
     #[inline]
-    pub fn write(&self, value: T) {
+    pub fn write(&mut self, value: T) {
         <T as sealed::Sealed>::write(value, self)
     }
 }
@@ -153,45 +154,27 @@ macro_rules! vars {
             )*
         }
 
-        const VARS: phf::Map<&'static str, VarKind> = phf::phf_map! {
-            $(
-                $string => VarKind::$name,
-            )*
+        const VARS: phf::Map<&str, VarKind> = phf::phf_map! {
+            $($string => VarKind::$name,)*
         };
 
         impl VarKind {
-            /// map a string into an var we're interested in
+            /// Map a string to a variable kind.
             #[inline]
             pub fn from_str(var: &str) -> Option<Self> {
-                VARS.get(var).cloned()
+                VARS.get(var).copied()
             }
 
-            /// returns the actual game variable this maps to
+            /// Config variable name.
             #[inline]
-            pub const fn as_nul_str(&self) -> &'static str {
+            pub const fn name(&self) -> &'static str {
                 match self {
-                    $(
-                        VarKind::$name => concat!($string, "\0"),
-                    )*
+                    $(VarKind::$name => concat!($string, "\0"),)*
                 }
-            }
-
-            /// returns the actual game variable this maps to
-            #[inline]
-            pub const fn as_str(&self) -> &'static str {
-                let string = self.as_nul_str();
-
-                unsafe { string.get_unchecked(0..string.len().saturating_sub(1)) }
-            }
-
-            /// returne a pointer to the var
-            #[inline]
-            pub const fn as_ptr(&self) -> *const u8 {
-                self.as_nul_str().as_ptr()
             }
         }
 
-        /// config variables
+        /// Map of config variables.
         #[derive(Debug)]
         #[non_exhaustive]
         pub struct Vars {
@@ -208,23 +191,21 @@ macro_rules! vars {
         impl Vars {
             /// load all config variables
             #[inline]
-            pub fn from_loader<L>(mut loader: L) -> Self
+            pub fn from_loader<L>(mut loader: L) -> Result<Self, VarKind>
             where
-                L: FnMut(VarKind) -> *const ()
+                L: FnMut(VarKind) -> *mut (),
             {
-                $(
-                    let $name = {
-                        let var = loader(VarKind::$name) as *mut Var<$type>;
+                $(let $name = {
+                    let var = loader(VarKind::$name).cast::<Var<$type>>();
 
-                        if var.is_null() {
-                            panic!(concat!("config variable `", stringify!($name), "` is null"));
-                        }
+                    if var.is_null() {
+                        return Err(VarKind::$name);
+                    }
 
-                        unsafe { &mut *var }
-                    };
-                )*
+                    unsafe { &mut *var }
+                };)*
 
-                Self { $($name,)* }
+                Ok(Self { $($name,)* })
             }
         }
     };
@@ -240,7 +221,6 @@ vars! {
     csm_shadows: bool = "cl_csm_shadows",
 
     decals: bool = "r_drawdecals",
-    do_interp: bool = "cl_interpolate",
 
     engine_sleep: bool = "engine_no_focus_sleep",
 
@@ -257,6 +237,7 @@ vars! {
     human_blood: bool = "violence_hblood",
 
     interp: f32 = "cl_interp",
+    interpolate: bool = "cl_interpolate",
     interp_ratio: f32 = "cl_interp_ratio",
     interp_ratio_min: f32 = "sv_client_min_interp_ratio",
     interp_ratio_max: f32 = "sv_client_max_interp_ratio",

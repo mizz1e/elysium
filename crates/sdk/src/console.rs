@@ -1,13 +1,22 @@
 use crate::ffi;
 use cake::ffi::VTablePad;
 use std::ffi::OsStr;
+use std::fmt;
+
+pub use var::{Kind, Var, VarKind, Vars};
+
+mod var;
 
 #[repr(C)]
 pub struct VTable {
     _pad0: VTablePad<15>,
-    var: unsafe extern "thiscall" fn(this: *const Console, var: *const u8) -> *const (),
+    var: unsafe extern "thiscall" fn(this: *const Console, name: *const libc::c_char) -> *const (),
     _pad1: VTablePad<11>,
-    write: unsafe extern "thiscall" fn(this: *const Console, fmt: *const u8, txt: *const u8),
+    write: unsafe extern "thiscall" fn(
+        this: *mut Console,
+        fmt: *const libc::c_char,
+        text: *const libc::c_char,
+    ),
 }
 
 #[repr(C)]
@@ -16,25 +25,31 @@ pub struct Console {
 }
 
 impl Console {
+    /// Get a config variable.
     #[inline]
-    pub fn var<S>(&self, name: S) -> *const ()
+    pub fn var<S, T>(&self, name: S) -> Option<&'static Var<T>>
     where
         S: AsRef<OsStr>,
+        T: Kind,
     {
-        let cstr = ffi::osstr_to_cstr_cow(name);
-        let ptr = ffi::cstr_cow_as_ptr(cstr.as_ref());
-
-        unsafe { (self.vtable.var)(self, ptr) }
+        ffi::with_cstr_os_str(name, |name| unsafe {
+            (self.vtable.var)(self, name.as_ptr())
+                .cast::<Var<T>>()
+                .as_ref()
+        })
     }
 
+    /// Write to the console.
     #[inline]
-    pub fn write<S>(&self, string: S)
-    where
-        S: AsRef<OsStr>,
-    {
-        let cstr = ffi::osstr_to_cstr_cow(string);
-        let ptr = ffi::cstr_cow_as_ptr(cstr.as_ref());
+    pub fn write(&mut self, args: fmt::Arguments<'_>) -> fmt::Result {
+        let mut buffer = String::new();
 
-        unsafe { (self.vtable.write)(self, "%s\0".as_ptr(), ptr) }
+        fmt::write(&mut buffer, args)?;
+
+        ffi::with_cstr_os_str(buffer, |buffer| unsafe {
+            (self.vtable.write)(self, ffi::const_cstr("%s\0").as_ptr(), buffer.as_ptr());
+        });
+
+        Ok(())
     }
 }

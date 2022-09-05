@@ -99,6 +99,30 @@ impl Vec3 {
         Self::from_xy(pitch, yaw)
     }
 
+    #[inline]
+    pub fn dir(self, forward: Vec3, right: Vec3) -> Vec3 {
+        let x = forward.x * self.x + right.x * self.y;
+        let y = forward.y * self.x + right.y * self.y;
+
+        Vec3::from_xy(x, y)
+    }
+
+    #[inline]
+    pub fn angle_diff(src: Vec3, dst: Vec3) -> Vec3 {
+        let delta = src - dst;
+        let hypot = (delta.x * delta.x + delta.y * delta.y).sqrt();
+
+        let x = (delta.z / hypot).atan().to_degrees();
+        let mut y = (delta.y / delta.x).atan().to_degrees();
+        let z = 0.0;
+
+        if delta.x >= 0.0 {
+            y += 180.0;
+        }
+
+        Vec3::from_xyz(x, y, z)
+    }
+
     /// Vector to angle.
     #[inline]
     pub fn to_angle(self) -> Vec3 {

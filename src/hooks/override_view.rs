@@ -7,6 +7,7 @@ pub unsafe extern "C" fn override_view(this: *const u8, view: &mut View) {
     let override_view_original = state.hooks.override_view.unwrap();
 
     view.angle = state.view_angle;
+    view.fov = 120.0;
 
     (override_view_original)(this, view);
 }

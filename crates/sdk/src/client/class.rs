@@ -1,6 +1,6 @@
 use super::Table;
 use crate::entity::EntityId;
-use crate::ffi;
+use cake::ffi::CUtf8Str;
 use core::fmt;
 
 #[non_exhaustive]
@@ -8,7 +8,7 @@ use core::fmt;
 pub struct Class {
     new: unsafe extern "C" fn(entity: i32, serial: i32) -> *const u8,
     new_event: unsafe extern "C" fn() -> *const u8,
-    name: *const u8,
+    name: *const libc::c_char,
     pub table: Option<&'static Table>,
     pub(super) next: *mut Class,
     pub entity_id: EntityId,
@@ -26,8 +26,12 @@ impl Class {
     }
 
     #[inline]
-    pub fn name(&self) -> &str {
-        unsafe { ffi::str_from_ptr_nullable(self.name) }
+    pub fn name(&self) -> Box<str> {
+        unsafe {
+            let name = CUtf8Str::from_ptr(self.name).as_str();
+
+            Box::from(name)
+        }
     }
 }
 

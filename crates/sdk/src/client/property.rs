@@ -1,6 +1,5 @@
 use super::Table;
-use crate::ffi;
-use cake::ffi::BytePad;
+use cake::ffi::{BytePad, CUtf8Str};
 use core::fmt;
 use core::ptr::NonNull;
 use elysium_math::Vec3;
@@ -57,7 +56,7 @@ pub enum PropertyKind {
 #[non_exhaustive]
 #[repr(C)]
 pub struct Property {
-    pub name: *const u8,
+    pub name: *const libc::c_char,
     pub kind: PropertyKind,
     pub flags: i32,
     pub string_len: i32,
@@ -69,18 +68,26 @@ pub struct Property {
     pub offset: i32,
     pub element_stride: i32,
     pub elements: i32,
-    pub parent_array_prop_name: *const u8,
+    pub parent_array_prop_name: *const libc::c_char,
 }
 
 impl Property {
     #[inline]
-    pub fn name(&self) -> &str {
-        unsafe { ffi::str_from_ptr_nullable(self.name) }
+    pub fn name(&self) -> Box<str> {
+        unsafe {
+            let name = CUtf8Str::from_ptr(self.name).as_str();
+
+            Box::from(name)
+        }
     }
 
     #[inline]
-    pub fn parent_array_prop_name(&self) -> &str {
-        unsafe { ffi::str_from_ptr_nullable(self.parent_array_prop_name) }
+    pub fn parent_array_prop_name(&self) -> Box<str> {
+        unsafe {
+            let name = CUtf8Str::from_ptr(self.parent_array_prop_name).as_str();
+
+            Box::from(name)
+        }
     }
 
     #[inline]

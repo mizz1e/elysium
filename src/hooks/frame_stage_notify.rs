@@ -1,10 +1,8 @@
 use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, TonemapRef};
 use crate::state::Local;
 use crate::State;
-use core::mem;
-use elysium_sdk::convar::Vars;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces};
+use elysium_sdk::{Engine, Vars, EntityList, Frame, Globals, Input, Interfaces};
 
 fn update_vars(vars: &Vars, engine: &Engine) {
     // misc
@@ -59,6 +57,10 @@ fn update_vars(vars: &Vars, engine: &Engine) {
 
     // phsyics
     vars.physics_timescale.write(0.5);
+
+    // meme
+    vars.interpolate.write(false);
+    vars.lag_comp.write(0.0);
 }
 
 /// Override fog controller properties.
@@ -236,15 +238,25 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     if local_vars.player.is_null() {
         local_vars.reset();
     } else {
-        let local = PlayerRef::from_raw(local_vars.player).unwrap();
+        let local_player = PlayerRef::from_raw(local_vars.player).unwrap();
 
-        input.thirdperson = !local.observer_mode().breaks_thirdperson()
-            && local_vars.thirdperson.0
-            && !local.is_scoped();
+        // is it even enabled
+        let mut thirdperson = local_vars.thirdperson.enabled;
+
+        // certain spectator modes alongside thirdperson break the camera.
+        thirdperson &= !local_player.observer_mode().breaks_thirdperson();
+
+        // use first person while scoped.
+        thirdperson &= !local_player.is_scoped();
+
+        // apply current toggle state.
+        thirdperson &= local_vars.thirdperson.toggle;
+
+        input.thirdperson = thirdperson;
 
         match frame {
             Frame::RenderStart => {
-                update_thirdperson(globals, input, local_vars, local);
+                update_thirdperson(globals, input, local_vars, local_player);
                 update_entities(entity_list);
             }
             _ => {}

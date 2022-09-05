@@ -6,7 +6,7 @@ use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, PlayerFlags, Renderable, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
-use palette::{Pixel, Srgb, Srgba, WithAlpha};
+use palette::{Srgb, Srgba, WithAlpha};
 use std::mem::MaybeUninit;
 use std::ops::RangeInclusive;
 use std::ptr;

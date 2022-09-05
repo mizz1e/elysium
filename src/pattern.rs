@@ -2,7 +2,7 @@
 
 use elysium_pattern::Pattern;
 use elysium_sdk::LibraryKind;
-use link::Library;
+use link::Module;
 
 pub const ANIMATION_LAYERS: Pattern<80> =
     Pattern::new("55 48 89 E5 41 56 41 55 41 89 F5 41 54 53 48 89 FB 8B");
@@ -45,17 +45,17 @@ pub const VDF_FROM_BYTES: Pattern<44> = Pattern::new("E8 ?? ?? ?? ?? 48 89 DF 48
 
 #[inline]
 pub fn get<const N: usize>(library: LibraryKind, pattern: &Pattern<N>) -> Option<&'static [u8]> {
-    let name = library.as_str();
+    let name = library.path();
 
     println!("elysium | find pattern {pattern:?} in {name}");
 
-    let library = unsafe { Library::load(library.as_nul_str()).ok()? };
-    let bytes = unsafe { library.bytes() };
+    let module = unsafe { link::load_module(library.path()).ok()? };
+    let bytes = unsafe { module.bytes() };
 
     println!("bytes = {:?}", bytes.len());
 
     pattern
         .regex()
         .find(bytes)
-        .map(|found| &bytes[found.start()..])
+        .map(|found| unsafe { bytes.get_unchecked(found.start()..) })
 }

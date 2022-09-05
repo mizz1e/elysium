@@ -4,8 +4,9 @@ name = "elysium-sdk"
 version = "0.0.0"
 
 [dependencies]
-cake = { git = "https://github.com/elysian6969/cake" }
+cake = { features = ["std"], git = "https://github.com/elysian6969/cake" }
 daisy_chain = { path = "../daisy_chain" }
+libc = "0.2"
 elysium-math = { path = "../math" }
 elysium-mem = { path = "../mem" }
 phf = { default-features = false, features = ["macros"], version = "0.11" }

@@ -1,4 +1,4 @@
-use crate::{vtable_validate, Engine, UtlVec};
+use crate::{vtable_validate, Engine};
 use core::ops::RangeInclusive;
 
 #[repr(C)]

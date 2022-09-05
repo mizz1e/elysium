@@ -1,3 +1,9 @@
+use crate::model::{ModelInfo, ModelRender};
+use crate::{Client, Engine, EntityList, InputSystem, Trace};
+use crate::{Console, Debug, Effects, Events, Filesystem, InputInternal};
+use crate::{Kinds, Localize, MaterialSystem, Movement, Panel, Panorama, Physics};
+use crate::{Prediction, Sound, Surface, VGui};
+
 macro_rules! libraries {
     ($($name:ident => $string:literal),*) => {
         /// library
@@ -13,27 +19,12 @@ macro_rules! libraries {
         }
 
         impl LibraryKind {
+            /// Return's the path of this library.
             #[inline]
-            pub const fn as_nul_str(&self) -> &'static str {
+            pub const fn path(&self) -> &'static str {
                 match self {
-                    $(
-                        LibraryKind::$name => concat!($string, "\0"),
-                    )*
+                    $(LibraryKind::$name => $string,)*
                 }
-            }
-
-            /// returns the library's path
-            #[inline]
-            pub const fn as_str(&self) -> &'static str {
-                let string = self.as_nul_str();
-
-                unsafe { string.get_unchecked(0..string.len().saturating_sub(1)) }
-            }
-
-            /// returns a pointer to this library's path
-            #[inline]
-            pub const fn as_ptr(&self) -> *const u8 {
-                self.as_nul_str().as_ptr()
             }
         }
     }
@@ -54,46 +45,27 @@ macro_rules! interfaces {
         }
 
         impl InterfaceKind {
+            /// Returns the interface's name.
             #[inline]
-            pub const fn as_nul_str(&self) -> &'static str {
+            pub const fn name(&self) -> &'static str {
                 match self {
-                    $(
-                        InterfaceKind::$ident => concat!($string, "\0"),
-                    )*
+                    $(InterfaceKind::$ident => $string,)*
                 }
             }
 
-            /// returns the interfaces library
+            /// Returns the library this interface is in.
             #[inline]
-            pub const fn library(&self) -> LibraryKind {
+            pub const fn kind(&self) -> LibraryKind {
                 match self {
-                    $(
-                        InterfaceKind::$ident => LibraryKind::$library,
-                    )*
+                    $(InterfaceKind::$ident => LibraryKind::$library,)*
                 }
-            }
-
-            /// returns the interfaces name
-            #[inline]
-            pub const fn as_str(&self) -> &'static str {
-                let string = self.as_nul_str();
-
-                unsafe { string.get_unchecked(0..string.len().saturating_sub(1)) }
-            }
-
-            /// returns a pointer to this interfaces name
-            #[inline]
-            pub const fn as_ptr(&self) -> *const u8 {
-                self.as_nul_str().as_ptr()
-            }
+            }    
         }
 
         //#[derive(Debug)]
         #[non_exhaustive]
         pub struct Interfaces {
-            $(
-                pub $field: &'static mut $ident,
-            )*
+            $(pub $field: &'static mut $ident,)*
         }
 
         impl Interfaces {
@@ -109,12 +81,6 @@ macro_rules! interfaces {
         }
     }
 }
-
-use crate::model::{ModelInfo, ModelRender};
-use crate::{Client, Engine, EntityList, InputSystem, Trace};
-use crate::{Console, Debug, Effects, Events, Filesystem, InputInternal};
-use crate::{Kinds, Localize, MaterialSystem, Movement, Panel, Panorama, Physics};
-use crate::{Prediction, Sound, Surface, VGui};
 
 libraries! {
     Client => "./csgo/bin/linux64/client_client.so",

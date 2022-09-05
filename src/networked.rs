@@ -118,7 +118,7 @@ impl Networked {
         for class in top_level.iter() {
             if let Some(table) = class.table {
                 // Skip classes we are not interested in.
-                if let Some(class) = Class::from_str(table.name()) {
+                if let Some(class) = Class::from_str(&*table.name()) {
                     iterate_table(self, table, class, 0);
                 }
             }
@@ -218,7 +218,7 @@ fn iterate_table(this: &mut Networked, table: &'static Table, class: Class, base
         }
 
         // Skip entries we are not interested in.
-        if let Some(entry) = Entry::from_str(property.name()) {
+        if let Some(entry) = Entry::from_str(&*property.name()) {
             let offset = base_offset + property.offset as usize;
 
             insert_entry(this, class, entry, offset);

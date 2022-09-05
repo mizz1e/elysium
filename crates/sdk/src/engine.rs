@@ -1,5 +1,5 @@
 use super::{ffi, vtable_export, vtable_validate, NetworkChannel, SteamAPIContext, SteamId};
-use cake::ffi::VTablePad;
+use cake::ffi::{COsStr, VTablePad};
 use elysium_math::{Matrix3x4, Vec3};
 use std::ffi::OsStr;
 use std::mem::MaybeUninit;
@@ -51,13 +51,13 @@ struct VTable {
     _unknown7: VTablePad<5>,
     bsp_tree_query: unsafe extern "thiscall" fn(this: *const Engine) -> *const (),
     _unknown8: VTablePad<9>,
-    level_name: unsafe extern "thiscall" fn(this: *const Engine) -> *const u8,
+    level_name: unsafe extern "thiscall" fn(this: *const Engine) -> *const libc::c_char,
     _unknown9: VTablePad<24>,
     network_channel: unsafe extern "thiscall" fn(this: *const Engine) -> *const NetworkChannel,
     _unknown10: VTablePad<34>,
     execute_command: unsafe extern "thiscall" fn(
         this: *const Engine,
-        command: *const u8,
+        command: *const libc::c_char,
         from_console_or_keybind: bool,
     ),
     _unknown11: VTablePad<72>,
@@ -119,25 +119,29 @@ impl Engine {
     /// returns the screen size
     #[inline]
     pub fn screen_size(&self) -> (f32, f32) {
-        unsafe {
-            let mut width = MaybeUninit::uninit();
-            let mut height = MaybeUninit::uninit();
+        let mut width = MaybeUninit::uninit();
+        let mut height = MaybeUninit::uninit();
 
+        unsafe {
             (self.vtable.screen_size)(self, width.as_mut_ptr(), height.as_mut_ptr());
 
-            (width.assume_init(), height.assume_init())
+            let width = MaybeUninit::assume_init(width);
+            let height = MaybeUninit::assume_init(height);
+
+            (width, height)
         }
     }
 
     /// get player info for the player at `index`
     #[inline]
     pub fn player_info(&self, index: i32) -> Option<PlayerInfo> {
+        let mut player_info = MaybeUninit::uninit();
+
         unsafe {
-            let mut player_info = MaybeUninit::uninit();
             let exists = (self.vtable.player_info)(self, index, player_info.as_mut_ptr());
 
             if exists {
-                Some(player_info.assume_init())
+                Some(MaybeUninit::assume_init(player_info))
             } else {
                 None
             }
@@ -154,19 +158,19 @@ impl Engine {
         }
     }
 
-    /// get the view angle
+    /// Get the engine view angle.
     #[inline]
     pub fn view_angle(&self) -> Vec3 {
+        let mut angle = MaybeUninit::uninit();
+
         unsafe {
-            let mut view_angle = MaybeUninit::uninit();
+            (self.vtable.view_angle)(self, angle.as_mut_ptr());
 
-            (self.vtable.view_angle)(self, view_angle.as_mut_ptr());
-
-            view_angle.assume_init()
+            MaybeUninit::assume_init(angle)
         }
     }
 
-    /// set the view angle
+    /// Set the engine view angle.
     #[inline]
     pub fn set_view_angle(&self, angle: Vec3) {
         unsafe { (self.vtable.set_view_angle)(self, &angle) }
@@ -184,27 +188,31 @@ impl Engine {
         unsafe { *(self.vtable.world_to_screen_matrix)(self) }
     }
 
-    /// returns the current level name
+    /// Returns the current level name.
     #[inline]
-    pub fn level_name(&self) -> &str {
+    pub fn level_name(&self) -> Option<Box<OsStr>> {
         unsafe {
-            let address = (self.vtable.level_name)(self);
+            let pointer = (self.vtable.level_name)(self);
 
-            ffi::str_from_ptr(address)
+            if pointer.is_null() {
+                return None;
+            }
+
+            let os_str = COsStr::from_ptr(pointer).as_os_str();
+
+            Some(Box::from(os_str))
         }
     }
 
-    /// executes a command
+    /// Executes a command.
+    // source: From console (false) or keybind (true).
     #[inline]
-    pub fn execute_command<C>(&self, command: C, from_console_or_keybind: bool)
+    pub fn execute_command<C>(&self, command: C, source: bool)
     where
         C: AsRef<OsStr>,
     {
-        unsafe {
-            let maybe_cstr = ffi::osstr_to_cstr_cow(command);
-            let ptr = ffi::cstr_cow_as_ptr(maybe_cstr.as_ref());
-
-            (self.vtable.execute_command)(self, ptr, from_console_or_keybind);
-        }
+        ffi::with_cstr_os_str(command, |command| unsafe {
+            (self.vtable.execute_command)(self, command.as_ptr(), source)
+        });
     }
 }

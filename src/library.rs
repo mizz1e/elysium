@@ -2,6 +2,7 @@
 // TODO: update with similar code to https://github.com/elysian6969/csgo-launcher ui rebuild branch
 
 use daisy_chain::{Chain, ChainIter};
+use cake::ffi::CUtf8Str;
 use link::Library;
 use std::time::Duration;
 use std::{fmt, ptr, thread};
@@ -24,7 +25,7 @@ impl Interface {
 
     #[inline]
     pub fn name(&self) -> &str {
-        unsafe { elysium_sdk::ffi::str_from_ptr_nullable(self.name) }
+        unsafe { CUtf8Str::from_pte(self.name).as_str() }
     }
 
     #[inline]
@@ -117,26 +118,11 @@ impl<'a> Iterator for InterfaceIter<'a> {
 #[inline]
 pub fn load_interfaces() -> elysium_sdk::Interfaces {
     unsafe {
-        elysium_sdk::Interfaces::from_loader(|interface_kind| {
-            let library_kind = interface_kind.library();
-            let library = match Library::load(library_kind.as_nul_str()) {
-                Ok(library) => library,
-                Err(error) => panic!("Failed to load library: {library_kind:?}: {error:?}"),
-            };
-
-            let symbol: *const *mut Interface = match library.symbol_ptr("s_pInterfaceRegs") {
-                Some(symbol) => symbol,
-                None => panic!("Failed to find interfaces within library: {library_kind:?}"),
-            };
-
-            let interfaces = Interfaces::from_ptr(*symbol);
-            let interface = interfaces.get(interface_kind.as_str());
-
-            if interface.is_null() {
-                println!("elysium | unable to load interface \x1b[38;5;2m{:?}\x1b[m within \x1b[38;5;2m{:?}\x1b[m at \x1b[38;5;3m{interface:?}\x1b[m", interface_kind.as_str(), library_kind.as_str());
-            } else {
-                println!("elysium | loaded interface \x1b[38;5;2m{:?}\x1b[m within \x1b[38;5;2m{:?}\x1b[m at \x1b[38;5;3m{interface:?}\x1b[m", interface_kind.as_str(), library_kind.as_str());
-            }
+        elysium_sdk::Interfaces::from_loader(|kind| {
+            let module = link::load_module(kind.path()).expect("module");
+            let symbol = module.symbol("s_pInterfaceRegs").expect("interface registry").symbol;
+            let interfaces = Interfaces::from_ptr(symbol.address as _);
+            let interface = interfaces.get(interface.name());
 
             interface
         })
@@ -148,7 +134,7 @@ pub fn wait_for_serverbrowser() {
     // `serverbrowser_client.so` is the last library to be loaded.
     println!("elysium | waiting for \x1b[38;5;2m`serverbrowser_client.so`\x1b[m to load");
 
-    while !Library::is_loaded("./bin/linux64/serverbrowser_client.so") {
+    while !link::is_module_loaded(LibraryKind::ServerBrowser.path()) {
         thread::sleep(Duration::from_millis(500));
     }
 

@@ -1,4 +1,5 @@
-use core::fmt;
+use core::cell::SyncUnsafeCell;
+use core::{fmt, ptr};
 
 #[repr(C)]
 pub union VdfValue {
@@ -25,8 +26,28 @@ pub struct Vdf {
     pub chain: *const Vdf,
 }
 
+#[inline]
+unsafe extern "C" fn from_bytes(name: *const u8, value: *const u8, _unk1: *const u8) -> *const Vdf {
+    panic!("Vdf::from_bytes called without loading the method from the game");
+}
+
+static FROM_BYTES: SyncUnsafeCell<
+    unsafe extern "C" fn(name: *const u8, value: *const u8, _unk1: *const u8) -> *const Vdf,
+> = SyncUnsafeCell::new(from_bytes);
+
+impl Vdf {
+    #[inline]
+    pub fn from_bytes(name: &str, value: &str) -> Option<&'static Vdf> {
+        let name = name.as_ptr();
+        let value = value.as_ptr();
+
+        unsafe { (*FROM_BYTES.get())(name, value, ptr::null()).as_ref() }
+    }
+}
+
 impl fmt::Debug for Vdf {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("Vdf")
             .field("key_name", &self.key_name)
             .field("value", &self.value)

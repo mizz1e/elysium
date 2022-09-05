@@ -1,12 +1,13 @@
 use super::MaterialFlag;
-use crate::{ffi, vtable_validate};
+use crate::vtable_validate;
+use cake::ffi::CUtf8Str;
 use cake::ffi::VTablePad;
 use cake::mem::UninitArray;
 
 #[repr(C)]
 struct VTable {
-    name: unsafe extern "thiscall" fn(this: *const Material) -> *const u8,
-    texture_group: unsafe extern "thiscall" fn(this: *const Material) -> *const u8,
+    name: unsafe extern "thiscall" fn(this: *const Material) -> *const libc::c_char,
+    group: unsafe extern "thiscall" fn(this: *const Material) -> *const libc::c_char,
     _pad0: VTablePad<25>,
     set_alpha: unsafe extern "thiscall" fn(this: *const Material, alpha: f32),
     set_rgb: unsafe extern "thiscall" fn(this: *const Material, red: f32, green: f32, blue: f32),
@@ -37,21 +38,25 @@ pub struct Material {
 }
 
 impl Material {
+    /// Material name.
     #[inline]
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> Box<str> {
         unsafe {
-            let ptr = (self.vtable.name)(self);
+            let pointer = (self.vtable.name)(self);
+            let name = CUtf8Str::from_ptr(pointer).as_str();
 
-            ffi::str_from_ptr(ptr)
+            Box::from(name)
         }
     }
 
+    /// Material texture group.
     #[inline]
-    pub fn texture_group(&self) -> &str {
+    pub fn group(&self) -> Box<str> {
         unsafe {
-            let ptr = (self.vtable.texture_group)(self);
+            let pointer = (self.vtable.group)(self);
+            let group = CUtf8Str::from_ptr(pointer).as_str();
 
-            ffi::str_from_ptr(ptr)
+            Box::from(group)
         }
     }
 

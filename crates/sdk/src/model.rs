@@ -81,7 +81,7 @@ pub struct Bone {
 
 impl Bone {
     pub const fn as_ptr(&self) -> *const u8 {
-        self as *const Self as *const u8
+        ptr::addr_of!(self).cast()
     }
 
     pub unsafe fn name(&self) -> *const i8 {
@@ -89,10 +89,11 @@ impl Bone {
     }
 
     pub unsafe fn procedural(&self) -> *const () {
-        match self.procedural_offset {
-            0 => ptr::null(),
-            offset => self.as_ptr().offset(offset as isize).cast(),
+        if self.procedural_offset == 0 {
+            return ptr::null();
         }
+
+        self.as_ptr().offset(self.procedural_offset as isize).cast()
     }
 
     pub unsafe fn get_surface_prop(&self) -> *const i8 {
@@ -118,14 +119,17 @@ pub struct BoundingBox {
 
 impl BoundingBox {
     pub const fn as_ptr(&self) -> *const u8 {
-        self as *const Self as *const u8
+        ptr::addr_of!(self).cast()
     }
 
     pub unsafe fn name(&self) -> *const i8 {
-        match self.hitbox_name_offset {
-            0 => ptr::null(),
-            offset => self.as_ptr().offset(offset as isize).cast(),
+        if self.hitbox_name_offset == 0 {
+            return ptr::null();
         }
+
+        self.as_ptr()
+            .offset(self.hitbox_name_offset as isize)
+            .cast()
     }
 }
 
@@ -139,7 +143,7 @@ pub struct HitboxSet {
 
 impl HitboxSet {
     pub const fn as_ptr(&self) -> *const u8 {
-        self as *const Self as *const u8
+        ptr::addr_of!(self).cast()
     }
 
     pub unsafe fn name(&self) -> *const i8 {
@@ -242,4 +246,11 @@ pub struct ModelRenderInfo {
     pub body: i32,
     pub hitboxset: i32,
     pub instance: *const (),
+}
+
+impl ModelRenderInfo {
+    #[inline]
+    pub fn name(&self, model_info: &ModelInfo) -> Option<Box<str>> {
+        model_info.name_from_info(self)
+    }
 }

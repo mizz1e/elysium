@@ -22,16 +22,14 @@ unsafe fn window_size(window: *mut SDL_Window) -> Size<u32> {
 /// `SDL_GL_SwapWindow` hook.
 pub unsafe extern "C" fn swap_window(window: *mut sdl2_sys::SDL_Window) {
     let state = State::get();
+    let proc_address = state.proc_address.unwrap();
     let swap_window_original = state.hooks.swap_window.unwrap();
 
     state.window_size = window_size(window);
 
-    let context = state.context.get_or_insert_with(|| {
-        let context = glow::Context::from_loader_function(|symbol| {
-            let get_proc_address = state.get_proc_address.unwrap_unchecked();
-
-            (get_proc_address)(symbol.as_ptr()) as _
-        });
+    let context = state.context.get_or_insert_with(move || {
+        let context =
+            glow::Context::from_loader_function(move |symbol| (proc_address)(symbol.as_ptr()) as _);
 
         context
     });

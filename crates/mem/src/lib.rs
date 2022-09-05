@@ -1,6 +1,6 @@
 //! Memory related functions.
 
-#![feature(pointer_byte_offsets)]
+#![feature(ptr_sub_ptr)]
 #![feature(strict_provenance)]
 
 use core::ptr;
@@ -36,31 +36,55 @@ where
     protect(ptr, prot)
 }
 
-/// Searches `ptr` for the next instruction that makes use of a relative address, then resolves and
+/// Searches `pointer` for the next instruction that makes use of a relative address, then resolves and
 /// returns the absolute address.
 #[inline]
-pub unsafe fn next_abs_addr<T>(base: *const T) -> *const T {
-    let insts = InstIter::from_bytes(base.addr(), &*base.cast::<[u8; 15]>());
+pub fn next_abs_addr<T>(bytes: &[u8]) -> Option<*const T> {
+    let ip = bytes.as_ptr().addr();
+    let insts = InstIter::from_bytes(ip, bytes);
 
     for inst in insts {
-        println!(
-            "elysium | {:0x?} {:0x?} {:02X?}",
-            inst.ip(),
-            *inst,
-            inst.to_bytes()
-        );
+        let ip = inst.ip();
+        let abs_addr = inst.abs_addr();
+        let inst = *inst;
+        let bytes = inst.to_bytes();
 
-        if let Some(addr) = inst.abs_addr() {
-            return ptr::from_exposed_addr(addr);
+        if let Some(addr) = abs_addr {
+            let addr = ptr::from_exposed_addr(addr);
+
+            println!("elysium | {ip:0x?} {inst:0x?} {bytes:02X?} -> {addr:0x?}",);
+
+            return Some(addr);
+        } else {
+            println!("elysium | {ip:0x?} {inst:0x?} {bytes:02X?}");
         }
     }
 
-    ptr::null()
+    None
 }
 
-/// Searches `ptr` for the next instruction that makes use of a relative address, then resolves and
+/// Searches `pointer` for the next instruction that makes use of a relative address, then resolves and
 /// returns the absolute address. Mutable variant.
 #[inline]
-pub unsafe fn next_abs_addr_mut<T>(base: *mut T) -> *mut T {
-    next_abs_addr(base) as *mut T
+pub fn next_abs_addr_mut<T>(bytes: &mut [u8]) -> Option<*mut T> {
+    next_abs_addr::<T>(bytes).map(|pointer| pointer as *mut T)
+}
+
+/// Searches `pointer` for the next instruction that makes use of a relative address, then resolves and
+/// returns the absolute address.
+#[inline]
+pub unsafe fn next_abs_addr_ptr<T>(pointer: *const u8) -> Option<*const T> {
+    let address = link::query_address(pointer)?;
+    let module_bytes = address.module.bytes();
+    let offset = pointer.sub_ptr(module_bytes.as_ptr());
+    let bytes = module_bytes.get_unchecked(offset..);
+
+    next_abs_addr(bytes)
+}
+
+/// Searches `pointer` for the next instruction that makes use of a relative address, then resolves and
+/// returns the absolute address.
+#[inline]
+pub unsafe fn next_abs_addr_mut_ptr<T>(pointer: *mut u8) -> Option<*mut T> {
+    next_abs_addr_ptr::<T>(pointer).map(|pointer| pointer as *mut T)
 }

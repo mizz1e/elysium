@@ -1,33 +1,35 @@
-use super::{Hdr, Model};
-use crate::ffi;
-use crate::vtable_validate;
-use cake::ffi::VTablePad;
+use super::{Hdr, Model, ModelRenderInfo};
+use crate::{ffi, vtable_validate};
+use cake::ffi::{CUtf8Str, VTablePad};
 use std::ffi::OsStr;
 
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<2>,
-    model: unsafe extern "thiscall" fn(this: *const ModelInfo, index: i32) -> *const u8,
-    model_index: unsafe extern "thiscall" fn(this: *const ModelInfo, file_name: *const u8) -> i32,
-    model_name: unsafe extern "thiscall" fn(this: *const ModelInfo, model: *const u8) -> *const u8,
-    _pad1: VTablePad<13>,
-    model_materials: unsafe extern "thiscall" fn(
+    get: unsafe extern "thiscall" fn(this: *const ModelInfo, index: i32) -> *const Model,
+    index_of:
+        unsafe extern "thiscall" fn(this: *const ModelInfo, file_name: *const libc::c_char) -> i32,
+    name_of: unsafe extern "thiscall" fn(
         this: *const ModelInfo,
-        model: *const u8,
+        model: *const Model,
+    ) -> *const libc::c_char,
+    _pad1: VTablePad<13>,
+    materials: unsafe extern "thiscall" fn(
+        this: *const ModelInfo,
+        model: *const Model,
         len: i32,
         materials: *mut *mut u8,
     ),
     _pad2: VTablePad<12>,
-    studio_model:
-        unsafe extern "thiscall" fn(this: *const ModelInfo, model: *const u8) -> *const u8,
+    studio: unsafe extern "thiscall" fn(this: *const ModelInfo, model: *const Model) -> *const Hdr,
 }
 
 vtable_validate! {
-    model => 2,
-    model_index => 3,
-    model_name => 4,
-    model_materials => 18,
-    studio_model => 31,
+    get => 2,
+    index_of => 3,
+    name_of => 4,
+    materials => 18,
+    studio => 31,
 }
 
 /// Model info.
@@ -37,33 +39,46 @@ pub struct ModelInfo {
 }
 
 impl ModelInfo {
-    pub fn model(&self, index: i32) -> *const u8 {
-        unsafe { (self.vtable.model)(self, index) }
+    /// Returns a model at `index`.
+    #[inline]
+    pub fn get(&self, index: i32) -> Option<&Model> {
+        unsafe { (self.vtable.get)(self, index).as_ref() }
     }
 
-    pub fn model_index<S>(&self, file_name: S) -> i32
+    /// Returns the index of a model by it's file name.
+    #[inline]
+    pub fn index_of<S>(&self, file_name: S) -> i32
     where
         S: AsRef<OsStr>,
     {
-        let cstr = ffi::osstr_to_cstr_cow(file_name);
-        let ptr = ffi::cstr_cow_as_ptr(cstr.as_ref());
-
-        unsafe { (self.vtable.model_index)(self, ptr) }
+        ffi::with_cstr_os_str(file_name, |file_name| unsafe {
+            unsafe { (self.vtable.index_of)(self, file_name.as_ptr()) }
+        })
     }
 
-    pub fn model_name(&self, model: &Model) -> &str {
-        let model = <*const Model>::cast(model);
-
+    /// Returns the name of a model.
+    #[inline]
+    pub fn name_of(&self, model: &Model) -> Box<str> {
         unsafe {
-            let ptr = (self.vtable.model_name)(self, model);
+            let pointer = (self.vtable.name_of)(self, model);
+            let name = CUtf8Str::from_ptr(pointer).as_str();
 
-            ffi::str_from_ptr(ptr)
+            Box::from(name)
         }
     }
 
-    pub fn studio_model(&self, model: &Model) -> *const Hdr {
-        let model = <*const Model>::cast(model);
+    /// Returns the name of a model from rendering information.
+    #[inline]
+    pub(crate) fn name_from_info(&self, info: &ModelRenderInfo) -> Option<Box<str>> {
+        let model = unsafe { info.model.as_ref()? };
+        let name = self.name_of(model);
 
-        unsafe { (self.vtable.studio_model)(self, model).cast() }
+        Some(name)
+    }
+
+    /// Returns the studio model.
+    #[inline]
+    pub fn studio(&self, model: &Model) -> *const Hdr {
+        unsafe { (self.vtable.studio)(self, model) }
     }
 }

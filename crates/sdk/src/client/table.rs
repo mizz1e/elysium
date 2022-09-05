@@ -1,6 +1,6 @@
 use super::Property;
 use crate::ffi;
-use cake::ffi::BytePad;
+use cake::ffi::{BytePad, CUtf8Str};
 use core::fmt;
 
 #[non_exhaustive]
@@ -8,14 +8,18 @@ use core::fmt;
 pub struct Table {
     properties: (*const Property, i32),
     _pad0: BytePad<8>,
-    name: *const u8,
+    name: *const libc::c_char,
     _pad1: BytePad<2>,
 }
 
 impl Table {
     #[inline]
-    pub fn name(&self) -> &str {
-        unsafe { ffi::str_from_ptr_nullable(self.name) }
+    pub fn name(&self) -> Box<str> {
+        unsafe {
+            let name = CUtf8Str::from_ptr(self.name).as_str();
+
+            Box::from(name)
+        }
     }
 
     #[inline]

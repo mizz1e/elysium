@@ -13,22 +13,22 @@ pub struct UtlString {
 
 impl UtlString {
     #[inline]
-    pub const fn as_bytes(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         unsafe { slice::from_raw_parts(self.mem.mem, self.len as usize) }
     }
 
     #[inline]
-    pub const fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         unsafe { str::from_utf8_unchecked(self.as_bytes()) }
     }
 
     #[inline]
-    pub const unsafe fn as_mut_bytes(&mut self) -> &mut [u8] {
+    pub unsafe fn as_mut_bytes(&mut self) -> &mut [u8] {
         slice::from_raw_parts_mut(self.mem.mem as *mut u8, self.len as usize)
     }
 
     #[inline]
-    pub const fn as_mut_str(&mut self) -> &mut str {
+    pub fn as_mut_str(&mut self) -> &mut str {
         unsafe { str::from_utf8_unchecked_mut(self.as_mut_bytes()) }
     }
 }
