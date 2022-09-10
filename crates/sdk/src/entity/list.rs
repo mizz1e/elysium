@@ -31,7 +31,7 @@ vtable_validate! {
 }
 
 pub const MAX_EDICT_BITS: i32 = 11;
-pub const MAX_EDICTS: i32 = 1 << MAX_EDICT_BITS;
+//pub const MAX_EDICTS: i32 = 1 << MAX_EDICT_BITS;
 
 pub const NUM_ENT_ENTRY_BITS: i32 = MAX_EDICT_BITS + 2;
 pub const NUM_ENT_ENTRIES: i32 = 1 << NUM_ENT_ENTRY_BITS;

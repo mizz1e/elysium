@@ -3,7 +3,7 @@
 
 use daisy_chain::{Chain, ChainIter};
 use cake::ffi::CUtf8Str;
-use link::Library;
+use link::Module;
 use std::time::Duration;
 use std::{fmt, ptr, thread};
 
@@ -11,7 +11,7 @@ use std::{fmt, ptr, thread};
 #[repr(C)]
 pub struct Interface {
     new: unsafe extern "C" fn() -> *mut u8,
-    name: *const u8,
+    name: *const libc::c_char,
     next: *mut Interface,
 }
 
@@ -25,7 +25,7 @@ impl Interface {
 
     #[inline]
     pub fn name(&self) -> &str {
-        unsafe { CUtf8Str::from_pte(self.name).as_str() }
+        unsafe { CUtf8Str::from_ptr(self.name).as_str() }
     }
 
     #[inline]

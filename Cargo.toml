@@ -14,6 +14,7 @@ elysium-pattern = { path = "crates/pattern" }
 elysium-sdk = { path = "crates/sdk" }
 iced_glow = { git = "https://github.com/iced-rs/iced" }
 iced_native = { features = ["debug"], git = "https://github.com/iced-rs/iced" }
+libc = "0.2"
 libm = { git = "https://github.com/elysian6969/libm" }
 link = { git = "https://github.com/elysian6969/link" }
 num-traits = "0.2"

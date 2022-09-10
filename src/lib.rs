@@ -1,4 +1,4 @@
-//#![deny(warnings)]
+#![deny(warnings)]
 #![feature(abi_thiscall)]
 #![feature(bound_map)]
 #![feature(const_fn_floating_point_arithmetic)]

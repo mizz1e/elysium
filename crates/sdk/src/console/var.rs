@@ -1,6 +1,5 @@
-use crate::{ffi, UtlVec};
+use crate::UtlVec;
 use cake::ffi::{BytePad, VTablePad};
-use core::ffi::CStr;
 use core::fmt;
 use core::marker::PhantomData;
 

@@ -1,4 +1,4 @@
-//#![deny(warnings)]
+#![deny(warnings)]
 #![allow(incomplete_features)]
 #![feature(abi_thiscall)]
 #![feature(const_convert)]

@@ -1,6 +1,3 @@
-use crate::ffi;
-use core::ffi::CStr;
-
 macro_rules! materials {
     ($($variant:ident => ($name:literal, $base:literal, $vdf:expr)),*) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -12,25 +9,25 @@ macro_rules! materials {
         impl MaterialKind {
             /// Material name passed to `Material::new`.
             #[inline]
-            pub const fn name(&self) -> &'static CStr {
+            pub const fn name(&self) -> &'static str {
                 match self {
-                    $(MaterialKind::$variant => ffi::const_cstr($name),)*
+                    $(MaterialKind::$variant => $name,)*
                 }
             }
 
             /// Base VDF/KeyValues object passed to the first argument of `KeyValues::fromString`.
             #[inline]
-            pub const fn base(&self) -> &'static CStr {
+            pub const fn base(&self) -> &'static str {
                 match self {
-                    $(MaterialKind::$variant => ffi::const_cstr($base),)*
+                    $(MaterialKind::$variant => $base,)*
                 }
             }
 
             /// VDF/KeyValues passed to the second argument of `KeyValues::fromString`.
             #[inline]
-            pub const fn vdf(&self) -> Option<&'static CStr> {
+            pub const fn vdf(&self) -> Option<&'static str> {
                 match self {
-                    $(MaterialKind::$variant => ffi::const_cstr_opt($vdf),)*
+                    $(MaterialKind::$variant => $vdf,)*
                 }
             }
         }
@@ -38,24 +35,24 @@ macro_rules! materials {
 }
 
 materials! {
-    Normal => ("normal\0", "VertexLitGenric\0", None),
-    Flat => ("flat\0", "UnlitGeneric\0", None),
-    Chrome => ("chrome\0", "VertexLitGeneric\0", Some("
+    Normal => ("normal", "VertexLitGenric", None),
+    Flat => ("flat", "UnlitGeneric", None),
+    Chrome => ("chrome", "VertexLitGeneric", Some("
         $envmap env_cubemap
-    \0")),
-    Glow => ("glow\0", "VertexLitGeneric\0", Some("
+    ")),
+    Glow => ("glow", "VertexLitGeneric", Some("
         $additive 1
         $envmap models/effects/cube_white
         $envmapfresnel 1
         $alpha .8
-    \0")),
-    Pearlescent => ("pearlescent\0", "VertexLitGeneric\0", Some("
+    ")),
+    Pearlescent => ("pearlescent", "VertexLitGeneric", Some("
         $ambientonly 1
         $phong 1
         $pearlescent 3
         $basemapalphaphongmask 1
-    \0")),
-    Metallic => ("metallic\0", "VertexLitGeneric\0", Some("
+    ")),
+    Metallic => ("metallic", "VertexLitGeneric", Some("
         $basetexture white
         $envmap env_cubemap
         $envmapcontrast 1
@@ -68,8 +65,8 @@ materials! {
         $normalmapalphaenvmapmask 1
         $selfillum 1
         $znearer 0
-    \0")),
-    Animated => ("animated\0", "VertexLitGeneric\0", Some("
+    ")),
+    Animated => ("animated", "VertexLitGeneric", Some("
         $basetexture dev/zone_warning
         $envmap editor/cube_vertigo
         $envmapcontrast 1
@@ -81,19 +78,19 @@ materials! {
                 texturescrollangle 90
             }
         }
-    \0")),
-    Platinum => ("platinum\0", "VertexLitGeneric\0", Some("
+    ")),
+    Platinum => ("platinum", "VertexLitGeneric", Some("
         $basetexture models/player/ct_fbi/ct_fbi_glass
         $envmap env_cubemap
         $envmaptint [.4 .6 .7]
-    \0")),
-    Glass => ("glass\0", "VertexLitGeneric\0", Some("
+    ")),
+    Glass => ("glass", "VertexLitGeneric", Some("
         $additive 1
         $basetexture detail/dt_metal1
         $color [.05 .05 .05]
         $envmap editor/cube_vertigo
-    \0")),
-    Crystal => ("crystal\0", "VertexLitGeneric\0", Some("
+    ")),
+    Crystal => ("crystal", "VertexLitGeneric", Some("
         $basetexture black
         $bumpmap effects/flat_normal
         $envmap models/effects/crystal_cube_vertigo_hdr
@@ -103,8 +100,8 @@ materials! {
         $phongexponent 16
         $phongtint [.2 .35 .6]
         $translucent 1
-    \0")),
-    Silver => ("silver\0", "VertexLitGeneric\0", Some("
+    ")),
+    Silver => ("silver", "VertexLitGeneric", Some("
         $basetexture white
         $bumpmap effects/flat_normal
         $color2 [.05 .05 .05]
@@ -116,8 +113,8 @@ materials! {
         $phongexponent 8
         $phongfresnelranges [.7 .8 1]
         $phongtint [.8 .9 1]
-    \0")),
-    Gold => ("gold\0", "VertexLitGeneric\0", Some("
+    ")),
+    Gold => ("gold", "VertexLitGeneric", Some("
         $basetexture white
         $bumpmap effects/flat_normal
         $color2 [.18 .15 .06]
@@ -130,8 +127,8 @@ materials! {
         $phongexponent 128
         $phongfresnelranges [.7 .8 1]
         $phongtint [.6 .5 .2]
-    \0")),
-    Plastic => ("plastic\0", "VertexLitGeneric\0", Some("
+    ")),
+    Plastic => ("plastic", "VertexLitGeneric", Some("
         $additive 1
         $basetexture black
         $bumpmap models/inventory_items/trophy_majors/matte_metal_normal
@@ -144,5 +141,5 @@ materials! {
         $phongexponent 3000
         $phongfesnelranges [.1 .4 1]
         $phongtint [.8 .9 1]
-    \0"))
+    "))
 }

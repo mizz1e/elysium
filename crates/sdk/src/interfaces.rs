@@ -59,7 +59,7 @@ macro_rules! interfaces {
                 match self {
                     $(InterfaceKind::$ident => LibraryKind::$library,)*
                 }
-            }    
+            }
         }
 
         //#[derive(Debug)]

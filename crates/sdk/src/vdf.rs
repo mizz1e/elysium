@@ -27,7 +27,11 @@ pub struct Vdf {
 }
 
 #[inline]
-unsafe extern "C" fn from_bytes(name: *const u8, value: *const u8, _unk1: *const u8) -> *const Vdf {
+unsafe extern "C" fn from_bytes(
+    _name: *const u8,
+    _value: *const u8,
+    _unk1: *const u8,
+) -> *const Vdf {
     panic!("Vdf::from_bytes called without loading the method from the game");
 }
 

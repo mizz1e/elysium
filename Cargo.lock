@@ -177,6 +177,7 @@ dependencies = [
  "elysium-sdk",
  "iced_glow",
  "iced_native",
+ "libc",
  "libm",
  "link",
  "num-traits",
@@ -453,7 +454,7 @@ dependencies = [
 [[package]]
 name = "iced_core"
 version = "0.5.0"
-source = "git+https://github.com/iced-rs/iced#ab1ac8228f2ab9ef53303e2c5b1770eaa9a513ad"
+source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
 dependencies = [
  "bitflags",
  "palette",
@@ -463,7 +464,7 @@ dependencies = [
 [[package]]
 name = "iced_futures"
 version = "0.4.1"
-source = "git+https://github.com/iced-rs/iced#ab1ac8228f2ab9ef53303e2c5b1770eaa9a513ad"
+source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
 dependencies = [
  "futures",
  "log",
@@ -474,7 +475,7 @@ dependencies = [
 [[package]]
 name = "iced_glow"
 version = "0.3.0"
-source = "git+https://github.com/iced-rs/iced#ab1ac8228f2ab9ef53303e2c5b1770eaa9a513ad"
+source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
 dependencies = [
  "bytemuck",
  "euclid",
@@ -489,7 +490,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.3.1"
-source = "git+https://github.com/iced-rs/iced#ab1ac8228f2ab9ef53303e2c5b1770eaa9a513ad"
+source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
 dependencies = [
  "bytemuck",
  "glam",
@@ -502,7 +503,7 @@ dependencies = [
 [[package]]
 name = "iced_native"
 version = "0.5.1"
-source = "git+https://github.com/iced-rs/iced#ab1ac8228f2ab9ef53303e2c5b1770eaa9a513ad"
+source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -515,7 +516,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.4.0"
-source = "git+https://github.com/iced-rs/iced#ab1ac8228f2ab9ef53303e2c5b1770eaa9a513ad"
+source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
 dependencies = [
  "iced_core",
  "lazy_static",
@@ -560,10 +561,11 @@ source = "git+https://github.com/elysian6969/libm#19bbd0a1806e79ddd3fc70a21797d5
 [[package]]
 name = "link"
 version = "0.0.0"
-source = "git+https://github.com/elysian6969/link#ab17f64312e4da3973f499b0099dadf92018b49d"
+source = "git+https://github.com/elysian6969/link#b001f9f52abbb35faf33813be1ceaa106a11a36c"
 dependencies = [
  "cake",
  "libc",
+ "memchr",
 ]
 
 [[package]]

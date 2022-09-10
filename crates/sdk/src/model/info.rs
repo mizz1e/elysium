@@ -52,7 +52,7 @@ impl ModelInfo {
         S: AsRef<OsStr>,
     {
         ffi::with_cstr_os_str(file_name, |file_name| unsafe {
-            unsafe { (self.vtable.index_of)(self, file_name.as_ptr()) }
+            (self.vtable.index_of)(self, file_name.as_ptr())
         })
     }
 

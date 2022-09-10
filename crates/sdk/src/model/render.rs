@@ -45,12 +45,7 @@ impl ModelRender {
     }
 
     #[inline]
-    pub fn override_material(
-        &mut self,
-        material: &Material,
-        override_kind: i32,
-        material_index: i32,
-    ) {
+    pub fn override_material(&mut self, material: &Material) {
         self._override_material(material)
     }
 

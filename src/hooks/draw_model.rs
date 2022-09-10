@@ -40,7 +40,7 @@ unsafe fn draw_model_inner(
 
             material.set_rgba(rgba);
 
-            model_render.override_material(material, 0, -1);
+            model_render.override_material(material);
             (draw_model_original)(this, context, draw_state, info, bone_to_world);
             model_render.reset_material();
         }

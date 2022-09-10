@@ -53,10 +53,6 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     local_vars.was_attacking = do_attack;
     local_vars.was_jumping = do_jump;
 
-    if let Some(mut weapon) = local.active_weapon() {
-        weapon.set_next_attack_time(globals.current_time);
-    }
-
     if do_attack {
         if was_attacking {
             command.attack(false);
