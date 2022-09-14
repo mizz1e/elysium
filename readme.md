@@ -1,6 +1,6 @@
-<h1 align="center"><code>elysium</code></h1>
+<h1 align="center">elysium</h1>
 
-![screenshot of local game on de_mirage_cyberpunk](assets/unknown.png)
+<p align="center"><img src="assets/unknown.png" width="500" /></p>
 
 ### installation
 
