@@ -14,5 +14,5 @@ $ cargo build --release
 $ cp "${CARGO_TARGET_DIR:-target}/release/elysium" "${XDG_DATA_HOME:-${HOME}/.local/share}/Steam/steamapps/common/Counter-Strike Global Offensive/elysium"
 
 # run the client
-$ ./elysium -steam
+$ LD_LIBRARY_PATH="./bin/linux64" ./elysium -steam
 ```
