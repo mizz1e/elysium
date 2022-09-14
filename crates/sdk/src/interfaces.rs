@@ -55,7 +55,7 @@ macro_rules! interfaces {
 
             /// Returns the library this interface is in.
             #[inline]
-            pub const fn kind(&self) -> LibraryKind {
+            pub const fn library(&self) -> LibraryKind {
                 match self {
                     $(InterfaceKind::$ident => LibraryKind::$library,)*
                 }
@@ -74,9 +74,7 @@ macro_rules! interfaces {
             where
                 L: FnMut(InterfaceKind) -> *mut u8,
             {
-                Self { $(
-                    $field: &mut *loader(InterfaceKind::$ident).cast(),
-                )* }
+                Self { $($field: &mut *loader(InterfaceKind::$ident).cast(),)* }
             }
         }
     }
@@ -92,7 +90,7 @@ libraries! {
     MaterialSystem => "./bin/linux64/materialsystem_client.so",
     Panorama => "./bin/linux64/panorama_gl_client.so",
     Physics => "./bin/linux64/vphysics_client.so",
-    Server => "./bin/linux64/serverbrowser_client.so",
+    ServerBrowser => "./bin/linux64/serverbrowser_client.so",
     Surface => "./bin/linux64/vguimatsurface_client.so",
     Tier0 => "./bin/linux64/libtier0_client.so",
     VGui => "./bin/linux64/vgui2_client.so"

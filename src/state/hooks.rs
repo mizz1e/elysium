@@ -1,15 +1,20 @@
 use elysium_math::Matrix3x4;
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
+use elysium_sdk::ClientMode;
 use elysium_sdk::{Command, Vdf, View};
 use sdl2_sys::{SDL_Event, SDL_Window};
 
 pub type ClMove = unsafe extern "C" fn(extra_samples: f32, final_tick: bool);
 pub type ClSendMove = unsafe extern "C" fn();
-pub type CreateMove =
-    unsafe extern "C" fn(this: *const u8, sample_time: f32, command: &mut Command) -> bool;
+
+pub type CreateMove = unsafe extern "C" fn(
+    client_mode: &mut ClientMode,
+    sample_time: f32,
+    command: &mut Command,
+) -> bool;
 
 pub type DrawModel = unsafe extern "C" fn(
-    this: *const ModelRender,
+    model_render: &mut ModelRender,
     context: *mut u8,
     draw_state: *mut DrawModelState,
     info: *const ModelRenderInfo,

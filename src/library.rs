@@ -1,9 +1,9 @@
 //! Shared library/module/interface loading.
 // TODO: update with similar code to https://github.com/elysian6969/csgo-launcher ui rebuild branch
 
-use daisy_chain::{Chain, ChainIter};
 use cake::ffi::CUtf8Str;
-use link::Module;
+use daisy_chain::{Chain, ChainIter};
+use elysium_sdk::LibraryKind;
 use std::time::Duration;
 use std::{fmt, ptr, thread};
 
@@ -119,10 +119,27 @@ impl<'a> Iterator for InterfaceIter<'a> {
 pub fn load_interfaces() -> elysium_sdk::Interfaces {
     unsafe {
         elysium_sdk::Interfaces::from_loader(|kind| {
-            let module = link::load_module(kind.path()).expect("module");
-            let symbol = module.symbol("s_pInterfaceRegs").expect("interface registry").symbol;
-            let interfaces = Interfaces::from_ptr(symbol.address as _);
-            let interface = interfaces.get(interface.name());
+            let path = kind.library().path();
+            let name = kind.name();
+
+            println!("load {path:?} {name:?}");
+
+            link::iterate_modules(|module| println!("{module:?}"));
+
+            let result = link::load_module(path);
+            let module = match result {
+                Ok(module) => module,
+                Err(error) => panic!("{error:?}"),
+            };
+
+            let address = module
+                .symbol("s_pInterfaceRegs")
+                .expect("interface registry")
+                .symbol
+                .address as *const *mut Interface;
+
+            let interfaces = Interfaces::from_ptr(*address);
+            let interface = interfaces.get(name);
 
             interface
         })

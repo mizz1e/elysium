@@ -3,6 +3,7 @@ use crate::State;
 use elysium_math::Vec3;
 use elysium_model::Bones;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
+use elysium_sdk::ClientMode;
 use elysium_sdk::{Command, EntityList, HitGroup, Interfaces};
 use std::arch::asm;
 
@@ -161,24 +162,29 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
 /// `CreateMove` hook.
 pub unsafe extern "C" fn create_move(
-    this: *const u8,
-    input_sample_time: f32,
+    this: &mut ClientMode,
+    sample: f32,
     command: &mut Command,
 ) -> bool {
     let return_address = cake::return_address!();
     let send_packet = &mut *return_address.offset(24);
 
-    create_move_inner(command, send_packet);
+    create_move_inner(this, sample, command, send_packet);
 
     false
 }
 
-unsafe fn create_move_inner(command: &mut Command, send_packet: &mut bool) -> Option<()> {
+unsafe fn create_move_inner(
+    this: &mut ClientMode,
+    sample: f32,
+    command: &mut Command,
+    send_packet: &mut bool,
+) -> Option<()> {
     let state = State::get();
     let create_move_original = state.hooks.create_move?;
     let globals = state.globals.as_ref()?;
 
-    (create_move_original)(this, input_sample_time, command);
+    (create_move_original)(this, sample, command);
 
     if command.tick_count == 0 {
         return None;
@@ -207,11 +213,11 @@ unsafe fn create_move_inner(command: &mut Command, send_packet: &mut bool) -> Op
     if *send_packet && fake_lag != 0 {
         let mut bones = &mut state.local.fake_bones;
 
-        load_bones(&local_player, command, bones);
+        load_bones(&mut local_player, command, bones, time);
     } else {
         let mut bones = &mut state.local.bones;
 
-        load_bones(&local_player, command, bones);
+        load_bones(&mut local_player, command, bones, time);
 
         state.local.view_angle = command.view_angle;
         state.local.time = globals.current_time;
@@ -222,11 +228,17 @@ unsafe fn create_move_inner(command: &mut Command, send_packet: &mut bool) -> Op
     None
 }
 
-fn load_bones(local_player: &PlayerRef<'_>, command: &Command, bones: &mut Bones) {
+fn load_bones(local_player: &mut PlayerRef<'_>, command: &Command, bones: &mut Bones, time: f32) {
     let view_angle = local_player.view_angle();
 
-    local_player.set_view_angle(command.view_angle);
+    unsafe {
+        local_player.set_view_angle(command.view_angle);
+    }
+
     local_player.setup_bones(&mut bones[..128], 0x00000100, time);
     local_player.setup_bones(&mut bones[..128], 0x000FFF00, time);
-    local_player.set_view_angle(view_angle);
+
+    unsafe {
+        local_player.set_view_angle(view_angle);
+    }
 }

@@ -183,7 +183,7 @@ macro_rules! vars {
                 #[doc = "`"]
                 // doc's alias is the same as it's name, cring
                 //#[doc(alias = $string)]
-                pub $name: &'static Var<$type>,
+                pub $name: &'static mut Var<$type>,
             )*
         }
 

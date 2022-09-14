@@ -15,7 +15,8 @@ macro_rules! materials {
                 }
             }
 
-            /// Base VDF/KeyValues object passed to the first argument of `KeyValues::fromString`.
+            /// Base VDF/KeyValues object passed to the first argument of
+            /// [`Vdf::from_bytes`](crate::Vdf::from_bytes).
             #[inline]
             pub const fn base(&self) -> &'static str {
                 match self {
@@ -23,7 +24,8 @@ macro_rules! materials {
                 }
             }
 
-            /// VDF/KeyValues passed to the second argument of `KeyValues::fromString`.
+            /// VDF/KeyValues passed to the second argument of
+            /// [`Vdf::from_bytes`](crate::Vdf::from_bytes).
             #[inline]
             pub const fn vdf(&self) -> Option<&'static str> {
                 match self {

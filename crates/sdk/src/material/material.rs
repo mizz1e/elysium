@@ -24,7 +24,7 @@ struct VTable {
 
 vtable_validate! {
     name => 0,
-    texture_group => 1,
+    group => 1,
     set_alpha => 27,
     set_rgb => 28,
     set_flag => 29,

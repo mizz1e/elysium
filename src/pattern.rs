@@ -1,8 +1,8 @@
 //! Assembly patterns within libraries.
 
+use core::mem;
 use elysium_pattern::Pattern;
 use elysium_sdk::LibraryKind;
-use link::Module;
 
 pub const ANIMATION_LAYERS: Pattern<80> =
     Pattern::new("55 48 89 E5 41 56 41 55 41 89 F5 41 54 53 48 89 FB 8B");
@@ -50,7 +50,9 @@ pub fn get<const N: usize>(library: LibraryKind, pattern: &Pattern<N>) -> Option
     println!("elysium | find pattern {pattern:?} in {name}");
 
     let module = unsafe { link::load_module(library.path()).ok()? };
-    let bytes = unsafe { module.bytes() };
+
+    // SAFETY: does this fucking look safe to you?
+    let bytes: &'static [u8] = unsafe { mem::transmute(module.bytes()) };
 
     println!("bytes = {:?}", bytes.len());
 

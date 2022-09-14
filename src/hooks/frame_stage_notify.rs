@@ -2,9 +2,9 @@ use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, 
 use crate::state::Local;
 use crate::State;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::{Engine, Vars, EntityList, Frame, Globals, Input, Interfaces};
+use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
 
-fn update_vars(vars: &Vars, engine: &Engine) {
+fn update_vars(vars: &mut Vars, engine: &Engine) {
     // misc
     vars.allow_developer.write(true);
     vars.fast_render.write(!engine.is_in_game());
@@ -206,7 +206,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();
     let globals = state.globals.as_mut().unwrap();
     let input = state.input.as_mut().unwrap();
-    let vars = state.vars.as_ref().unwrap();
+    let vars = state.vars.as_mut().unwrap();
     let local_vars = &mut state.local;
     let is_menu_open = state.menu_open.0;
     let frame = match Frame::from_raw(frame) {

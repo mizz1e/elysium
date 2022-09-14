@@ -77,7 +77,7 @@ dependencies = [
 [[package]]
 name = "cake"
 version = "0.0.0"
-source = "git+https://github.com/elysian6969/cake#c8c3f54bee9d34dae2fa0917d18f0382239161c9"
+source = "git+https://github.com/elysian6969/cake#cd008113dd302ca687ea2f22e88b2598088233b7"
 dependencies = [
  "libm",
 ]
@@ -179,7 +179,7 @@ dependencies = [
  "iced_native",
  "libc",
  "libm",
- "link",
+ "link 0.0.0",
  "num-traits",
  "palette",
  "rand",
@@ -209,7 +209,7 @@ dependencies = [
  "cake",
  "dismal",
  "libc",
- "link",
+ "link 0.0.0 (git+https://github.com/elysian6969/link)",
 ]
 
 [[package]]
@@ -454,7 +454,7 @@ dependencies = [
 [[package]]
 name = "iced_core"
 version = "0.5.0"
-source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
+source = "git+https://github.com/iced-rs/iced#465541125612ef6e70623098b956d5c757b0b1cf"
 dependencies = [
  "bitflags",
  "palette",
@@ -464,7 +464,7 @@ dependencies = [
 [[package]]
 name = "iced_futures"
 version = "0.4.1"
-source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
+source = "git+https://github.com/iced-rs/iced#465541125612ef6e70623098b956d5c757b0b1cf"
 dependencies = [
  "futures",
  "log",
@@ -475,7 +475,7 @@ dependencies = [
 [[package]]
 name = "iced_glow"
 version = "0.3.0"
-source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
+source = "git+https://github.com/iced-rs/iced#465541125612ef6e70623098b956d5c757b0b1cf"
 dependencies = [
  "bytemuck",
  "euclid",
@@ -490,7 +490,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.3.1"
-source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
+source = "git+https://github.com/iced-rs/iced#465541125612ef6e70623098b956d5c757b0b1cf"
 dependencies = [
  "bytemuck",
  "glam",
@@ -503,7 +503,7 @@ dependencies = [
 [[package]]
 name = "iced_native"
 version = "0.5.1"
-source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
+source = "git+https://github.com/iced-rs/iced#465541125612ef6e70623098b956d5c757b0b1cf"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -516,7 +516,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.4.0"
-source = "git+https://github.com/iced-rs/iced#cb395abd197ef06bc79b91d184ffa52e9bd17c82"
+source = "git+https://github.com/iced-rs/iced#465541125612ef6e70623098b956d5c757b0b1cf"
 dependencies = [
  "iced_core",
  "lazy_static",
@@ -534,9 +534,9 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.59"
+version = "0.3.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "258451ab10b34f8af53416d1fdab72c22e805f0c92a1136d59470ec0b11138b2"
+checksum = "49409df3e3bf0856b916e2ceaca09ee28e6871cf7d9ce97a692cacfdb2a25a47"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -561,7 +561,16 @@ source = "git+https://github.com/elysian6969/libm#19bbd0a1806e79ddd3fc70a21797d5
 [[package]]
 name = "link"
 version = "0.0.0"
-source = "git+https://github.com/elysian6969/link#b001f9f52abbb35faf33813be1ceaa106a11a36c"
+dependencies = [
+ "cake",
+ "libc",
+ "memchr",
+]
+
+[[package]]
+name = "link"
+version = "0.0.0"
+source = "git+https://github.com/elysian6969/link#dbe0a149392b0ffe0255a6cb7f801f75cbb0a1d4"
 dependencies = [
  "cake",
  "libc",
@@ -954,18 +963,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c1b05ca9d106ba7d2e31a9dab4a64e7be2cce415321966ea3132c49a656e252"
+checksum = "c53f98874615aea268107765aa1ed8f6116782501d18e53d08b471733bea6c85"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8f2591983642de85c921015f3f070c665a197ed69e417af436115e3a1407487"
+checksum = "f8b463991b4eab2d801e724172285ec4195c650e8ec79b149e6c2a8e6dd3f783"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1000,15 +1009,15 @@ dependencies = [
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4f5b37a154999a8f3f98cc23a628d850e154479cd94decf3414696e12e31aaf"
+checksum = "dcc811dc4066ac62f84f11307873c4850cb653bfa9b1719cee2bd2204a4bc5dd"
 
 [[package]]
 name = "unicode-segmentation"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e8820f5d777f6224dc4be3632222971ac30164d4a258d595640799554ebfd99"
+checksum = "0fdbf052a0783de01e944a6ce7a8cb939e295b1e7be835a1112c3b9a7f047a5a"
 
 [[package]]
 name = "version-compare"
@@ -1030,9 +1039,9 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.82"
+version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc7652e3f6c4706c8d9cd54832c4a4ccb9b5336e2c3bd154d5cccfbf1c1f5f7d"
+checksum = "eaf9f5aceeec8be17c128b2e93e031fb8a4d469bb9c4ae2d7dc1888b26887268"
 dependencies = [
  "cfg-if",
  "wasm-bindgen-macro",
@@ -1040,9 +1049,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.82"
+version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "662cd44805586bd52971b9586b1df85cdbbd9112e4ef4d8f41559c334dc6ac3f"
+checksum = "4c8ffb332579b0557b52d268b91feab8df3615f265d5270fec2a8c95b17c1142"
 dependencies = [
  "bumpalo",
  "log",
@@ -1055,9 +1064,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.32"
+version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa76fb221a1f8acddf5b54ace85912606980ad661ac7a503b4570ffd3a624dad"
+checksum = "23639446165ca5a5de86ae1d8896b737ae80319560fbaa4c2887b7da6e7ebd7d"
 dependencies = [
  "cfg-if",
  "js-sys",
@@ -1067,9 +1076,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.82"
+version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b260f13d3012071dfb1512849c033b1925038373aea48ced3012c09df952c602"
+checksum = "052be0f94026e6cbc75cdefc9bae13fd6052cdcaf532fa6c45e7ae33a1e6c810"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -1077,9 +1086,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.82"
+version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5be8e654bdd9b79216c2929ab90721aa82faf65c48cdf08bdc4e7f51357b80da"
+checksum = "07bc0c051dc5f23e307b13285f9d75df86bfdf816c5721e573dec1f9b8aa193c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1090,9 +1099,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.82"
+version = "0.2.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6598dd0bd3c7d51095ff6531a5b23e02acdc81804e30d8f07afb77b7215a140a"
+checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 
 [[package]]
 name = "wasm-timer"
@@ -1111,9 +1120,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.59"
+version = "0.3.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed055ab27f941423197eb86b2035720b1a3ce40504df082cac2ecc6ed73335a1"
+checksum = "bcda906d8be16e728fd5adc5b729afad4e444e106ab28cd1c7256e54fa61510f"
 dependencies = [
  "js-sys",
  "wasm-bindgen",

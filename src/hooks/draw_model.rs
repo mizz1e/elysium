@@ -6,7 +6,7 @@ use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
 
 #[inline]
 unsafe fn draw_model_inner(
-    this: *const ModelRender,
+    model_render: &mut ModelRender,
     context: *mut u8,
     draw_state: *mut DrawModelState,
     info: *const ModelRenderInfo,
@@ -17,7 +17,6 @@ unsafe fn draw_model_inner(
     let interfaces = state.interfaces.as_ref()?;
     let entity_list = &interfaces.entity_list;
     let model_info = &interfaces.model_info;
-    let model_render = this.as_ref()?;
     let material = state.materials.gold?;
 
     let info = info.as_ref()?;
@@ -30,7 +29,13 @@ unsafe fn draw_model_inner(
 
         if index == local.index() {
             model_render.reset_material();
-            (draw_model_original)(this, context, draw_state, info, state.local.bones.as_ptr());
+            (draw_model_original)(
+                model_render,
+                context,
+                draw_state,
+                info,
+                state.local.bones.as_ptr(),
+            );
         } else {
             let rgba = match player.team() {
                 Team::Counter => [0.0, 1.0, 1.0, 0.5],
@@ -41,13 +46,13 @@ unsafe fn draw_model_inner(
             material.set_rgba(rgba);
 
             model_render.override_material(material);
-            (draw_model_original)(this, context, draw_state, info, bone_to_world);
+            (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
             model_render.reset_material();
         }
     } else if name.starts_with("models/weapons/v_") {
-        (draw_model_original)(this, context, draw_state, info, bone_to_world);
+        (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
     } else {
-        (draw_model_original)(this, context, draw_state, info, bone_to_world);
+        (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
     }
 
     Some(())
@@ -55,11 +60,11 @@ unsafe fn draw_model_inner(
 
 /// `DrawModelExecute` hook.
 pub unsafe extern "C" fn draw_model(
-    this: *const ModelRender,
+    model_render: &mut ModelRender,
     context: *mut u8,
     draw_state: *mut DrawModelState,
     info: *const ModelRenderInfo,
     bone_to_world: *const Matrix3x4,
 ) {
-    draw_model_inner(this, context, draw_state, info, bone_to_world);
+    draw_model_inner(model_render, context, draw_state, info, bone_to_world);
 }

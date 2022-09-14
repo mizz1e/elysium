@@ -1,4 +1,4 @@
-#![deny(warnings)]
+//#![deny(warnings)]
 #![feature(abi_thiscall)]
 #![feature(bound_map)]
 #![feature(const_fn_floating_point_arithmetic)]
@@ -11,12 +11,79 @@
 #![feature(sync_unsafe_cell)]
 #![feature(strict_provenance)]
 
+use error::Error;
+use std::borrow::Cow;
+use std::ffi::{CStr, CString, OsString};
+use std::os::unix::ffi::OsStringExt;
+use std::{env, ffi, iter, mem, ptr};
+
+mod error;
+
+type Main = unsafe extern "C" fn(argc: libc::c_int, argv: *const *const libc::c_char);
+
+const LAUNCHER_CLIENT: &str = "bin/linux64/launcher_client.so";
+const LAUNCHER_MAIN: &str = "LauncherMain";
+
+const fn const_cstr(string: &'static str) -> Cow<'static, CStr> {
+    unsafe { Cow::Borrowed(CStr::from_bytes_with_nul_unchecked(string.as_bytes())) }
+}
+
+fn cstring_from_osstring(string: OsString) -> Result<Cow<'static, CStr>, ffi::NulError> {
+    let bytes = string.into_vec();
+    let string = CString::new(bytes)?;
+
+    Ok(Cow::Owned(string))
+}
+
+const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
+
+#[inline]
+fn run() -> Result<(), Error> {
+    env::var_os("DISPLAY").ok_or(Error::NoDisplay)?;
+
+    let args = env::args_os()
+        .map(cstring_from_osstring)
+        .chain(iter::once(Ok(NO_BREAKPAD)))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(Error::InvalidArgs)?;
+
+    let args = args
+        .iter()
+        .map(|arg| arg.as_ptr())
+        .chain(iter::once(ptr::null()))
+        .collect::<Vec<_>>();
+
+    let launcher = unsafe { link::load_module(LAUNCHER_CLIENT).map_err(Error::LoadLauncher)? };
+
+    let main: Main = unsafe {
+        let address = launcher.symbol(LAUNCHER_MAIN).map_err(Error::FindMain)?;
+
+        mem::transmute(address.symbol.address)
+    };
+
+    println!("\x1b[38;5;2minfo:\x1b[m starting csgo");
+
+    std::thread::spawn(main2);
+
+    unsafe {
+        (main)(args.len().saturating_sub(1) as _, args.as_ptr());
+    }
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(error) = run() {
+        println!("\x1b[38;5;1merror:\x1b[m {error}");
+    }
+}
+
 use elysium_sdk::material::{Material, MaterialKind};
+use elysium_sdk::MaterialSystem;
 use elysium_sdk::{Interfaces, LibraryKind, Vars, Vdf};
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 use std::io::Write;
-use std::path::Path;
-use std::{mem, ptr, thread};
+use std::thread;
 
 pub use controls::Controls;
 pub use menu::Menu;
@@ -37,23 +104,6 @@ pub mod networked;
 pub mod pattern;
 //pub mod simulation;
 pub mod state;
-
-// this is called by glibc after the library is loaded into a process
-#[link_section = ".init_array"]
-#[used]
-static BOOTSTRAP: unsafe extern "C" fn() = bootstrap;
-
-#[link_section = ".text.startup"]
-unsafe extern "C" fn bootstrap() {
-    let program = std::env::args_os().next();
-    let is_csgo = program.as_deref().map(Path::new).map_or(false, |path| {
-        path.ends_with("csgo_linux64") || path.ends_with("csgo-launcher")
-    });
-
-    if is_csgo {
-        thread::spawn(main);
-    }
-}
 
 #[inline]
 fn hooked(name: &str) {
@@ -79,7 +129,7 @@ fn console() {
 }
 
 #[inline]
-fn main() {
+fn main2() {
     unsafe {
         library::wait_for_serverbrowser();
 
@@ -90,8 +140,8 @@ fn main() {
 
         thread::spawn(console);
 
-        let interfaces = state.interfaces.as_ref().unwrap_unchecked();
-        let console = &interfaces.console;
+        let interfaces = state.interfaces.as_mut().unwrap_unchecked();
+        let console = &mut interfaces.console;
         let client = &interfaces.client;
         let model_render = &interfaces.model_render;
         let material_system = &interfaces.material_system;
@@ -102,22 +152,25 @@ fn main() {
         println!("{globals:?}");
         println!("{input:?}");
 
-        console.write(format_args!("welcome to elysium\n"));
+        console.write(format_args!("welcome to elysium\n")).unwrap();
 
         let vars = Vars::from_loader(|kind| {
             let name = kind.name();
-            let var = console.var(name);
+            let var = console.var::<_, i32>(name);
 
-            if var.is_none() {
-                println!(
-                    "elysium | config variable \x1b[38;5;2m{name}\x1b[m was not found, remove it"
-                );
+            match var {
+                Some(var) => {
+                    let pointer = var as *const _ as _;
 
-                ptr::null_mut()
-            } else {
-                println!("elysium | config variable \x1b[38;5;2m{name}\x1b[m found at \x1b[38;5;3m{address:?}\x1b[m");
+                    println!("convar {name} found at {pointer:?}");
 
-                var as *const _ as _
+                    pointer
+                }
+                None => {
+                    println!("convar {name} missing :warning:");
+
+                    ptr::null_mut()
+                }
             }
         });
 
@@ -217,11 +270,11 @@ fn main() {
         hooked("SDL_PollEvent");
 
         println!("create gold");
-        state.materials.gold = create_material();
+        state.materials.gold = create_material(material_system);
     }
 }
 
-fn create_material() -> Option<&'static Material> {
+fn create_material(material_system: &MaterialSystem) -> Option<&'static Material> {
     let material = MaterialKind::Glow;
     let vdf = Vdf::from_bytes(material.base(), material.vdf().unwrap())?;
     let material = material_system.create(material.name(), vdf)?;
