@@ -6,6 +6,7 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(mem_copy_fn)]
+#![feature(iter_intersperse)]
 #![feature(pointer_byte_offsets)]
 #![feature(result_option_inspect)]
 #![feature(sync_unsafe_cell)]
@@ -35,6 +36,10 @@ fn cstring_from_osstring(string: OsString) -> Result<Cow<'static, CStr>, ffi::Nu
     Ok(Cow::Owned(string))
 }
 
+fn cow_str_from_debug(string: OsString) -> Cow<'static, str> {
+    Cow::Owned(format!("{string:?}"))
+}
+
 const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
 
 #[inline]
@@ -61,7 +66,12 @@ fn run() -> Result<(), Error> {
         mem::transmute(address.symbol.address)
     };
 
-    println!("\x1b[38;5;2minfo:\x1b[m starting csgo");
+    let pretty_args = env::args_os()
+        .map(cow_str_from_debug)
+        .intersperse(Cow::Borrowed(", "))
+        .collect::<String>();
+
+    println!("\x1b[38;5;2minfo:\x1b[m starting csgo with args: {pretty_args}");
 
     std::thread::spawn(main2);
 
@@ -195,7 +205,7 @@ fn main2() {
         let base = bytes.as_ptr().cast::<i32>().byte_add(1);
         let new = base.byte_add(4).byte_offset(base.read() as isize);
 
-        state.hooks.vdf_from_bytes = Some(mem::transmute(new));
+        Vdf::set_from_bytes(mem::transmute(new));
 
         let address = client.create_move_address().cast::<CreateMove>();
 

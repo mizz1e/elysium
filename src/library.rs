@@ -1,74 +1,37 @@
-//! Shared library/module/interface loading.
-// TODO: update with similar code to https://github.com/elysian6969/csgo-launcher ui rebuild branch
+//! interfaced youre mother
 
 use cake::ffi::CUtf8Str;
-use daisy_chain::{Chain, ChainIter};
 use elysium_sdk::LibraryKind;
 use std::time::Duration;
-use std::{fmt, ptr, thread};
-
-/// An interface.
-#[repr(C)]
-pub struct Interface {
-    new: unsafe extern "C" fn() -> *mut u8,
-    name: *const libc::c_char,
-    next: *mut Interface,
-}
-
-impl Interface {
-    #[inline]
-    pub fn new(&self) -> *mut u8 {
-        let new = self.new;
-
-        unsafe { new() }
-    }
-
-    #[inline]
-    pub fn name(&self) -> &str {
-        unsafe { CUtf8Str::from_ptr(self.name).as_str() }
-    }
-
-    #[inline]
-    fn next(&self) -> *mut Interface {
-        self.next
-    }
-}
-
-impl fmt::Debug for Interface {
-    #[inline]
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("Interface")
-            .field("new", &self.new)
-            .field("name", &self.name())
-            .finish()
-    }
-}
-
-type Next = fn(&Interface) -> *mut Interface;
-
-/// Linked list of interfaces.
-pub struct Interfaces {
-    inner: Chain<Interface, Next>,
-}
+use std::{fmt, mem, ptr, thread};
 
 #[inline]
 fn is_exact(target: &str) -> bool {
     target.chars().rev().take(3).all(char::is_numeric)
 }
 
-impl Interfaces {
-    #[inline]
-    pub const unsafe fn from_ptr(head: *mut Interface) -> Self {
-        let inner = Chain::from_ptr(head, Interface::next as Next);
+/// An interface.
+#[repr(C)]
+pub struct Interface {
+    new: unsafe extern "C" fn() -> *mut u8,
+    name: CUtf8Str<'static>,
+    next: *const Interface,
+}
 
-        Self { inner }
+impl Interface {
+    #[inline]
+    pub fn new(&self) -> *mut u8 {
+        unsafe { (self.new)() }
     }
 
     #[inline]
-    pub const fn iter<'a>(&'a self) -> InterfaceIter<'a> {
-        let inner = self.inner.iter();
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
 
-        InterfaceIter { inner }
+    #[inline]
+    pub fn iter(&self) -> InterfaceIter<'_> {
+        InterfaceIter { iter: Some(self) }
     }
 
     #[inline]
@@ -95,23 +58,27 @@ impl Interfaces {
     }
 }
 
-impl fmt::Debug for Interfaces {
+impl fmt::Debug for Interface {
     #[inline]
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self.inner, fmt)
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Interface")
+            .field("name", &self.name())
+            .finish_non_exhaustive()
     }
 }
 
 pub struct InterfaceIter<'a> {
-    inner: ChainIter<'a, Interface, Next>,
+    iter: Option<&'a Interface>,
 }
 
 impl<'a> Iterator for InterfaceIter<'a> {
     type Item = &'a Interface;
 
     #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+    fn next(&mut self) -> Option<&'a Interface> {
+        let next = unsafe { self.iter?.next.as_ref() };
+
+        mem::replace(&mut self.iter, next)
     }
 }
 
@@ -136,9 +103,9 @@ pub fn load_interfaces() -> elysium_sdk::Interfaces {
                 .symbol("s_pInterfaceRegs")
                 .expect("interface registry")
                 .symbol
-                .address as *const *mut Interface;
+                .address as *const *const Interface;
 
-            let interfaces = Interfaces::from_ptr(*address);
+            let interfaces = &**address;
             let interface = interfaces.get(name);
 
             interface
@@ -148,12 +115,26 @@ pub fn load_interfaces() -> elysium_sdk::Interfaces {
 
 #[inline]
 pub fn wait_for_serverbrowser() {
-    // `serverbrowser_client.so` is the last library to be loaded.
-    println!("elysium | waiting for \x1b[38;5;2m`serverbrowser_client.so`\x1b[m to load");
+    use std::borrow::Cow;
+    use std::collections::HashSet;
+
+    let mut modules = HashSet::new();
 
     while !link::is_module_loaded(LibraryKind::ServerBrowser.path()) {
+        let mut new_modules = HashSet::new();
+        
+        link::iterate_modules(|module| { new_modules.insert(module.path); });
+
+        let yes = new_modules.iter()
+            .filter(|path| !modules.contains(&**path))
+            .flat_map(|path| Some(path.file_name()?.to_str()?))
+            .intersperse(&Cow::Borrowed(", "))
+            .collect::<String>();
+
+        println!("{yes}");
+        
+        modules = new_modules;
+
         thread::sleep(Duration::from_millis(500));
     }
-
-    println!("elysium | \x1b[38;5;2m`serverbrowser_client.so`\x1b[m loaded, continuing...");
 }

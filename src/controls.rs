@@ -220,6 +220,111 @@ impl Program for Controls {
     }
 }
 
+mod overlay {
+    use iced_native::layout::Limits;
+    use iced_native::widget::container;
+    use iced_native::widget::tree;
+    use iced_native::widget::tree::{State, Tree};
+    use iced_native::widget::{Container, Widget};
+    use iced_native::{event, layout, mouse, overlay, renderer};
+    use iced_native::{Clipboard, Event, Layout, Length, Point, Rectangle, Shell};
+
+    pub struct Overlay<'a, Message, Renderer>
+    where
+        Renderer: iced_native::Renderer,
+        Renderer::Theme: container::StyleSheet,
+    {
+        container: Container<'a, Message, Renderer>,
+    }
+
+    impl<'a, Message, Renderer> Widget<Message, Renderer> for Overlay<'a, Message, Renderer>
+    where
+        Renderer: iced_native::Renderer,
+        Renderer::Theme: container::StyleSheet,
+    {
+        fn children(&self) -> Vec<Tree> {
+            self.container.children()
+        }
+
+        fn diff(&self, tree: &mut Tree) {
+            self.container.diff(tree)
+        }
+
+        fn draw(
+            &self,
+            tree: &Tree,
+            renderer: &mut Renderer,
+            theme: &Renderer::Theme,
+            style: &renderer::Style,
+            layout: Layout<'_>,
+            cursor_position: Point,
+            viewport: &Rectangle,
+        ) {
+        }
+
+        fn height(&self) -> Length {
+            Widget::height(&self.container)
+        }
+
+        fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+            self.container.layout(renderer, limits)
+        }
+
+        fn mouse_interaction(
+            &self,
+            tree: &Tree,
+            layout: Layout<'_>,
+            cursor_position: Point,
+            viewport: &Rectangle,
+            renderer: &Renderer,
+        ) -> mouse::Interaction {
+            self.mouse_interaction(tree, layout, cursor_position, viewport, renderer)
+        }
+
+        fn on_event(
+            &mut self,
+            tree: &mut Tree,
+            event: Event,
+            layout: Layout<'_>,
+            cursor_position: Point,
+            renderer: &Renderer,
+            clipboard: &mut dyn Clipboard,
+            shell: &mut Shell<'_, Message>,
+        ) -> event::Status {
+            self.container.on_event(
+                tree,
+                event,
+                layout,
+                cursor_position,
+                renderer,
+                clipboard,
+                shell,
+            )
+        }
+
+        fn overlay<'b>(
+            &'b self,
+            tree: &'b mut Tree,
+            layout: Layout<'_>,
+            renderer: &Renderer,
+        ) -> Option<overlay::Element<'_, Message, Renderer>> {
+            todo!()
+        }
+
+        fn tag(&self) -> tree::Tag {
+            self.container.tag()
+        }
+
+        fn state(&self) -> tree::State {
+            self.container.state()
+        }
+
+        fn width(&self) -> Length {
+            Widget::width(&self.container)
+        }
+    }
+}
+
 mod style {
     use iced_native::widget::container;
     use iced_native::{Background, Color, Theme};

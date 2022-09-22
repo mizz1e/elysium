@@ -4,28 +4,30 @@ name = "elysium"
 version = "0.0.0"
 
 [dependencies]
-cake = { git = "https://github.com/elysian6969/cake" }
-daisy_chain = { path = "crates/daisy_chain" }
-elysium-input = { path = "crates/input" }
-elysium-math = { path = "crates/math" }
-elysium-mem = { path = "crates/mem" }
-elysium-model = { path = "crates/model" }
-elysium-pattern = { path = "crates/pattern" }
-elysium-sdk = { path = "crates/sdk" }
-iced_glow = { git = "https://github.com/iced-rs/iced" }
-iced_native = { features = ["debug"], git = "https://github.com/iced-rs/iced" }
-libc = "0.2"
-libm = { git = "https://github.com/elysian6969/libm" }
-#link = { git = "https://github.com/elysian6969/link" }
-link = { path = "../link" }
-num-traits = "0.2"
-palette = "0.6"
-rand = "0.8"
-sdl2-sys = "0.35"
+cake = { default-features = false, git = "https://github.com/elysian6969/cake", rev = "2e14d611a478d59f84672a6e675df259d1c41340" }
+elysium-input = { default-features = false, path = "crates/input" }
+elysium-math = { default-features = false, path = "crates/math" }
+elysium-mem = { default-features = false, path = "crates/mem" }
+elysium-model = { default-features = false, path = "crates/model" }
+elysium-pattern = { default-features = false, path = "crates/pattern" }
+elysium-sdk = { default-features = false, path = "crates/sdk" }
+iced_glow = { default-features = false, git = "https://github.com/elysian6969/iced" }
+iced_native = { default-features = false, git = "https://github.com/elysian6969/iced" }
+libc = { default-features = false, version = "0.2" }
+libm = { default-features = false, git = "https://github.com/elysian6969/libm" }
+#link = { default-features = false, git = "https://github.com/elysian6969/link" }
+link = { default-features = false, path = "../link" }
+num-traits = { default-features = false, version = "0.2" }
+palette = { default-features = false, version = "0.6" }
+rand = { default-features = false, version = "0.8" }
+sdl2-sys = { default-features = false, version = "0.35" }
 
 [workspace]
 members = [
     "crates/input",
+    "crates/math",
     "crates/mem",
+    "crates/model",
+    "crates/pattern",
     "crates/sdk",
 ]

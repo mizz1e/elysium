@@ -1,8 +1,0 @@
-[package]
-edition = "2021"
-name = "elysium-theme"
-version = "0.0.0"
-
-[dependencies.iced_native]
-default-features = false
-git = "https://github.com/iced-rs/iced"

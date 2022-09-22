@@ -3,10 +3,6 @@ edition = "2021"
 name = "elysium-input"
 version = "0.0.0"
 
-[dependencies.iced_native]
-default-features = false
-git = "https://github.com/iced-rs/iced"
-
-[dependencies.sdl2-sys]
-default-features = false
-version = "0.35"
+[dependencies]
+iced_native = { default-features = false, git = "https://github.com/elysian6969/iced" }
+sdl2-sys = { default-features = false, version = "0.35" }

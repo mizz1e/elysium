@@ -112,10 +112,10 @@ impl Networked {
 
     #[inline]
     pub fn update(&mut self, client: &Client) {
-        let top_level = client.get_all_classes();
+        let top_level = client.class_iter();
 
         // Iterate classes.
-        for class in top_level.iter() {
+        for class in top_level {
             if let Some(table) = class.table {
                 // Skip classes we are not interested in.
                 if let Some(class) = Class::from_str(&*table.name()) {

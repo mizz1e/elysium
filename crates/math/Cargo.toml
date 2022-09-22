@@ -4,5 +4,5 @@ name = "elysium-math"
 version = "0.0.0"
 
 [dependencies]
-cake = { git = "https://github.com/elysian6969/cake" }
-meth = { git = "https://github.com/elysian6969/meth" }
+cake = { default-features = false, git = "https://github.com/elysian6969/cake", rev = "2e14d611a478d59f84672a6e675df259d1c41340" }
+meth = { default-features = false, git = "https://github.com/elysian6969/meth" }

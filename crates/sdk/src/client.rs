@@ -3,7 +3,7 @@ use cake::ffi::VTablePad;
 use core::{mem, ptr};
 
 pub use class::Class;
-pub use classes::{Classes, ClassesIter};
+pub use classes::ClassIter;
 pub use property::Property;
 pub use table::Table;
 
@@ -15,7 +15,7 @@ mod table;
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<8>,
-    get_all_classes: unsafe extern "thiscall" fn(this: *const Client) -> *mut Class,
+    class_iter: unsafe extern "thiscall" fn(this: *const Client) -> *const Class,
     _pad1: VTablePad<1>,
     hud_process_input: unsafe extern "thiscall" fn(),
     hud_update: unsafe extern "thiscall" fn(),
@@ -33,7 +33,7 @@ struct VTable {
 }
 
 vtable_validate! {
-    get_all_classes => 8,
+    class_iter => 8,
     hud_process_input => 10,
     hud_update => 11,
     activate_mouse => 16,
@@ -49,10 +49,12 @@ pub struct Client {
 
 impl Client {
     #[inline]
-    pub fn get_all_classes(&self) -> Classes<'_> {
-        let classes = unsafe { (self.vtable.get_all_classes)(self) };
+    pub fn class_iter(&self) -> ClassIter<'_> {
+        unsafe {
+            let iter = (self.vtable.class_iter)(self).as_ref();
 
-        Classes::new(classes)
+            ClassIter { iter }
+        }
     }
 
     #[inline]

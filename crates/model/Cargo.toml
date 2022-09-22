@@ -3,5 +3,5 @@ edition = "2021"
 name = "elysium-model"
 version = "0.0.0"
 
-[dependencies.elysium-math]
-path = "../math"
+[dependencies]
+elysium-math = { default-features = false, path = "../math" }

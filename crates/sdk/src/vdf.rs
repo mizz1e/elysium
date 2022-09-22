@@ -32,7 +32,7 @@ unsafe extern "C" fn from_bytes(
     _value: *const u8,
     _unk1: *const u8,
 ) -> *const Vdf {
-    panic!("Vdf::from_bytes called without loading the method from the game");
+    panic!("Vdf::from_bytes called without loading the function from the game");
 }
 
 static FROM_BYTES: SyncUnsafeCell<
@@ -46,6 +46,19 @@ impl Vdf {
         let value = value.as_ptr();
 
         unsafe { (*FROM_BYTES.get())(name, value, ptr::null()).as_ref() }
+    }
+
+    #[inline]
+    pub fn set_from_bytes(
+        function: unsafe extern "C" fn(
+            name: *const u8,
+            value: *const u8,
+            _unk1: *const u8,
+        ) -> *const Vdf,
+    ) {
+        unsafe {
+            (*FROM_BYTES.get()) = function;
+        }
     }
 }
 

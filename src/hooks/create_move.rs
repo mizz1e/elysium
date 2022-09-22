@@ -166,8 +166,14 @@ pub unsafe extern "C" fn create_move(
     sample: f32,
     command: &mut Command,
 ) -> bool {
-    let return_address = cake::return_address!();
-    let send_packet = &mut *return_address.offset(24);
+    let library = link::query_address(cake::return_addr!());
+
+    println!("{library:?}");
+
+    //let return_address = cake::return_address!();
+    //let send_packet = &mut *return_address.offset(24);
+    let mut send_packet = true;
+    let send_packet = &mut send_packet;
 
     create_move_inner(this, sample, command, send_packet);
 
