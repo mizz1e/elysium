@@ -42,12 +42,12 @@ materials! {
     Chrome => ("chrome", "VertexLitGeneric", Some("
         $envmap env_cubemap
     ")),
-    Glow => ("glow", "VertexLitGeneric", Some("
+    Glow => ("glow", "VertexLitGeneric", Some(r#"
         $additive 1
         $envmap models/effects/cube_white
         $envmapfresnel 1
         $alpha .8
-    ")),
+    "#)),
     Pearlescent => ("pearlescent", "VertexLitGeneric", Some("
         $ambientonly 1
         $phong 1

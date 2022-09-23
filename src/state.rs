@@ -2,7 +2,8 @@
 
 use crate::anti_aim::AntiAim;
 use crate::entity::{Player as _, PlayerRef};
-use crate::{Menu, Networked};
+use crate::Networked;
+use crate::Ui;
 use elysium_math::Vec3;
 use elysium_sdk::network::Flow;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
@@ -82,7 +83,7 @@ pub struct State {
     /// opengl get proc address
     pub proc_address: Option<unsafe extern "C" fn(symbol: *const u8) -> *const u8>,
     /// menu context
-    pub menu: Option<Menu>,
+    pub menu: Option<Ui>,
     /// first boolean determines whether the menu is visible, second prevents input from being
     /// spaz
     pub menu_open: (bool, bool),

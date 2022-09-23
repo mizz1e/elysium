@@ -1,26 +1,26 @@
-//! Menu related functions.
-
-use crate::{assets, Controls};
+use super::Program;
+use crate::assets;
 use iced_glow::{glow, Backend, Renderer, Settings, Viewport};
 use iced_native::clipboard::Null;
 use iced_native::program::State;
 use iced_native::{clipboard, renderer, Color, Debug, Event, Point};
 
-/// UI rendering state.
-pub struct Menu {
-    clipboard: Null,
-    debug: Debug,
-    renderer: Renderer,
-    //scene: Scene,
-    state: State<Controls>,
+pub struct Ui {
+    pub clipboard: Null,
+    pub debug: Debug,
+    pub renderer: Renderer,
+    pub state: State<Program>,
 }
 
-impl Menu {
+impl Ui {
     #[inline]
     pub fn new(context: &glow::Context, viewport: Viewport) -> Self {
         let clipboard = clipboard::Null;
-        let controls = Controls::new();
+        let program = Program::new();
         let mut debug = Debug::new();
+
+        debug.toggle();
+
         let mut renderer = Renderer::new(Backend::new(
             context,
             Settings {
@@ -29,7 +29,7 @@ impl Menu {
             },
         ));
 
-        let state = State::new(controls, viewport.logical_size(), &mut renderer, &mut debug);
+        let state = State::new(program, viewport.logical_size(), &mut renderer, &mut debug);
         let debug = debug;
         let renderer = renderer;
 
@@ -37,7 +37,6 @@ impl Menu {
             clipboard,
             debug,
             renderer,
-            //scene,
             state,
         }
     }

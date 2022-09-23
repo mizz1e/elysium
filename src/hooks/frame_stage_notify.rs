@@ -25,7 +25,8 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     vars.panorama_blur.write(true);
 
     // p100
-    //vars.hud.write(false);
+    vars.hud.write(false);
+    vars.vgui.write(false);
 
     // shadows
     //vars.csm.write(false);
@@ -186,7 +187,7 @@ unsafe fn update_entities(entity_list: &EntityList) {
         match class.entity_id {
             EntityId::CEnvTonemapController => update_tonemap(entity.cast_tonemap()),
             EntityId::CFogController => update_fog(entity.cast_fog()),
-            EntityId::CPrecipitation => println!("got rain"),
+            EntityId::CPrecipitation => (), //println!("got rain"),
             _ => {}
         }
     }

@@ -233,6 +233,7 @@ vars! {
     horizontal_speed: f32 = "cl_sidespeed",
     html_motd: bool = "cl_disablehtmlmotd",
     hud: bool = "cl_drawhud",
+    vgui: bool = "r_drawvgui",
     human_blood: bool = "violence_hblood",
 
     interp: f32 = "cl_interp",

@@ -1,55 +1,11 @@
+use super::Surface;
 use crate::anti_aim::Pitch;
 use crate::State;
 use core::ops::RangeInclusive;
 use iced_glow::Renderer;
 use iced_native::theme::Container;
-use iced_native::{widget, Command, Element, Length, Program};
-
-mod extra_widget {
-    use iced_native::{renderer, text, widget};
-    use num_traits::FromPrimitive;
-    use std::borrow::Cow;
-    use std::fmt::Display;
-    use std::ops::RangeInclusive;
-
-    pub fn slider<'a, T, Message, Renderer>(
-        label: impl Display,
-        range: RangeInclusive<T>,
-        value: T,
-        on_change: impl Fn(T) -> Message + 'a,
-    ) -> widget::Row<'a, Message, Renderer>
-    where
-        T: Copy + Display + From<u8> + FromPrimitive + Into<f64> + PartialOrd + 'a,
-        Message: Clone + 'a,
-        Renderer: renderer::Renderer + text::Renderer + 'a,
-        Renderer::Theme: widget::slider::StyleSheet + widget::text::StyleSheet,
-    {
-        let label = format!("{label} ({value})");
-        let text = widget::text(label);
-        let slider = widget::slider(range, value, on_change);
-
-        iced_native::row![text, slider]
-    }
-
-    pub fn pick_list<'a, Message, Renderer, T>(
-        label: impl ToString,
-        options: impl Into<Cow<'a, [T]>>,
-        selected: Option<T>,
-        on_selected: impl Fn(T) -> Message + 'a,
-    ) -> widget::Row<'a, Message, Renderer>
-    where
-        T: Clone + Eq + ToString + 'static,
-        [T]: ToOwned<Owned = Vec<T>>,
-        Message: 'a,
-        Renderer: text::Renderer + 'a,
-        Renderer::Theme: widget::pick_list::StyleSheet + widget::text::StyleSheet,
-    {
-        let text = widget::text(label);
-        let pick_list = widget::pick_list(options, selected, on_selected);
-
-        iced_native::row![text, pick_list]
-    }
-}
+use iced_native::{widget, Command, Element, Length};
+use std::cell::UnsafeCell;
 
 fn hex_color(string: String) -> Message {
     match u32::from_str_radix(&string, 16) {
@@ -60,7 +16,7 @@ fn hex_color(string: String) -> Message {
 
 /// Iced UI controls.
 #[derive(Default)]
-pub struct Controls {}
+pub struct Program {}
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -89,14 +45,14 @@ pub enum Message {
     None,
 }
 
-impl Controls {
+impl Program {
     #[inline]
-    pub fn new() -> Controls {
+    pub fn new() -> Program {
         Default::default()
     }
 }
 
-impl Program for Controls {
+impl iced_native::Program for Program {
     type Renderer = Renderer;
     type Message = Message;
 
@@ -148,12 +104,12 @@ impl Program for Controls {
         const PITCH_OPTIONS: &[Pitch] = &[Pitch::Default, Pitch::Up, Pitch::Down];
 
         let mut content = widget::Column::new();
-        let anti_aim = widget::checkbox("Anti-Aim", state.anti_aim.enabled, Message::AntiAim);
+        let anti_aim = widget::checkbox("anti-aim", state.anti_aim.enabled, Message::AntiAim);
 
         content = content.push(anti_aim);
 
         if state.anti_aim.enabled {
-            let pitch = extra_widget::pick_list(
+            let pitch = super::pick_list(
                 "Pitch",
                 PITCH_OPTIONS,
                 Some(state.anti_aim.pitch),
@@ -163,7 +119,7 @@ impl Program for Controls {
             let yaw_jitter =
                 widget::checkbox("Yaw Jitter", state.anti_aim.yaw_jitter, Message::YawJitter);
 
-            let yaw_offset = extra_widget::slider(
+            let yaw_offset = super::slider(
                 "Yaw Offset",
                 YAW_RANGE,
                 state.anti_aim.yaw_offset,
@@ -179,8 +135,7 @@ impl Program for Controls {
                 .push(roll);
         }
 
-        let fake_lag =
-            extra_widget::slider("Fake Lag", FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag);
+        let fake_lag = super::slider("Fake Lag", FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag);
 
         let fog_color = iced_native::row![
             widget::text("Fog Color"),
@@ -216,112 +171,20 @@ impl Program for Controls {
             .height(Length::Fill)
             .style(Container::Custom(style::overlay));
 
-        overlay.into()
-    }
-}
+        let content = widget::text("hi");
 
-mod overlay {
-    use iced_native::layout::Limits;
-    use iced_native::widget::container;
-    use iced_native::widget::tree;
-    use iced_native::widget::tree::{State, Tree};
-    use iced_native::widget::{Container, Widget};
-    use iced_native::{event, layout, mouse, overlay, renderer};
-    use iced_native::{Clipboard, Event, Layout, Length, Point, Rectangle, Shell};
+        let ui = widget::container(content)
+            .center_x()
+            .center_y()
+            .width(Length::Fill)
+            .height(Length::Fill);
 
-    pub struct Overlay<'a, Message, Renderer>
-    where
-        Renderer: iced_native::Renderer,
-        Renderer::Theme: container::StyleSheet,
-    {
-        container: Container<'a, Message, Renderer>,
-    }
+        let surface = Surface {
+            ui: ui,
+            overlay: UnsafeCell::new(overlay),
+        };
 
-    impl<'a, Message, Renderer> Widget<Message, Renderer> for Overlay<'a, Message, Renderer>
-    where
-        Renderer: iced_native::Renderer,
-        Renderer::Theme: container::StyleSheet,
-    {
-        fn children(&self) -> Vec<Tree> {
-            self.container.children()
-        }
-
-        fn diff(&self, tree: &mut Tree) {
-            self.container.diff(tree)
-        }
-
-        fn draw(
-            &self,
-            tree: &Tree,
-            renderer: &mut Renderer,
-            theme: &Renderer::Theme,
-            style: &renderer::Style,
-            layout: Layout<'_>,
-            cursor_position: Point,
-            viewport: &Rectangle,
-        ) {
-        }
-
-        fn height(&self) -> Length {
-            Widget::height(&self.container)
-        }
-
-        fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-            self.container.layout(renderer, limits)
-        }
-
-        fn mouse_interaction(
-            &self,
-            tree: &Tree,
-            layout: Layout<'_>,
-            cursor_position: Point,
-            viewport: &Rectangle,
-            renderer: &Renderer,
-        ) -> mouse::Interaction {
-            self.mouse_interaction(tree, layout, cursor_position, viewport, renderer)
-        }
-
-        fn on_event(
-            &mut self,
-            tree: &mut Tree,
-            event: Event,
-            layout: Layout<'_>,
-            cursor_position: Point,
-            renderer: &Renderer,
-            clipboard: &mut dyn Clipboard,
-            shell: &mut Shell<'_, Message>,
-        ) -> event::Status {
-            self.container.on_event(
-                tree,
-                event,
-                layout,
-                cursor_position,
-                renderer,
-                clipboard,
-                shell,
-            )
-        }
-
-        fn overlay<'b>(
-            &'b self,
-            tree: &'b mut Tree,
-            layout: Layout<'_>,
-            renderer: &Renderer,
-        ) -> Option<overlay::Element<'_, Message, Renderer>> {
-            todo!()
-        }
-
-        fn tag(&self) -> tree::Tag {
-            self.container.tag()
-        }
-
-        fn state(&self) -> tree::State {
-            self.container.state()
-        }
-
-        fn width(&self) -> Length {
-            Widget::width(&self.container)
-        }
+        Element::new(surface)
     }
 }
 

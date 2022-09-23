@@ -12,14 +12,34 @@
 #![feature(sync_unsafe_cell)]
 #![feature(strict_provenance)]
 
+use elysium_sdk::material::{Material, MaterialFlag, MaterialKind};
+use elysium_sdk::MaterialSystem;
+use elysium_sdk::{Interfaces, LibraryKind, Vars, Vdf};
 use error::Error;
+use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString, OsString};
+use std::io::Write;
 use std::os::unix::ffi::OsStringExt;
+use std::thread;
 use std::time::Duration;
 use std::{env, ffi, iter, mem, ptr};
 
+pub use networked::Networked;
+pub use state::State;
+pub use ui::Ui;
+
 mod error;
+mod ui;
+
+pub mod anti_aim;
+pub mod assets;
+pub mod entity;
+pub mod hooks;
+pub mod library;
+pub mod networked;
+pub mod pattern;
+pub mod state;
 
 type Main = unsafe extern "C" fn(argc: libc::c_int, argv: *const *const libc::c_char);
 
@@ -88,33 +108,6 @@ fn main() {
         println!("\x1b[38;5;1merror:\x1b[m {error}");
     }
 }
-
-use elysium_sdk::material::{Material, MaterialKind};
-use elysium_sdk::MaterialSystem;
-use elysium_sdk::{Interfaces, LibraryKind, Vars, Vdf};
-use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
-use std::io::Write;
-use std::thread;
-
-pub use controls::Controls;
-pub use menu::Menu;
-pub use networked::Networked;
-pub use scene::Scene;
-pub use state::State;
-
-mod controls;
-mod menu;
-mod scene;
-
-pub mod anti_aim;
-pub mod assets;
-pub mod entity;
-pub mod hooks;
-pub mod library;
-pub mod networked;
-pub mod pattern;
-//pub mod simulation;
-pub mod state;
 
 #[inline]
 fn hooked(name: &str) {
@@ -305,6 +298,8 @@ fn create_material(material_system: &MaterialSystem) -> Option<&'static Material
 
     println!("name = {:?}", material.name());
     println!("group = {:?}", material.group());
+
+    material.set_flag(MaterialFlag::WIREFRAME, false);
 
     Some(material)
 }

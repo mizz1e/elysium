@@ -161,7 +161,6 @@ impl Matrix3x4 {
 
         Self::from_simd(matrix)
     }
-
     /// Set the z axis (up).
     #[inline]
     pub fn with_z_axis(self, axis: Vec3) -> Self {

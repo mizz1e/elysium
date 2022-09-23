@@ -3,6 +3,7 @@ use iced_native::keyboard::Event::{KeyPressed, KeyReleased};
 use iced_native::keyboard::KeyCode::Insert;
 use iced_native::mouse::Button::Other;
 use iced_native::mouse::Event::{ButtonPressed, ButtonReleased};
+use iced_native::mouse::Interaction;
 use iced_native::{mouse, Event};
 
 /// `SDL_PollEvent` hook.
@@ -47,11 +48,12 @@ pub unsafe extern "C" fn poll_event(event: *mut sdl2_sys::SDL_Event) -> i32 {
                 menu.queue_event(event)
             }
         });
-    }
 
-    // block input to the game when the menu is open
-    if state.menu_open.0 {
-        (*event).type_ = 0;
+        let interaction = dbg!(menu.state.mouse_interaction());
+
+        if !matches!(interaction, Interaction::Idle) {
+            (*event).type_ = 0;
+        }
     }
 
     result

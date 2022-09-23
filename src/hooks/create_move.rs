@@ -137,10 +137,7 @@ pub unsafe extern "C" fn create_move(
     sample: f32,
     command: &mut Command,
 ) -> bool {
-    //let return_address = cake::return_address!();
-    //let send_packet = &mut *return_address.offset(24);
-    let mut send_packet = true;
-    let send_packet = &mut send_packet;
+    let send_packet = &mut *cake::frame_addr!().cast::<*mut bool>().read().byte_sub(24);
 
     create_move_inner(this, sample, command, send_packet);
 
@@ -163,7 +160,7 @@ unsafe fn create_move_inner(
         return None;
     }
 
-    let mut local_player = PlayerRef::from_raw(state.local.player)?;
+    let local_player = PlayerRef::from_raw(state.local.player)?;
 
     // don't mess with input if you are spectating
     if local_player.observer_mode() != ObserverMode::None {
@@ -184,11 +181,11 @@ unsafe fn create_move_inner(
     let fake_lag = state.fake_lag;
 
     if *send_packet && fake_lag != 0 {
-        let mut bones = &mut state.local.fake_bones;
+        let bones = &mut state.local.fake_bones;
 
         load_bones(&mut local_player, command, bones, time);
     } else {
-        let mut bones = &mut state.local.bones;
+        let bones = &mut state.local.bones;
 
         load_bones(&mut local_player, command, bones, time);
 
@@ -196,7 +193,7 @@ unsafe fn create_move_inner(
         state.local.time = globals.current_time;
     }
 
-    println!("{:?}", crate::state::is_record_valid(globals.current_time));
+    //println!("{:?}", crate::state::is_record_valid(globals.current_time));
 
     None
 }

@@ -1,4 +1,4 @@
-use crate::{Menu, State};
+use crate::{State, Ui};
 use core::mem::MaybeUninit;
 use glow::HasContext;
 use iced_glow::{glow, Viewport};
@@ -44,19 +44,17 @@ pub unsafe extern "C" fn swap_window(window: *mut sdl2_sys::SDL_Window) {
     let viewport = Viewport::with_physical_size(state.window_size, 1.0);
     let menu = state
         .menu
-        .get_or_insert_with(|| Menu::new(context, viewport.clone()));
+        .get_or_insert_with(|| Ui::new(context, viewport.clone()));
 
-    if state.menu_open.0 {
-        context.viewport(
-            0,
-            0,
-            state.window_size.width as i32,
-            state.window_size.height as i32,
-        );
+    context.viewport(
+        0,
+        0,
+        state.window_size.width as i32,
+        state.window_size.height as i32,
+    );
 
-        menu.update(viewport.clone(), state.cursor_position);
-        menu.draw(context, viewport);
-    }
+    menu.update(viewport.clone(), state.cursor_position);
+    menu.draw(context, viewport);
 
     // disable auto-conversion from/to sRGB
     context.disable(glow::FRAMEBUFFER_SRGB);

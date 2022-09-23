@@ -11,7 +11,7 @@ elysium-mem = { default-features = false, path = "crates/mem" }
 elysium-pattern = { default-features = false, path = "crates/pattern" }
 elysium-sdk = { default-features = false, path = "crates/sdk" }
 iced_glow = { default-features = false, git = "https://github.com/elysian6969/iced" }
-iced_native = { default-features = false, git = "https://github.com/elysian6969/iced" }
+iced_native = { default-features = false, features = ["debug"], git = "https://github.com/elysian6969/iced" }
 libc = { default-features = false, version = "0.2" }
 libm = { default-features = false, git = "https://github.com/elysian6969/libm" }
 #link = { default-features = false, git = "https://github.com/elysian6969/link" }

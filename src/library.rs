@@ -1,9 +1,7 @@
 //! interfaced youre mother
 
 use cake::ffi::CUtf8Str;
-use elysium_sdk::LibraryKind;
-use std::time::Duration;
-use std::{fmt, mem, ptr, thread};
+use std::{fmt, mem, ptr};
 
 #[inline]
 fn is_exact(target: &str) -> bool {
@@ -110,32 +108,5 @@ pub fn load_interfaces() -> elysium_sdk::Interfaces {
 
             interface
         })
-    }
-}
-
-#[inline]
-pub fn wait_for_serverbrowser() {
-    use std::borrow::Cow;
-    use std::collections::HashSet;
-
-    let mut modules = HashSet::new();
-
-    while !link::is_module_loaded(LibraryKind::ServerBrowser.path()) {
-        let mut new_modules = HashSet::new();
-
-        link::iterate_modules(|module| {
-            new_modules.insert(module.path);
-        });
-
-        let yes = new_modules
-            .iter()
-            .filter(|path| !modules.contains(&**path))
-            .flat_map(|path| Some(path.file_name()?.to_str()?))
-            .intersperse(&Cow::Borrowed(", "))
-            .collect::<String>();
-
-        println!("{yes}");
-
-        modules = new_modules;
     }
 }
