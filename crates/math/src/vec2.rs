@@ -1,7 +1,8 @@
-use core::ops::{Add, Div, Mul, Rem, Sub};
-use core::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
+use crate::{impl_all_ops, impl_methods};
+use core::simd::{Simd, SimdFloat};
 
-#[derive(Copy, Clone, Default, Debug)]
+/// 2D vector.
+#[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct Vec2 {
     pub x: f32,
@@ -9,108 +10,42 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
-    /// Create a new `Vec2` from x, y coordinates.
-    pub const fn from_xy(x: f32, y: f32) -> Vec2 {
-        Vec2 { x, y }
-    }
-
-    /// Create a new `Vec2` from x, and y coordinates, discarding z.
-    pub const fn from_xyz(x: f32, y: f32, z: f32) -> Vec2 {
-        let _ = z;
-
-        Vec2 { x, y }
-    }
-
-    /// Create a new `Vec2` from x, and y coordinates, discarding z, and w.
-    pub const fn from_xyzw(x: f32, y: f32, z: f32, w: f32) -> Vec2 {
-        let _ = z;
-        let _ = w;
-
-        Vec2 { x, y }
-    }
-
-    /// Create a new `Vec2` from an array.
-    pub const fn from_array(array: [f32; 2]) -> Vec2 {
+    #[inline]
+    pub const fn from_array(array: [f32; 2]) -> Self {
         let [x, y] = array;
 
-        Vec2 { x, y }
+        Self { x, y }
     }
 
-    pub const fn splat(value: f32) -> Vec2 {
-        Vec2 { x: value, y: value }
+    #[inline]
+    pub const fn to_array(self) -> [f32; 2] {
+        let Self { x, y } = self;
+
+        [x, y]
     }
 
-    /// Create a new `Vec2` with all coordinates set to zero.
-    pub const fn zero() -> Vec2 {
-        Vec2::splat(0.0)
+    #[inline]
+    pub(crate) const fn from_simd(simd: Simd<f32, 2>) -> Self {
+        Self::from_array(simd.to_array())
     }
 
-    /// Create a new `Vec2` with all coordinates set to one.
-    pub const fn one() -> Vec2 {
-        Vec2::splat(1.0)
+    #[inline]
+    pub(crate) const fn to_simd(self) -> Simd<f32, 2> {
+        Simd::from_array(self.to_array())
     }
 
-    pub fn distance(self, other: Vec2) -> f32 {
-        self.to_vec().distance(other.to_vec())
+    /// Construct a vector where all elements are set to the given value.
+    #[inline]
+    pub const fn splat(value: f32) -> Self {
+        Self::from_array([value; 2])
     }
 
-    pub fn distance_squared(self, other: Vec2) -> f32 {
-        self.to_vec().distance_squared(other.to_vec())
+    #[inline]
+    pub fn product(self) -> f32 {
+        self.to_simd().reduce_product()
     }
 
-    pub fn dot(self, other: Vec2) -> f32 {
-        self.to_vec().dot(other.to_vec())
-    }
-
-    /// Calculate the magnitude (length).
-    pub fn magnitude(self) -> f32 {
-        self.to_vec().magnitude()
-    }
-
-    /// Calculate the magnitude (length) without squaring.
-    pub fn magnitude_squared(self) -> f32 {
-        self.to_vec().magnitude_squared()
-    }
-
-    pub fn is_finite(self) -> bool {
-        self.x.is_finite() && self.y.is_finite()
-    }
-
-    pub fn is_normal(self) -> bool {
-        self.x.is_normal() && self.y.is_normal()
-    }
-
-    fn from_vec(vec: meth::Vec2<f32>) -> Vec2 {
-        Vec2::from_array(vec.to_array())
-    }
-
-    fn to_vec(self) -> meth::Vec2<f32> {
-        let Vec2 { x, y } = self;
-
-        meth::Vec2::from_array([x, y])
-    }
+    impl_methods! {}
 }
 
-macro_rules! impl_op {
-    { $ty:ident, $trait:ident, $trait_assign:ident, $fn:ident, $fn_assign:ident, $op:tt } => {
-        impl $trait < $ty > for $ty {
-            type Output = $ty;
-
-            fn $fn(self, other: $ty) -> $ty {
-                $ty::from_vec(self.to_vec() $op other.to_vec())
-            }
-        }
-
-        impl $trait_assign < $ty > for $ty {
-            fn $fn_assign(&mut self, other: $ty) {
-                *self = *self $op other;
-            }
-        }
-    }
-}
-
-impl_op! { Vec2, Add, AddAssign, add, add_assign, + }
-impl_op! { Vec2, Div, DivAssign, div, div_assign, / }
-impl_op! { Vec2, Mul, MulAssign, mul, mul_assign, * }
-impl_op! { Vec2, Rem, RemAssign, rem, rem_assign, % }
-impl_op! { Vec2, Sub, SubAssign, sub, sub_assign, - }
+impl_all_ops! { Vec2 }

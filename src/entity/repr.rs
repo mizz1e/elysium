@@ -294,8 +294,8 @@ impl EntityRepr {
         unsafe {
             let enabled = range
                 .inspect(|range| {
-                    let start = elysium_math::to_finite(*range.start(), 0.0).max(0.0);
-                    let end = elysium_math::to_finite(*range.end(), 0.0).max(start);
+                    let start = (*range.start()).max(0.0);
+                    let end = (*range.end()).max(start);
 
                     self.start_mut().write_unaligned(start);
                     self.end_mut().write_unaligned(end);
@@ -381,10 +381,10 @@ impl EntityRepr {
         let view_offset = unsafe { self.view_offset_ref().read_unaligned() };
 
         // zero view offset fix
-        if view_offset.is_zero() {
+        if view_offset == Vec3::splat(0.0) {
             let z = if self.flags().ducking() { 46.0 } else { 64.0 };
 
-            Vec3::from_xyz(0.0, 0.0, z)
+            Vec3::from_array([0.0, 0.0, z])
         } else {
             view_offset
         }
@@ -537,7 +537,6 @@ mod exposure {
                     Bound::Unbounded => MIN_EXPOSURE,
                 };
 
-                let value = elysium_math::to_finite(value, MIN_EXPOSURE);
                 let value = value.max(MIN_EXPOSURE);
 
                 value
@@ -626,7 +625,7 @@ impl EntityRepr {
     #[inline]
     pub fn set_bloom(&mut self, scale: f32) {
         unsafe {
-            let scale = elysium_math::to_finite(scale, 0.0).max(0.0);
+            let scale = scale.max(0.0);
 
             self.bloom_scale_mut().write_unaligned(scale);
             self.enable_bloom_scale_mut().write_unaligned(scale != 0.0);

@@ -1,5 +1,4 @@
-use elysium_math::Vec3;
-use elysium_model::Bones;
+use elysium_math::{Matrix3x4, Vec3};
 use std::ptr;
 
 pub struct Thirdperson {
@@ -25,9 +24,9 @@ pub struct Local {
     pub aim_punch_angle: Vec3,
 
     /// Local player's bones.
-    pub bones: Bones,
+    pub bones: [Matrix3x4; 256],
 
-    pub fake_bones: Bones,
+    pub fake_bones: [Matrix3x4; 256],
 
     /// Local player's current health.
     pub health: i32,
@@ -73,18 +72,18 @@ pub struct Local {
 }
 
 const NEW: Local = Local {
-    aim_punch_angle: Vec3::zero(),
-    bones: Bones::zero(),
-    fake_bones: Bones::zero(),
+    aim_punch_angle: Vec3::splat(0.0),
+    bones: Matrix3x4::splat_model(0.0),
+    fake_bones: Matrix3x4::splat_model(0.0),
     health: 0,
     magazine_ammo: 0,
     old_yaw: 0.0,
     player: ptr::null(),
-    shot_view_angle: Vec3::zero(),
+    shot_view_angle: Vec3::splat(0.0),
     thirdperson: Thirdperson::new(),
     total_ammo: 0,
-    view_angle: Vec3::zero(),
-    view_punch_angle: Vec3::zero(),
+    view_angle: Vec3::splat(0.0),
+    view_punch_angle: Vec3::splat(0.0),
     visualize_shot: 0.0,
     weapon: ptr::null(),
     was_attacking: false,

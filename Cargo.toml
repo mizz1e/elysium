@@ -4,11 +4,10 @@ name = "elysium"
 version = "0.0.0"
 
 [dependencies]
-cake = { default-features = false, git = "https://github.com/elysian6969/cake", rev = "2e14d611a478d59f84672a6e675df259d1c41340" }
+cake = { branch = "old", default-features = false, git = "https://github.com/elysian6969/cake" }
 elysium-input = { default-features = false, path = "crates/input" }
 elysium-math = { default-features = false, path = "crates/math" }
 elysium-mem = { default-features = false, path = "crates/mem" }
-elysium-model = { default-features = false, path = "crates/model" }
 elysium-pattern = { default-features = false, path = "crates/pattern" }
 elysium-sdk = { default-features = false, path = "crates/sdk" }
 iced_glow = { default-features = false, git = "https://github.com/elysian6969/iced" }
@@ -27,7 +26,6 @@ members = [
     "crates/input",
     "crates/math",
     "crates/mem",
-    "crates/model",
     "crates/pattern",
     "crates/sdk",
 ]

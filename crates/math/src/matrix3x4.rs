@@ -1,6 +1,10 @@
 use crate::Vec3;
+use core::mem;
 use core::ops::{Deref, DerefMut};
+use core::simd::Which::{First, Second};
+use core::simd::{simd_swizzle, Simd};
 
+/// 3x4 matrix.
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct Matrix3x4 {
@@ -8,26 +12,46 @@ pub struct Matrix3x4 {
 }
 
 impl Matrix3x4 {
-    pub const fn splat(value: f32) -> Matrix3x4 {
+    /// Construct a matrix from a flat array of floats.
+    #[inline]
+    pub const fn from_array(array: [f32; 12]) -> Self {
+        unsafe { mem::transmute(array) }
+    }
+
+    /// Convert this matrix to a flat array of floats.
+    #[inline]
+    pub const fn to_array(self) -> [f32; 12] {
+        unsafe { mem::transmute(self) }
+    }
+
+    #[inline]
+    pub(crate) fn from_simd(simd: Simd<f32, 16>) -> Self {
+        let array = simd.to_array();
+        let array = unsafe { mem::transmute_copy(&array) };
+
+        Self::from_array(array)
+    }
+
+    #[inline]
+    pub(crate) fn to_simd(self) -> Simd<f32, 16> {
+        let mut simd = Simd::splat(0.0);
+
+        simd.as_mut_array()[..12].copy_from_slice(&self.to_array());
+        simd
+    }
+
+    /// Construct a matrix where all elements are set to the given value.
+    #[inline]
+    pub const fn splat(value: f32) -> Self {
         let matrix = [[value; 4]; 3];
 
         Self { matrix }
     }
 
-    pub const fn zero() -> Matrix3x4 {
-        Self::splat(0.0)
-    }
-
-    pub const fn one() -> Matrix3x4 {
-        Self::splat(1.0)
-    }
-
-    pub const fn as_ptr(&self) -> *const f32 {
-        self.matrix.as_ptr().cast()
-    }
-
-    pub fn as_mut_ptr(&mut self) -> *mut f32 {
-        self.matrix.as_mut_ptr().cast()
+    /// Construct a model matrix where all elements are set to the given value.
+    #[inline]
+    pub const fn splat_model(value: f32) -> [Self; 256] {
+        [Self::splat(value); 256]
     }
 
     /// Create a matrix where
@@ -35,8 +59,9 @@ impl Matrix3x4 {
     ///  y axis = left
     ///  z axis = up
     ///  w axis = origin
-    pub const fn from_xyzw(x: Vec3, y: Vec3, z: Vec3, w: Vec3) -> Matrix3x4 {
-        Self::zero()
+    #[inline]
+    pub fn from_xyzw(x: Vec3, y: Vec3, z: Vec3, w: Vec3) -> Self {
+        Self::splat(0.0)
             .with_x_axis(x)
             .with_y_axis(y)
             .with_z_axis(z)
@@ -44,92 +69,174 @@ impl Matrix3x4 {
     }
 
     /// Returns the x axis (forward).
-    pub const fn x_axis(&self) -> Vec3 {
-        let x = self[0][0];
-        let y = self[1][0];
-        let z = self[2][0];
+    #[inline]
+    pub fn x_axis(self) -> Vec3 {
+        let matrix = self.to_simd();
 
-        Vec3::from_xyz(x, y, z)
+        Vec3::from_simd(simd_swizzle!(matrix, [0, 4, 9, 0]))
     }
 
     /// Returns the y axis (left).
-    pub const fn y_axis(&self) -> Vec3 {
-        let x = self[0][1];
-        let y = self[1][1];
-        let z = self[2][1];
+    #[inline]
+    pub fn y_axis(self) -> Vec3 {
+        let matrix = self.to_simd();
 
-        Vec3::from_xyz(x, y, z)
+        Vec3::from_simd(simd_swizzle!(matrix, [1, 5, 10, 0]))
     }
 
     /// Returns the z axis (up).
-    pub const fn z_axis(&self) -> Vec3 {
-        let x = self[0][2];
-        let y = self[1][2];
-        let z = self[2][2];
+    #[inline]
+    pub fn z_axis(self) -> Vec3 {
+        let matrix = self.to_simd();
 
-        Vec3::from_xyz(x, y, z)
+        Vec3::from_simd(simd_swizzle!(matrix, [2, 6, 11, 0]))
     }
 
     /// Returns the w axis (origin).
-    pub const fn w_axis(&self) -> Vec3 {
-        let x = self[0][3];
-        let y = self[1][3];
-        let z = self[2][3];
+    #[inline]
+    pub fn w_axis(self) -> Vec3 {
+        let matrix = self.to_simd();
 
-        Vec3::from_xyz(x, y, z)
+        Vec3::from_simd(simd_swizzle!(matrix, [3, 7, 12, 0]))
     }
 
     /// Set the x axis (forward).
-    pub const fn with_x_axis(mut self, x: Vec3) -> Matrix3x4 {
-        let Vec3 { x, y, z } = x;
+    #[inline]
+    pub fn with_x_axis(self, axis: Vec3) -> Self {
+        let axis = axis.to_simd_16();
+        let matrix = self.to_simd();
+        let matrix = simd_swizzle!(
+            matrix,
+            axis,
+            [
+                Second(0),
+                First(1),
+                First(2),
+                First(3),
+                Second(1),
+                First(5),
+                First(6),
+                First(7),
+                Second(2),
+                First(9),
+                First(10),
+                First(11),
+                First(0),
+                First(0),
+                First(0),
+                First(0),
+            ]
+        );
 
-        self[0][0] = x;
-        self[1][0] = y;
-        self[2][0] = z;
-        self
+        Self::from_simd(matrix)
     }
 
     /// Set the y axis (left).
-    pub const fn with_y_axis(mut self, y: Vec3) -> Matrix3x4 {
-        let Vec3 { x, y, z } = y;
+    #[inline]
+    pub fn with_y_axis(self, axis: Vec3) -> Self {
+        let axis = axis.to_simd_16();
+        let matrix = self.to_simd();
+        let matrix = simd_swizzle!(
+            matrix,
+            axis,
+            [
+                First(0),
+                Second(0),
+                First(2),
+                First(3),
+                First(4),
+                Second(1),
+                First(6),
+                First(7),
+                First(8),
+                Second(2),
+                First(10),
+                First(11),
+                First(0),
+                First(0),
+                First(0),
+                First(0),
+            ]
+        );
 
-        self[0][1] = x;
-        self[1][1] = y;
-        self[2][1] = z;
-        self
+        Self::from_simd(matrix)
     }
 
     /// Set the z axis (up).
-    pub const fn with_z_axis(mut self, z: Vec3) -> Matrix3x4 {
-        let Vec3 { x, y, z } = z;
+    #[inline]
+    pub fn with_z_axis(self, axis: Vec3) -> Self {
+        let axis = axis.to_simd_16();
+        let matrix = self.to_simd();
+        let matrix = simd_swizzle!(
+            matrix,
+            axis,
+            [
+                First(0),
+                Second(0),
+                First(2),
+                First(3),
+                First(4),
+                Second(1),
+                First(6),
+                First(7),
+                First(8),
+                Second(2),
+                First(10),
+                First(11),
+                First(0),
+                First(0),
+                First(0),
+                First(0),
+            ]
+        );
 
-        self[0][1] = x;
-        self[1][1] = y;
-        self[2][1] = z;
-        self
+        Self::from_simd(matrix)
     }
 
     /// Set the w axis (orign).
-    pub const fn with_w_axis(mut self, w: Vec3) -> Matrix3x4 {
-        let Vec3 { x, y, z } = w;
+    #[inline]
+    pub fn with_w_axis(self, axis: Vec3) -> Self {
+        let axis = axis.to_simd_16();
+        let matrix = self.to_simd();
+        let matrix = simd_swizzle!(
+            matrix,
+            axis,
+            [
+                First(0),
+                Second(0),
+                First(2),
+                First(3),
+                First(4),
+                Second(1),
+                First(6),
+                First(7),
+                First(8),
+                Second(2),
+                First(10),
+                First(11),
+                First(0),
+                First(0),
+                First(0),
+                First(0),
+            ]
+        );
 
-        self[0][1] = x;
-        self[1][1] = y;
-        self[2][1] = z;
-        self
+        Self::from_simd(matrix)
     }
 }
 
-impl const Deref for Matrix3x4 {
+impl Deref for Matrix3x4 {
     type Target = [[f32; 4]; 3];
 
-    fn deref(&self) -> &[[f32; 4]; 3] {
+    #[inline]
+    fn deref(&self) -> &Self::Target {
         &self.matrix
     }
 }
 
-impl const DerefMut for Matrix3x4 {
-    fn deref_mut(&mut self) -> &mut [[f32; 4]; 3] {
+impl DerefMut for Matrix3x4 {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.matrix
     }
 }

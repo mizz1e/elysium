@@ -65,7 +65,7 @@ impl AntiAim {
         }
 
         let side = if side { -1.0 } else { 1.0 };
-        let (x, y, z) = view_angle.to_tuple();
+        let [x, y, z] = view_angle.to_array();
 
         let x = match self.pitch {
             Pitch::Up => -89.0,
@@ -73,17 +73,16 @@ impl AntiAim {
             _ => x,
         };
 
-        let desync = 58.0 * side;
         let y = y
             + self.yaw_offset
             + if self.yaw_jitter {
-                (desync - 15.0) + random(0.0..=15.0)
+                (58.0 - 7.5) + random(0.0..=15.0)
             } else {
-                desync
+                58.0
             };
 
         let z = if self.roll { 50.0 * side } else { z };
 
-        Vec3::from_xyz(x, y, z)
+        Vec3 { x, y, z }
     }
 }

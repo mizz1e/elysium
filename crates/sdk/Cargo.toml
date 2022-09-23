@@ -4,7 +4,7 @@ name = "elysium-sdk"
 version = "0.0.0"
 
 [dependencies]
-cake = { default-features = false, features = ["std"], git = "https://github.com/elysian6969/cake", rev = "2e14d611a478d59f84672a6e675df259d1c41340" }
+cake = { branch = "old", default-features = false, features = ["std"], git = "https://github.com/elysian6969/cake" }
 libc = { default-features = false, version = "0.2" }
 elysium-math = { default-features = false, path = "../math" }
 elysium-mem = { default-features = false, path = "../mem" }

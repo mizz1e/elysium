@@ -1,9 +1,9 @@
 use core::ops::{Deref, DerefMut};
-use elysium_model::Bones;
+use elysium_math::Matrix3x4;
 
 /// A cached player.
 pub struct Player {
-    pub bones: Bones,
+    pub bones: [Matrix3x4; 256],
     pub id: u64,
     pub index: i32,
     pub health: i32,
@@ -16,7 +16,7 @@ pub struct Player {
 
 impl Player {
     pub const fn new() -> Player {
-        let bones = Bones::zero();
+        let bones = Matrix3x4::splat_model(0.0);
         let id = 0;
         let index = 0;
         let health = 0;

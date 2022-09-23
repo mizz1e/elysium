@@ -122,19 +122,20 @@ pub fn wait_for_serverbrowser() {
 
     while !link::is_module_loaded(LibraryKind::ServerBrowser.path()) {
         let mut new_modules = HashSet::new();
-        
-        link::iterate_modules(|module| { new_modules.insert(module.path); });
 
-        let yes = new_modules.iter()
+        link::iterate_modules(|module| {
+            new_modules.insert(module.path);
+        });
+
+        let yes = new_modules
+            .iter()
             .filter(|path| !modules.contains(&**path))
             .flat_map(|path| Some(path.file_name()?.to_str()?))
             .intersperse(&Cow::Borrowed(", "))
             .collect::<String>();
 
         println!("{yes}");
-        
-        modules = new_modules;
 
-        thread::sleep(Duration::from_millis(500));
+        modules = new_modules;
     }
 }

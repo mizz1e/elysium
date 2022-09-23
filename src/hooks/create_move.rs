@@ -1,38 +1,10 @@
 use crate::entity::{Entity, Player, PlayerRef, Weapon};
 use crate::State;
-use elysium_math::Vec3;
-use elysium_model::Bones;
+use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
 use elysium_sdk::ClientMode;
 use elysium_sdk::{Command, EntityList, HitGroup, Interfaces};
 use std::arch::asm;
-
-#[inline]
-fn fix_movement(command: &mut Command, wish_angle: Vec3) {
-    let (mut wish_forward, mut wish_right, _wish_up) = wish_angle.sanitize_angle().angle_vector();
-    let (mut curr_forward, mut curr_right, _curr_up) =
-        command.view_angle.sanitize_angle().angle_vector();
-
-    wish_forward.z = 0.0;
-    wish_right.z = 0.0;
-    curr_forward.z = 0.0;
-    curr_right.z = 0.0;
-
-    wish_forward = wish_forward.normalize();
-    wish_right = wish_right.normalize();
-    curr_forward = curr_forward.normalize();
-    curr_right = curr_right.normalize();
-
-    let wish_dir = command.movement.dir(wish_forward, wish_right);
-    let curr_dir = command.movement.dir(curr_forward, curr_right);
-
-    if wish_dir != curr_dir {
-        let denom = curr_right.y * curr_forward.x - curr_right.x * curr_forward.y;
-
-        command.movement.x = (wish_dir.x * curr_right.y - wish_dir.y * curr_right.x) / denom;
-        command.movement.y = (wish_dir.y * curr_forward.x - wish_dir.x * curr_forward.y) / denom;
-    }
-}
 
 #[inline]
 unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packet: &mut bool) {
@@ -79,10 +51,10 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         // don't do anything fancy whilest on a ladder or noclipping
         if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
             let velocity = local.velocity();
-            let magnitude = velocity.magnitude2d();
+            let magnitude = velocity.xy().magnitude();
             let ideal_strafe = (15.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0);
             let mut wish_angle = command.view_angle;
-            let strafe_dir = command.movement.to_dir();
+            let strafe_dir = command.movement.xy();
             let strafe_dir_yaw_offset = strafe_dir.y.atan2(strafe_dir.x).to_degrees();
 
             wish_angle.y -= strafe_dir_yaw_offset;
@@ -96,7 +68,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
             let horizontal_speed = vars.horizontal_speed.read();
 
             if abs_yaw_delta <= ideal_strafe || abs_yaw_delta >= 30.0 {
-                let velocity_dir = Vec3::vector_angle(velocity);
+                let velocity_dir = velocity.to_angle();
                 let velocity_yaw_delta = libm::remainderf(wish_angle.y - velocity_dir.y, 360.0);
                 let retrack = (30.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0) * 2.0;
 
@@ -119,8 +91,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
             }
 
             command.movement.x = 0.0;
-
-            fix_movement(command, wish_angle);
+            command.movement = command.movement.movement(command.view_angle, wish_angle);
         }
     }
 
@@ -153,7 +124,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     command.fast_duck(true);
 
-    fix_movement(command, state.view_angle);
+    command.movement = command.movement.movement(command.view_angle, state.view_angle);
 
     if state.anti_untrusted {
         command.view_angle = command.view_angle.sanitize_angle();
@@ -209,7 +180,7 @@ unsafe fn create_move_inner(
     let time = globals.current_time;
 
     if command.command < state.last_command {
-        command.view_angle = Vec3::zero();
+        command.view_angle = Vec3::splat(0.0);
     }
 
     state.last_command = command.command;
@@ -234,7 +205,12 @@ unsafe fn create_move_inner(
     None
 }
 
-fn load_bones(local_player: &mut PlayerRef<'_>, command: &Command, bones: &mut Bones, time: f32) {
+fn load_bones(
+    local_player: &mut PlayerRef<'_>,
+    command: &Command,
+    bones: &mut [Matrix3x4; 256],
+    time: f32,
+) {
     let view_angle = local_player.view_angle();
 
     unsafe {

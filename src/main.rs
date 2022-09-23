@@ -16,6 +16,7 @@ use error::Error;
 use std::borrow::Cow;
 use std::ffi::{CStr, CString, OsString};
 use std::os::unix::ffi::OsStringExt;
+use std::time::Duration;
 use std::{env, ffi, iter, mem, ptr};
 
 mod error;
@@ -140,9 +141,60 @@ fn console() {
 
 #[inline]
 fn main2() {
-    unsafe {
-        library::wait_for_serverbrowser();
+    while dbg!(!{
+        link::is_module_loaded("libGLX.so.0.0.0")
+            && link::is_module_loaded("libSDL2-2.0.so.0")
+            && link::is_module_loaded("vgui2_client.so")
+    }) {
+        thread::sleep(Duration::from_millis(100));
+    }
 
+    unsafe {
+        let state = State::get();
+
+        let glx = link::load_module("libGLX.so.0.0.0").expect("libGL.so.0.0.0");
+        let address = glx
+            .symbol("glXGetProcAddress")
+            .expect("glXGetProcAddress")
+            .symbol
+            .address;
+
+        state.proc_address = mem::transmute(address);
+
+        let sdl = link::load_module("libSDL2-2.0.so.0").expect("libSDL2-2.0.so.0");
+
+        let address = sdl
+            .symbol("SDL_GL_SwapWindow")
+            .expect("SDL_GL_SwapWindow")
+            .symbol
+            .address;
+
+        let swap_window =
+            elysium_mem::next_abs_addr_mut_ptr::<SwapWindow>(address as _).expect("swap_window");
+
+        state.hooks.swap_window = Some(swap_window.replace(hooks::swap_window));
+
+        hooked("SDL_GL_SwapWindow");
+
+        let address = sdl
+            .symbol("SDL_PollEvent")
+            .expect("SDL_PollEvent")
+            .symbol
+            .address;
+
+        let poll_event =
+            elysium_mem::next_abs_addr_mut_ptr::<PollEvent>(address as _).expect("poll_event");
+
+        state.hooks.poll_event = Some(poll_event.replace(hooks::poll_event));
+
+        hooked("SDL_PollEvent");
+
+        while dbg!(!link::is_module_loaded("serverbrowser_client.so")) {
+            thread::sleep(Duration::from_millis(100));
+        }
+    }
+
+    unsafe {
         let interfaces = library::load_interfaces();
         let state = State::get();
 
@@ -240,44 +292,6 @@ fn main2() {
             hooked("OverrideView");
             prot
         });
-
-        let glx = link::load_module("libGL.so.1").expect("libGL.so.1");
-
-        let address = glx
-            .symbol("glXGetProcAddress")
-            .expect("glXGetProcAddress")
-            .symbol
-            .address;
-
-        state.proc_address = mem::transmute(address);
-
-        let sdl = link::load_module("libSDL2-2.0.so.0").expect("libSDL2-2.0.so.0");
-
-        let address = sdl
-            .symbol("SDL_GL_SwapWindow")
-            .expect("SDL_GL_SwapWindow")
-            .symbol
-            .address;
-
-        let swap_window =
-            elysium_mem::next_abs_addr_mut_ptr::<SwapWindow>(address as _).expect("swap_window");
-
-        state.hooks.swap_window = Some(swap_window.replace(hooks::swap_window));
-
-        hooked("SDL_GL_SwapWindow");
-
-        let address = sdl
-            .symbol("SDL_PollEvent")
-            .expect("SDL_PollEvent")
-            .symbol
-            .address;
-
-        let poll_event =
-            elysium_mem::next_abs_addr_mut_ptr::<PollEvent>(address as _).expect("poll_event");
-
-        state.hooks.poll_event = Some(poll_event.replace(hooks::poll_event));
-
-        hooked("SDL_PollEvent");
 
         println!("create gold");
         state.materials.gold = create_material(material_system);
