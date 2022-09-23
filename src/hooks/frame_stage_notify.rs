@@ -194,10 +194,6 @@ unsafe fn update_entities(entity_list: &EntityList) {
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
-    let library = link::query_address(cake::return_addr!());
-
-    println!("{library:?}");
-
     let state = State::get();
     let Interfaces {
         engine,

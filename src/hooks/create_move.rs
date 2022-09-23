@@ -114,9 +114,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         .player_range()
         .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
 
-    for (index, player) in player_iter {
-        println!("{index} {player:?}");
-    }
+    for (index, player) in player_iter {}
 
     if do_attack {
         command.view_angle = state.view_angle;
@@ -124,7 +122,9 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     command.fast_duck(true);
 
-    command.movement = command.movement.movement(command.view_angle, state.view_angle);
+    command.movement = command
+        .movement
+        .movement(command.view_angle, state.view_angle);
 
     if state.anti_untrusted {
         command.view_angle = command.view_angle.sanitize_angle();
@@ -137,10 +137,6 @@ pub unsafe extern "C" fn create_move(
     sample: f32,
     command: &mut Command,
 ) -> bool {
-    let library = link::query_address(cake::return_addr!());
-
-    println!("{library:?}");
-
     //let return_address = cake::return_address!();
     //let send_packet = &mut *return_address.offset(24);
     let mut send_packet = true;

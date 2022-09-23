@@ -73,21 +73,21 @@ impl Vec3 {
     }
 
     #[inline]
-    pub fn sin(self) -> Self {
-        let [x, y, z] = self.to_array();
-        let x = x.sin();
-        let y = y.sin();
-        let z = z.sin();
-
-        Self { x, y, z }
-    }
-
-    #[inline]
     pub fn cos(self) -> Self {
         let [x, y, z] = self.to_array();
         let x = x.cos();
         let y = y.cos();
         let z = z.cos();
+
+        Self { x, y, z }
+    }
+
+    #[inline]
+    pub fn sin(self) -> Self {
+        let [x, y, z] = self.to_array();
+        let x = x.sin();
+        let y = y.sin();
+        let z = z.sin();
 
         Self { x, y, z }
     }
@@ -108,13 +108,13 @@ impl Vec3 {
         let z = -sin.x;
         let forward = Vec3::from_array([x, y, z]);
 
-        let x = -sin.z * sin.x * cos.y + cos.z * sin.y;
-        let y = -sin.z * sin.x * sin.y - cos.z * cos.y;
+        let x = (-sin.z * sin.x * cos.y) + (-cos.z * -sin.y);
+        let y = (-sin.z * sin.x * sin.y) + (-cos.z * cos.y);
         let z = -sin.z * cos.x;
         let right = Vec3::from_array([x, y, z]);
 
-        let x = cos.z * sin.x * cos.y + sin.z * sin.y;
-        let y = cos.z * sin.x * sin.y - sin.z * cos.y;
+        let x = (cos.z * sin.x * cos.y) + (-sin.z * -sin.y);
+        let y = (cos.z * sin.x * sin.y) + (-sin.z * cos.y);
         let z = cos.z * cos.x;
         let up = Vec3::from_array([x, y, z]);
 
@@ -148,18 +148,18 @@ impl Vec3 {
         let (mut curr_forward, mut curr_right, _curr_up) = curr_angle.to_vectors();
         let (mut wish_forward, mut wish_right, _wish_up) = wish_angle.to_vectors();
 
-        wish_forward.z = 0.0;
-        wish_right.z = 0.0;
         curr_forward.z = 0.0;
         curr_right.z = 0.0;
+        wish_forward.z = 0.0;
+        wish_right.z = 0.0;
 
         wish_forward = wish_forward.normalize();
         wish_right = wish_right.normalize();
         curr_forward = curr_forward.normalize();
         curr_right = curr_right.normalize();
 
-        let wish_dir = self.dir(wish_forward, wish_right);
         let curr_dir = self.dir(curr_forward, curr_right);
+        let wish_dir = self.dir(wish_forward, wish_right);
 
         if wish_dir != curr_dir {
             let denominator = curr_right.y * curr_forward.x - curr_right.x * curr_forward.y;
@@ -213,31 +213,35 @@ impl Vec3 {
         self.normalize_angle().clamp_angle()
     }
 
-    
+    /// Forward direction vector to euler angles.
     #[inline]
     pub fn to_angle(self) -> Self {
         let [x, y, z] = self.to_array();
-        let mut pitch;
-        let mut yaw;
 
-        if !(x != 0.0 || y != 0.0) {
-            pitch = if z > 0.0 { 270.0 } else { 90.0 };
-            yaw = 0.0;
+        let (x, y) = if x == 0.0 && y == 0.0 {
+            let pitch = if z > 0.0 { 270.0 } else { 90.0 };
+            let yaw = 0.0;
+
+            (pitch, yaw)
         } else {
-            pitch = (-z).atan2(self.xy().magnitude()).to_degrees();
+            let mut pitch = (-z).atan2(self.xy().magnitude()).to_degrees();
 
             if pitch < 0.0 {
                 pitch += 360.0;
             }
 
-            yaw = y.atan2(x).to_degrees();
+            let mut yaw = y.atan2(x).to_degrees();
 
             if yaw < 0.0 {
                 yaw += 360.0;
             }
-        }
 
-        Self::from_array([pitch, yaw, 0.0])
+            (pitch, yaw)
+        };
+
+        let z = 0.0;
+
+        Self::from_array([x, y, z])
     }
 
     impl_methods! {}
