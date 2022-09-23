@@ -134,9 +134,8 @@ impl Vec3 {
 
     #[inline]
     pub fn dir(self, forward: Self, right: Self) -> Self {
-        let dir = forward * self + right * self;
-        let x = dir.x;
-        let y = dir.y;
+        let x = forward.x * self.x + right.x * self.y;
+        let y = forward.y * self.x + right.y * self.y;
         let z = 0.0;
 
         Vec3::from_array([x, y, z])
@@ -158,6 +157,7 @@ impl Vec3 {
         curr_forward = curr_forward.normalize();
         curr_right = curr_right.normalize();
 
+        // self is command.movement
         let curr_dir = self.dir(curr_forward, curr_right);
         let wish_dir = self.dir(wish_forward, wish_right);
 
@@ -218,7 +218,7 @@ impl Vec3 {
     pub fn to_angle(self) -> Self {
         let [x, y, z] = self.to_array();
 
-        let (x, y) = if x == 0.0 && y == 0.0 {
+        let (x, y) = if !(x != 0.0 || y != 0.0) {
             let pitch = if z > 0.0 { 270.0 } else { 90.0 };
             let yaw = 0.0;
 
