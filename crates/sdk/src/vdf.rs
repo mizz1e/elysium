@@ -41,9 +41,9 @@ static FROM_BYTES: SyncUnsafeCell<
 
 impl Vdf {
     #[inline]
-    pub fn from_bytes(name: &str, value: &str) -> Option<&'static Vdf> {
+    pub fn from_bytes(name: &str, value: Option<&str>) -> Option<&'static Vdf> {
         let name = name.as_ptr();
-        let value = value.as_ptr();
+        let value = value.map(|value| value.as_ptr()).unwrap_or(ptr::null());
 
         unsafe { (*FROM_BYTES.get())(name, value, ptr::null()).as_ref() }
     }

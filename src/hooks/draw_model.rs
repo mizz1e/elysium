@@ -2,7 +2,28 @@ use crate::entity::{Entity, Player, PlayerRef};
 use crate::State;
 use elysium_math::Matrix3x4;
 use elysium_sdk::entity::Team;
+use elysium_sdk::material::{Material, MaterialKind};
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
+use elysium_sdk::MaterialSystem;
+use elysium_sdk::Vdf;
+
+fn create_material(
+    material_system: &MaterialSystem,
+    material: MaterialKind,
+) -> Option<&'static Material> {
+    println!("create material {material:?}");
+    println!("base = {:?}", material.base());
+    println!("vdf = {:?}", material.vdf());
+    println!("name = {:?}", material.name());
+
+    let vdf = Vdf::from_bytes(material.base(), material.vdf())?;
+    let material = material_system.create(material.name(), vdf)?;
+
+    println!("name = {:?}", material.name());
+    println!("group = {:?}", material.group());
+
+    Some(material)
+}
 
 #[inline]
 unsafe fn draw_model_inner(
@@ -17,7 +38,17 @@ unsafe fn draw_model_inner(
     let interfaces = state.interfaces.as_ref()?;
     let entity_list = &interfaces.entity_list;
     let model_info = &interfaces.model_info;
-    let material = state.materials.gold?;
+    let material_system = &interfaces.material_system;
+
+    let flat = state
+        .materials
+        .flat
+        .get_or_insert_with(|| create_material(material_system, MaterialKind::Flat).unwrap());
+
+    let glow = state
+        .materials
+        .glow
+        .get_or_insert_with(|| create_material(material_system, MaterialKind::Glow).unwrap());
 
     let info = info.as_ref()?;
     let name = info.name(&model_info)?;
@@ -43,9 +74,12 @@ unsafe fn draw_model_inner(
                 _ => [1.0, 1.0, 1.0, 0.5],
             };
 
-            material.set_rgba(rgba);
+            flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
+            glow.set_rgba(dbg!(rgba));
 
-            model_render.override_material(material);
+            model_render.override_material(flat);
+            (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
+            model_render.override_material(glow);
             (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
             model_render.reset_material();
         }

@@ -13,7 +13,6 @@
 #![feature(strict_provenance)]
 
 use elysium_sdk::material::{Material, MaterialFlag, MaterialKind};
-use elysium_sdk::MaterialSystem;
 use elysium_sdk::{Interfaces, LibraryKind, Vars, Vdf};
 use error::Error;
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
@@ -284,21 +283,5 @@ fn main2() {
             hooked("OverrideView");
             prot
         });
-
-        println!("create gold");
-        state.materials.gold = create_material(material_system);
     }
-}
-
-fn create_material(material_system: &MaterialSystem) -> Option<&'static Material> {
-    let material = MaterialKind::Glow;
-    let vdf = Vdf::from_bytes(material.base(), material.vdf().unwrap())?;
-    let material = material_system.create(material.name(), vdf)?;
-
-    println!("name = {:?}", material.name());
-    println!("group = {:?}", material.group());
-
-    material.set_flag(MaterialFlag::WIREFRAME, false);
-
-    Some(material)
 }
