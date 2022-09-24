@@ -1,12 +1,10 @@
-use overlay::Overlay;
-use program::Program;
+use hud::Hud;
+use ui::Ui;
 
+pub use context::Context;
 pub use helpers::*;
-pub use surface::Surface;
-pub use ui::Ui;
 
+mod context;
 mod helpers;
-mod overlay;
-mod program;
-mod surface;
+mod hud;
 mod ui;

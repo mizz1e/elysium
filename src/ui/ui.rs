@@ -1,75 +1,190 @@
-use super::Program;
-use crate::assets;
-use iced_glow::{glow, Backend, Renderer, Settings, Viewport};
-use iced_native::clipboard::Null;
-use iced_native::program::State;
-use iced_native::{clipboard, renderer, Color, Debug, Event, Point};
+use crate::anti_aim::Pitch;
+use crate::State;
+use core::ops::RangeInclusive;
+use iced_glow::Renderer;
+use iced_native::theme::Container;
+use iced_native::{widget, Command, Element, Length, Program};
 
-pub struct Ui {
-    pub clipboard: Null,
-    pub debug: Debug,
-    pub renderer: Renderer,
-    pub state: State<Program>,
+pub struct Ui;
+
+#[derive(Clone, Debug)]
+pub enum Message {
+    Thirdperson(bool),
+    AntiUntrusted(bool),
+
+    FogColor(u32),
+
+    FogStart(f32),
+    FogEnd(f32),
+    FogClip(f32),
+
+    Bloom(f32),
+
+    ExposureMin(f32),
+    ExposureMax(f32),
+
+    FakeLag(u8),
+
+    AntiAim(bool),
+    Pitch(Pitch),
+    YawOffset(f32),
+    YawJitter(bool),
+    Roll(bool),
+
+    None,
 }
 
 impl Ui {
     #[inline]
-    pub fn new(context: &glow::Context, viewport: Viewport) -> Self {
-        let clipboard = clipboard::Null;
-        let program = Program::new();
-        let mut debug = Debug::new();
+    pub fn new() -> Self {
+        Self
+    }
+}
 
-        debug.toggle();
+impl Program for Ui {
+    type Renderer = Renderer;
+    type Message = Message;
 
-        let mut renderer = Renderer::new(Backend::new(
-            context,
-            Settings {
-                default_font: Some(assets::QUICKSAND_REGULAR),
-                ..Settings::default()
-            },
-        ));
+    #[inline]
+    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+        let state = State::get();
 
-        let state = State::new(program, viewport.logical_size(), &mut renderer, &mut debug);
-        let debug = debug;
-        let renderer = renderer;
+        match message {
+            Message::AntiUntrusted(value) => state.anti_untrusted = value,
+            Message::Thirdperson(value) => state.local.thirdperson.enabled = value,
 
-        Self {
-            clipboard,
-            debug,
-            renderer,
-            state,
+            Message::FogStart(value) => state.fog_start = value,
+            Message::FogEnd(value) => state.fog_end = value,
+            Message::FogClip(value) => state.fog_clip = value,
+
+            Message::Bloom(value) => state.bloom = value,
+
+            Message::ExposureMin(value) => state.exposure_min = value,
+            Message::ExposureMax(value) => state.exposure_max = value,
+
+            Message::FakeLag(value) => state.fake_lag = value,
+
+            Message::AntiAim(value) => state.anti_aim.enabled = value,
+            Message::Pitch(value) => state.anti_aim.pitch = value,
+            Message::YawJitter(value) => state.anti_aim.yaw_jitter = value,
+            Message::YawOffset(value) => state.anti_aim.yaw_offset = value,
+            Message::Roll(value) => state.anti_aim.roll = value,
+
+            _ => {}
         }
+
+        Command::none()
     }
 
     #[inline]
-    pub fn draw(&mut self, context: &glow::Context, viewport: Viewport) {
-        let debug = &mut self.debug;
-        let renderer = &mut self.renderer;
+    fn view(&self) -> Element<'_, Self::Message, Self::Renderer> {
+        let state = State::get();
 
-        renderer.with_primitives(|backend, primitives| {
-            backend.present(&context, primitives, &viewport, &debug.overlay());
-        });
-    }
+        const COMPONENT_RANGE: RangeInclusive<f32> = 0.0..=1.0;
+        const FOG_RANGE: RangeInclusive<f32> = 0.0..=10_000.0;
+        const BLOOM_RANGE: RangeInclusive<f32> = 0.0..=5.0;
+        const EXPOSURE_RANGE: RangeInclusive<f32> = 0.0..=10.0;
+        const YAW_RANGE: RangeInclusive<f32> = -180.0..=180.0;
 
-    #[inline]
-    pub fn update(&mut self, viewport: Viewport, cursor_position: Point) {
-        self.state.update(
-            viewport.logical_size(),
-            cursor_position,
-            &mut self.renderer,
-            &iced_glow::Theme::Dark,
-            &renderer::Style {
-                text_color: Color::WHITE,
-            },
-            &mut self.clipboard,
-            &mut self.debug,
+        // TODO: cl move client-side cap fix
+        // TODO: check sv_maxusrcmdprocessticks
+        const FAKE_LAG_RANGE: RangeInclusive<u8> = 0..=16;
+
+        const PITCH_OPTIONS: &[Pitch] = &[Pitch::Default, Pitch::Up, Pitch::Down];
+
+        let mut content = widget::Column::new();
+        let anti_aim = widget::checkbox("anti-aim", state.anti_aim.enabled, Message::AntiAim);
+
+        content = content.push(anti_aim);
+
+        if state.anti_aim.enabled {
+            let pitch = super::pick_list(
+                "Pitch",
+                PITCH_OPTIONS,
+                Some(state.anti_aim.pitch),
+                Message::Pitch,
+            );
+
+            let yaw_jitter =
+                widget::checkbox("Yaw Jitter", state.anti_aim.yaw_jitter, Message::YawJitter);
+
+            let yaw_offset = super::slider(
+                "Yaw Offset",
+                YAW_RANGE,
+                state.anti_aim.yaw_offset,
+                Message::YawOffset,
+            );
+
+            let roll = widget::checkbox("Roll", state.anti_aim.roll, Message::Roll);
+
+            content = content
+                .push(pitch)
+                .push(yaw_jitter)
+                .push(yaw_offset)
+                .push(roll);
+        }
+
+        let fake_lag = super::slider("Fake Lag", FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag);
+
+        /*let fog_color = iced_native::row![
+            widget::text("Fog Color"),
+            widget::text_input("FF0000FA", "00000000", hex_color),
+        ];*/
+
+        let thirdperson = widget::checkbox(
+            "Thirdperson",
+            state.local.thirdperson.enabled,
+            Message::Thirdperson,
         );
+
+        content = content
+            .push(fake_lag)
+            //.push(fog_color)
+            .push(thirdperson)
+            .spacing(15);
+
+        let content = widget::scrollable(content);
+
+        let menu = widget::container(content)
+            .width(Length::Units(800))
+            .height(Length::Units(640))
+            .center_x()
+            .center_y()
+            .padding(20)
+            .style(Container::Custom(style::menu));
+
+        let overlay = widget::container(menu)
+            .center_x()
+            .center_y()
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(Container::Custom(style::overlay));
+
+        overlay.into()
+    }
+}
+
+mod style {
+    use iced_native::widget::container;
+    use iced_native::{Background, Color, Theme};
+
+    #[inline]
+    pub fn menu(_theme: &Theme) -> container::Appearance {
+        background(Color::from_rgba8(0x00, 0x00, 0x00, 0.7))
     }
 
     #[inline]
-    pub fn queue_event(&mut self, event: Event) {
-        let state = &mut self.state;
+    pub fn overlay(_theme: &Theme) -> container::Appearance {
+        background(Color::from_rgba8(0, 0, 0, 0.2))
+    }
 
-        state.queue_event(event);
+    #[inline]
+    pub fn background(color: Color) -> container::Appearance {
+        let appearance = container::Appearance {
+            background: Some(Background::Color(color)),
+            ..container::Appearance::default()
+        };
+
+        appearance
     }
 }

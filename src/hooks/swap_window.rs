@@ -1,4 +1,5 @@
-use crate::{State, Ui};
+use crate::ui;
+use crate::State;
 use core::mem::MaybeUninit;
 use glow::HasContext;
 use iced_glow::{glow, Viewport};
@@ -44,7 +45,7 @@ pub unsafe extern "C" fn swap_window(window: *mut sdl2_sys::SDL_Window) {
     let viewport = Viewport::with_physical_size(state.window_size, 1.0);
     let menu = state
         .menu
-        .get_or_insert_with(|| Ui::new(context, viewport.clone()));
+        .get_or_insert_with(|| ui::Context::new(context, viewport.clone()));
 
     context.viewport(
         0,

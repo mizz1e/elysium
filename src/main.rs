@@ -27,7 +27,6 @@ use std::{env, ffi, iter, mem, ptr};
 
 pub use networked::Networked;
 pub use state::State;
-pub use ui::Ui;
 
 mod error;
 mod ui;
