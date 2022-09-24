@@ -2,7 +2,7 @@ use crate::entity::{Entity, Player, PlayerRef};
 use crate::State;
 use elysium_math::Matrix3x4;
 use elysium_sdk::entity::Team;
-use elysium_sdk::material::{Material, MaterialKind};
+use elysium_sdk::material::{Material, MaterialFlag, MaterialKind};
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
 use elysium_sdk::MaterialSystem;
 use elysium_sdk::Vdf;
@@ -50,14 +50,17 @@ unsafe fn draw_model_inner(
                 state.local.bones.as_ptr(),
             );
         } else {
-            let rgba = match player.team() {
-                Team::Counter => [0.0, 1.0, 1.0, 0.5],
-                Team::Terrorist => [1.0, 0.0, 0.0, 0.5],
-                _ => [1.0, 1.0, 1.0, 0.5],
+            let (rgba, ignore_z) = match player.team() {
+                Team::Counter => ([0.0, 1.0, 1.0, 0.5], false),
+                Team::Terrorist => ([1.0, 0.0, 0.0, 0.5], true),
+                _ => ([1.0, 1.0, 1.0, 0.5], false),
             };
 
             flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
             glow.set_rgba(rgba);
+
+            flat.set_flag(MaterialFlag::IGNORE_Z, ignore_z);
+            glow.set_flag(MaterialFlag::IGNORE_Z, ignore_z);
 
             model_render.override_material(flat);
             (draw_model_original)(model_render, context, draw_state, info, bone_to_world);

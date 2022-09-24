@@ -35,7 +35,7 @@ struct VTable {
         found: *mut bool,
         complain: bool,
     ) -> *mut Var,
-    _pad1: VTablePad<13>,
+    _pad1: VTablePad<15>,
     set_alpha: unsafe extern "thiscall" fn(this: *const Material, alpha: f32),
     set_rgb: unsafe extern "thiscall" fn(this: *const Material, red: f32, green: f32, blue: f32),
     set_flag: unsafe extern "thiscall" fn(this: *const Material, flag: MaterialFlag, enabled: bool),

@@ -89,8 +89,6 @@ pub fn load_interfaces() -> elysium_sdk::Interfaces {
 
             println!("load {path:?} {name:?}");
 
-            link::iterate_modules(|module| println!("{module:?}"));
-
             let result = link::load_module(path);
             let module = match result {
                 Ok(module) => module,

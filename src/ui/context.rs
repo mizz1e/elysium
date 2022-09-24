@@ -104,15 +104,19 @@ impl Context {
             &mut self.hud_debug,
         );
 
-        self.ui.update(
-            viewport.logical_size(),
-            cursor_position,
-            &mut self.ui_renderer,
-            &theme,
-            &style,
-            &mut self.clipboard,
-            &mut self.ui_debug,
-        );
+        let state = crate::State::get();
+
+        if state.menu_open.0 {
+            self.ui.update(
+                viewport.logical_size(),
+                cursor_position,
+                &mut self.ui_renderer,
+                &theme,
+                &style,
+                &mut self.clipboard,
+                &mut self.ui_debug,
+            );
+        }
     }
 
     #[inline]

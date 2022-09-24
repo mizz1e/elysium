@@ -105,9 +105,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     // don't do anything fancy whilest on a ladder or noclipping
     if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
-        command.view_angle = state
-            .anti_aim
-            .apply(command.command % 2 == 0, command.view_angle);
+        command.view_angle = state.anti_aim.apply(*send_packet, command.view_angle);
     }
 
     let player_iter = entity_list
@@ -131,19 +129,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     }
 }
 
-/// `CreateMove` hook.
-pub unsafe extern "C" fn create_move(
-    this: &mut ClientMode,
-    sample: f32,
-    command: &mut Command,
-) -> bool {
-    let send_packet = &mut *cake::frame_addr!().cast::<*mut bool>().read().byte_sub(24);
-
-    create_move_inner(this, sample, command, send_packet);
-
-    false
-}
-
+#[inline]
 unsafe fn create_move_inner(
     this: &mut ClientMode,
     sample: f32,
@@ -167,53 +153,30 @@ unsafe fn create_move_inner(
         return None;
     }
 
+    *send_packet = command.command % state.fake_lag as i32 == 0;
+
     do_create_move(command, local_player, send_packet);
 
-    let mut local_player = PlayerRef::from_raw(state.local.player).unwrap();
-    let time = globals.current_time;
-
-    if command.command < state.last_command {
-        command.view_angle = Vec3::splat(0.0);
-    }
-
-    state.last_command = command.command;
-
-    let fake_lag = state.fake_lag;
-
-    if *send_packet && fake_lag != 0 {
-        let bones = &mut state.local.fake_bones;
-
-        load_bones(&mut local_player, command, bones, time);
-    } else {
-        let bones = &mut state.local.bones;
-
-        load_bones(&mut local_player, command, bones, time);
-
+    if !(*send_packet && state.fake_lag != 0) {
         state.local.view_angle = command.view_angle;
-        state.local.time = globals.current_time;
     }
-
-    //println!("{:?}", crate::state::is_record_valid(globals.current_time));
 
     None
 }
 
-fn load_bones(
-    local_player: &mut PlayerRef<'_>,
-    command: &Command,
-    bones: &mut [Matrix3x4; 256],
-    time: f32,
-) {
-    let view_angle = local_player.view_angle();
+/// `CreateMove` hook.
+pub unsafe extern "C" fn create_move(
+    this: &mut ClientMode,
+    sample: f32,
+    command: &mut Command,
+) -> bool {
+    let rbp: *mut *mut bool;
 
-    unsafe {
-        local_player.set_view_angle(command.view_angle);
-    }
+    asm!("mov {}, rbp", out(reg) rbp, options(nostack));
 
-    local_player.setup_bones(&mut bones[..128], 0x00000100, time);
-    local_player.setup_bones(&mut bones[..128], 0x000FFF00, time);
+    let send_packet = &mut *(*rbp).sub(24);
 
-    unsafe {
-        local_player.set_view_angle(view_angle);
-    }
+    create_move_inner(this, sample, command, send_packet);
+
+    false
 }

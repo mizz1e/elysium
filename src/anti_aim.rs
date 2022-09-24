@@ -59,12 +59,11 @@ impl AntiAim {
     }
 
     #[inline]
-    pub fn apply(&self, side: bool, view_angle: Vec3) -> Vec3 {
+    pub fn apply(&self, send_packet: bool, view_angle: Vec3) -> Vec3 {
         if !self.enabled {
             return view_angle;
         }
 
-        let side = if side { -1.0 } else { 1.0 };
         let [x, y, z] = view_angle.to_array();
 
         let x = match self.pitch {
@@ -73,15 +72,17 @@ impl AntiAim {
             _ => x,
         };
 
-        let y = y
-            + self.yaw_offset
-            + if self.yaw_jitter {
-                (58.0 - 7.5) + random(0.0..=15.0)
-            } else {
-                58.0
-            };
+        let mut y = y + self.yaw_offset;
 
-        let z = if self.roll { 50.0 * side } else { z };
+        if self.yaw_jitter {
+            y += 7.5 - random(0.0..=15.0);
+        }
+
+        if send_packet {
+            y += 58.0;
+        }
+
+        let z = if self.roll { 50.0 } else { z };
 
         Vec3 { x, y, z }
     }
