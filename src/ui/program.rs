@@ -14,7 +14,6 @@ fn hex_color(string: String) -> Message {
     }
 }
 
-/// Iced UI controls.
 #[derive(Default)]
 pub struct Program {}
 

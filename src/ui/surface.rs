@@ -20,22 +20,14 @@ where
 
 #[derive(Debug)]
 pub struct SurfaceState {
-    ui: Tree,
     overlay: Tree,
-    is_open: bool,
 }
 
 impl SurfaceState {
     pub fn new() -> Self {
-        let ui = Tree::empty();
         let overlay = Tree::empty();
-        let is_open = false;
 
-        Self {
-            ui,
-            overlay,
-            is_open,
-        }
+        Self { overlay }
     }
 }
 
@@ -62,6 +54,15 @@ where
         cursor_position: Point,
         viewport: &Rectangle,
     ) {
+        self.ui.draw(
+            tree,
+            renderer,
+            theme,
+            style,
+            layout,
+            cursor_position,
+            viewport,
+        )
     }
 
     fn height(&self) -> Length {
@@ -111,17 +112,22 @@ where
         layout: Layout<'_>,
         renderer: &Renderer,
     ) -> Option<overlay::Element<'_, Message, Renderer>> {
+        let state = crate::State::get();
+
+        if !state.menu_open.0 {
+            return None;
+        }
+
         let state = tree.state.downcast_mut::<SurfaceState>();
+        let overlay: &'b mut Container<'b, Message, Renderer> =
+            unsafe { &mut *self.overlay.get().cast() };
+
+        state.overlay.diff(overlay as &dyn Widget<_, _>);
 
         Some(overlay::Element::new(
             layout.position(),
             Box::new(Overlay {
-                overlay: unsafe {
-                    let overlay: &'b mut Container<'b, Message, Renderer> =
-                        &mut *self.overlay.get().cast();
-
-                    overlay
-                },
+                overlay,
                 state: &mut state.overlay,
             }),
         ))
