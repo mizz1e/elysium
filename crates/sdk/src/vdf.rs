@@ -1,5 +1,7 @@
+use crate::ffi;
 use core::cell::SyncUnsafeCell;
 use core::{fmt, ptr};
+use std::ffi::OsStr;
 
 #[repr(C)]
 pub union VdfValue {
@@ -28,32 +30,54 @@ pub struct Vdf {
 
 #[inline]
 unsafe extern "C" fn from_bytes(
-    _name: *const u8,
-    _value: *const u8,
-    _unk1: *const u8,
+    _name: *const libc::c_char,
+    _value: *const libc::c_char,
+    _end_of_parser: *const libc::c_char,
 ) -> *const Vdf {
     panic!("Vdf::from_bytes called without loading the function from the game");
 }
 
 static FROM_BYTES: SyncUnsafeCell<
-    unsafe extern "C" fn(name: *const u8, value: *const u8, _unk1: *const u8) -> *const Vdf,
+    unsafe extern "C" fn(
+        name: *const libc::c_char,
+        value: *const libc::c_char,
+        end_of_parser: *const libc::c_char,
+    ) -> *const Vdf,
 > = SyncUnsafeCell::new(from_bytes);
 
 impl Vdf {
     #[inline]
-    pub fn from_bytes(name: &str, value: Option<&str>) -> Option<&'static Vdf> {
-        let name = name.as_ptr();
-        let value = value.map(|value| value.as_ptr()).unwrap_or(ptr::null());
+    pub fn from_bytes<S, T>(base: S, vdf: Option<T>) -> Option<&'static Vdf>
+    where
+        S: AsRef<OsStr>,
+        T: AsRef<OsStr>,
+    {
+        ffi::with_cstr_os_str(base, |base| unsafe {
+            let base = base.as_ptr();
 
-        unsafe { (*FROM_BYTES.get())(name, value, ptr::null()).as_ref() }
+            match vdf {
+                Some(vdf) => {
+                    ffi::with_cstr_os_str(vdf, |vdf| Self::_from_bytes(base, vdf.as_ptr()))
+                }
+                None => Self::_from_bytes(base, ptr::null()),
+            }
+        })
+    }
+
+    #[inline]
+    unsafe fn _from_bytes(
+        base: *const libc::c_char,
+        vdf: *const libc::c_char,
+    ) -> Option<&'static Vdf> {
+        unsafe { (*FROM_BYTES.get())(base, vdf, ptr::null()).as_ref() }
     }
 
     #[inline]
     pub fn set_from_bytes(
         function: unsafe extern "C" fn(
-            name: *const u8,
-            value: *const u8,
-            _unk1: *const u8,
+            name: *const libc::c_char,
+            value: *const libc::c_char,
+            end_of_parser: *const libc::c_char,
         ) -> *const Vdf,
     ) {
         unsafe {

@@ -132,11 +132,11 @@ fn console() {
 
 #[inline]
 fn main2() {
-    while dbg!(!{
+    while !{
         link::is_module_loaded("libGLX.so.0.0.0")
             && link::is_module_loaded("libSDL2-2.0.so.0")
             && link::is_module_loaded("vgui2_client.so")
-    }) {
+    } {
         thread::sleep(Duration::from_millis(100));
     }
 
@@ -180,7 +180,7 @@ fn main2() {
 
         hooked("SDL_PollEvent");
 
-        while dbg!(!link::is_module_loaded("serverbrowser_client.so")) {
+        while !link::is_module_loaded("serverbrowser_client.so") {
             thread::sleep(Duration::from_millis(100));
         }
     }
@@ -201,9 +201,6 @@ fn main2() {
 
         let globals = &mut *(client.globals() as *mut _);
         let input = &mut *(client.input() as *mut _);
-
-        println!("{globals:?}");
-        println!("{input:?}");
 
         console.write(format_args!("welcome to elysium\n")).unwrap();
 

@@ -7,24 +7,6 @@ use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
 use elysium_sdk::MaterialSystem;
 use elysium_sdk::Vdf;
 
-fn create_material(
-    material_system: &MaterialSystem,
-    material: MaterialKind,
-) -> Option<&'static Material> {
-    println!("create material {material:?}");
-    println!("base = {:?}", material.base());
-    println!("vdf = {:?}", material.vdf());
-    println!("name = {:?}", material.name());
-
-    let vdf = Vdf::from_bytes(material.base(), material.vdf())?;
-    let material = material_system.create(material.name(), vdf)?;
-
-    println!("name = {:?}", material.name());
-    println!("group = {:?}", material.group());
-
-    Some(material)
-}
-
 #[inline]
 unsafe fn draw_model_inner(
     model_render: &mut ModelRender,
@@ -43,12 +25,12 @@ unsafe fn draw_model_inner(
     let flat = state
         .materials
         .flat
-        .get_or_insert_with(|| create_material(material_system, MaterialKind::Flat).unwrap());
+        .get_or_insert_with(|| material_system.from_kind(MaterialKind::Flat).unwrap());
 
     let glow = state
         .materials
         .glow
-        .get_or_insert_with(|| create_material(material_system, MaterialKind::Glow).unwrap());
+        .get_or_insert_with(|| material_system.from_kind(MaterialKind::Glow).unwrap());
 
     let info = info.as_ref()?;
     let name = info.name(&model_info)?;
@@ -75,7 +57,7 @@ unsafe fn draw_model_inner(
             };
 
             flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
-            glow.set_rgba(dbg!(rgba));
+            glow.set_rgba(rgba);
 
             model_render.override_material(flat);
             (draw_model_original)(model_render, context, draw_state, info, bone_to_world);

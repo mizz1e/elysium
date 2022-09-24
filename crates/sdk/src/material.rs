@@ -42,13 +42,39 @@ pub struct MaterialSystem {
 
 impl MaterialSystem {
     #[inline]
-    pub fn create<S>(&self, name: S, vdf: &Vdf) -> Option<&'static Material>
+    pub fn from_vdf<S>(&self, name: S, vdf: Option<&Vdf>) -> Option<&'static Material>
     where
         S: AsRef<OsStr>,
     {
+        let vdf = match vdf {
+            Some(vdf) => vdf as *const Vdf,
+            None => ptr::null(),
+        };
+
         ffi::with_cstr_os_str(name, |name| unsafe {
             (self.vtable.create)(self, name.as_ptr(), vdf).as_ref()
         })
+    }
+
+    #[inline]
+    pub fn from_bytes<S, T, U>(&self, name: S, base: T, vdf: Option<U>) -> Option<&'static Material>
+    where
+        S: AsRef<OsStr>,
+        T: AsRef<OsStr>,
+        U: AsRef<OsStr>,
+    {
+        let vdf = Vdf::from_bytes::<T, U>(base, vdf);
+
+        self.from_vdf(name, vdf)
+    }
+
+    #[inline]
+    pub fn from_kind(&self, kind: MaterialKind) -> Option<&'static Material> {
+        let name = kind.name();
+        let base = kind.base();
+        let vdf = kind.vdf();
+
+        self.from_bytes(name, base, vdf)
     }
 
     #[inline]
