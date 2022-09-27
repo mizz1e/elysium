@@ -41,7 +41,7 @@ where
     let top_right = widget::text("top right");
 
     let centre_left = widget::text("centre left");
-    let centre_centre = widget::text("centre centre");
+    let centre_centre = widget::text("(hud isn't implemented yet, cope)");
     let centre_right = widget::text("centre right");
 
     let bottom_left = widget::text("bottom left");
