@@ -69,6 +69,8 @@ mod launcher {
     const CONNECT: Cow<'static, CStr> = const_cstr("+connect\0");
     const MAP: Cow<'static, CStr> = const_cstr("+map\0");
     pub const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
+    pub const FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
+    pub const FPS_144: Cow<'static, CStr> = const_cstr("144\0");
 }
 
 /// X11 DISPLAY sanity check as CSGO prefers to segmentation fault.
@@ -87,6 +89,8 @@ fn run() -> Result<(), Error> {
 
     let args = env::args_os()
         .map(cstring_from_osstring)
+        .chain(iter::once(Ok(launcher::FPS)))
+        .chain(iter::once(Ok(launcher::FPS_144)))
         .chain(iter::once(Ok(launcher::NO_BREAKPAD)))
         .collect::<Result<Vec<_>, _>>()
         .map_err(Error::InvalidArgs)?;

@@ -217,10 +217,10 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
             match group {
                 "World textures" => {
-                    material.set_rgba([0.7, 0.0, 1.0, 1.0]);
+                    material.set_rgba([0.7, 0.4, 0.4, 1.0]);
                 }
                 "SkyBox textures" => {
-                    material.set_rgba([0.7, 0.0, 1.0, 1.0]);
+                    material.set_rgba([0.7, 0.0, 0.0, 0.7]);
                 }
                 _ => {}
             }

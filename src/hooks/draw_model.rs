@@ -65,7 +65,7 @@ unsafe fn draw_model_inner(
         }
     } else if name.starts_with("models/weapons/v_") {
         flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
-        glow.set_rgba([0.7, 0.0, 1.0, 1.0]);
+        glow.set_rgba([0.7, 0.0, 1.0, 0.4]);
 
         flat.set_flag(MaterialFlag::IGNORE_Z, false);
         glow.set_flag(MaterialFlag::IGNORE_Z, false);
@@ -77,7 +77,7 @@ unsafe fn draw_model_inner(
         model_render.reset_material();
     } else {
         flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
-        glow.set_rgba([0.7, 0.0, 1.0, 1.0]);
+        glow.set_rgba([0.7, 0.0, 1.0, 0.4]);
 
         flat.set_flag(MaterialFlag::IGNORE_Z, false);
         glow.set_flag(MaterialFlag::IGNORE_Z, false);
