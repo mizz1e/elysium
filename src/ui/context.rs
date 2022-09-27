@@ -73,7 +73,7 @@ impl Context {
         hud_debug.render_started();
 
         hud_renderer.with_primitives(|backend, primitives| {
-            backend.present(&context, primitives, &viewport, &hud_debug.overlay());
+            backend.present(&context, primitives, &viewport, &["elysium"]);
         });
 
         hud_debug.render_finished();

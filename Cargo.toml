@@ -5,6 +5,7 @@ version = "0.0.0"
 
 [dependencies]
 cake = { branch = "old", default-features = false, git = "https://github.com/elysian6969/cake" }
+clap = { default-features = false, features = ["color", "derive", "std", "suggestions"], version = "3.2" }
 elysium-input = { default-features = false, path = "crates/input" }
 elysium-math = { default-features = false, path = "crates/math" }
 elysium-mem = { default-features = false, path = "crates/mem" }
@@ -20,6 +21,9 @@ num-traits = { default-features = false, version = "0.2" }
 palette = { default-features = false, version = "0.6" }
 rand = { default-features = false, version = "0.8" }
 sdl2-sys = { default-features = false, version = "0.35" }
+
+[profile.dev]
+opt-level = 3
 
 [workspace]
 members = [

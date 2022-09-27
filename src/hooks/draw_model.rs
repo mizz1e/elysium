@@ -42,13 +42,8 @@ unsafe fn draw_model_inner(
 
         if index == local.index() {
             model_render.reset_material();
-            (draw_model_original)(
-                model_render,
-                context,
-                draw_state,
-                info,
-                state.local.bones.as_ptr(),
-            );
+
+            (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
         } else {
             let (rgba, ignore_z) = match player.team() {
                 Team::Counter => ([0.0, 1.0, 1.0, 0.5], false),
@@ -69,9 +64,29 @@ unsafe fn draw_model_inner(
             model_render.reset_material();
         }
     } else if name.starts_with("models/weapons/v_") {
+        flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
+        glow.set_rgba([0.7, 0.0, 1.0, 1.0]);
+
+        flat.set_flag(MaterialFlag::IGNORE_Z, false);
+        glow.set_flag(MaterialFlag::IGNORE_Z, false);
+
+        model_render.override_material(flat);
         (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
+        model_render.override_material(glow);
+        (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
+        model_render.reset_material();
     } else {
+        flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
+        glow.set_rgba([0.7, 0.0, 1.0, 1.0]);
+
+        flat.set_flag(MaterialFlag::IGNORE_Z, false);
+        glow.set_flag(MaterialFlag::IGNORE_Z, false);
+
+        model_render.override_material(flat);
         (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
+        model_render.override_material(glow);
+        (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
+        model_render.reset_material();
     }
 
     Some(())

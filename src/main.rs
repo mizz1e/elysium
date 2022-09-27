@@ -25,9 +25,11 @@ use std::time::Duration;
 use std::{env, ffi, iter, mem, ptr};
 
 pub use networked::Networked;
+pub use options::Options;
 pub use state::State;
 
 mod error;
+mod options;
 mod ui;
 
 pub mod anti_aim;
@@ -59,15 +61,33 @@ fn cow_str_from_debug(string: OsString) -> Cow<'static, str> {
     Cow::Owned(format!("{string:?}"))
 }
 
-const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
+mod launcher {
+    use super::const_cstr;
+    use std::borrow::Cow;
+    use std::ffi::CStr;
+
+    const CONNECT: Cow<'static, CStr> = const_cstr("+connect\0");
+    const MAP: Cow<'static, CStr> = const_cstr("+map\0");
+    pub const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
+}
+
+/// X11 DISPLAY sanity check as CSGO prefers to segmentation fault.
+#[inline]
+fn check_display() -> Result<(), Error> {
+    env::var_os("DISPLAY").ok_or(Error::NoDisplay)?;
+
+    Ok(())
+}
 
 #[inline]
 fn run() -> Result<(), Error> {
-    env::var_os("DISPLAY").ok_or(Error::NoDisplay)?;
+    let options = Options::parse();
+
+    check_display()?;
 
     let args = env::args_os()
         .map(cstring_from_osstring)
-        .chain(iter::once(Ok(NO_BREAKPAD)))
+        .chain(iter::once(Ok(launcher::NO_BREAKPAD)))
         .collect::<Result<Vec<_>, _>>()
         .map_err(Error::InvalidArgs)?;
 

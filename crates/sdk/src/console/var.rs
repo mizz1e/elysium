@@ -236,6 +236,7 @@ vars! {
     vgui: bool = "r_drawvgui",
     human_blood: bool = "violence_hblood",
 
+    infinite_ammo: f32 = "sv_infinite_ammo",
     interp: f32 = "cl_interp",
     interpolate: bool = "cl_interpolate",
     interp_ratio: f32 = "cl_interp_ratio",
@@ -249,7 +250,8 @@ vars! {
     developer: bool = "developer",
 
     max_commands: i32 = "sv_maxusrcmdprocessticks",
-    model_stats: i32 = "r_drawmodelstatsoverlay",
+
+    other_models: i32 = "r_drawmodelstatsoverlay",
 
     panorama_blur: bool = "@panorama_disable_blur",
     physics_timescale: f32 = "cl_phys_timescale",
@@ -269,6 +271,7 @@ vars! {
     skybox3d: bool = "r_3dsky",
     sprite_shadows: bool = "cl_csm_sprite_shadows",
 
+    timescale: f32 = "host_timescale",
     translucent_renderables: bool = "r_drawtranslucentrenderables",
     translucent_world: bool = "r_drawtranslucentworld",
 

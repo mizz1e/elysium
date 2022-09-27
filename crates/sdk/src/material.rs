@@ -28,11 +28,20 @@ struct VTable {
         complain: bool,
         complain_prefix: *const libc::c_char,
     ) -> *const Material,
+    _pad1: VTablePad<1>,
+    first: unsafe extern "thiscall" fn(this: *const MaterialSystem) -> u16,
+    next: unsafe extern "thiscall" fn(this: *const MaterialSystem, index: u16) -> u16,
+    invalid: unsafe extern "thiscall" fn(this: *const MaterialSystem) -> u16,
+    get: unsafe extern "thiscall" fn(this: *const MaterialSystem, index: u16) -> *const Material,
 }
 
 vtable_validate! {
     create => 83,
     find => 84,
+    first => 86,
+    next => 87,
+    invalid => 88,
+    get => 89,
 }
 
 #[repr(C)]
@@ -88,5 +97,21 @@ impl MaterialSystem {
                 (self.vtable.find)(self, name.as_ptr(), group.as_ptr(), true, ptr::null()).as_ref()
             })
         })
+    }
+
+    pub fn first(&self) -> u16 {
+        unsafe { (self.vtable.first)(self) }
+    }
+
+    pub fn next(&self, index: u16) -> u16 {
+        unsafe { (self.vtable.next)(self, index) }
+    }
+
+    pub fn invalid(&self) -> u16 {
+        unsafe { (self.vtable.invalid)(self) }
+    }
+
+    pub fn get(&self, index: u16) -> *const Material {
+        unsafe { (self.vtable.get)(self, index) }
     }
 }

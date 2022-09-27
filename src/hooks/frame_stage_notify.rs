@@ -27,6 +27,7 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     // p100
     vars.hud.write(false);
     vars.vgui.write(false);
+    vars.other_models.write(2);
 
     // shadows
     //vars.csm.write(false);
@@ -201,8 +202,32 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         entity_list,
         input_system,
         surface,
+        material_system,
         ..
     } = state.interfaces.as_ref().unwrap();
+
+    let mut index = material_system.first();
+
+    while index != material_system.invalid() {
+        let material = material_system.get(index).as_ref();
+
+        if let Some(material) = material {
+            let group = material.group();
+            let group = &*group;
+
+            match group {
+                "World textures" => {
+                    material.set_rgba([0.7, 0.0, 1.0, 1.0]);
+                }
+                "SkyBox textures" => {
+                    material.set_rgba([0.7, 0.0, 1.0, 1.0]);
+                }
+                _ => {}
+            }
+        }
+
+        index = material_system.next(index);
+    }
 
     let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();
     let globals = state.globals.as_mut().unwrap();
