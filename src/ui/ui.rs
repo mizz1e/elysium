@@ -99,23 +99,23 @@ impl Program for Ui {
 
         if state.anti_aim.enabled {
             let pitch = super::pick_list(
-                "Pitch",
+                "pitch",
                 PITCH_OPTIONS,
                 Some(state.anti_aim.pitch),
                 Message::Pitch,
             );
 
             let yaw_jitter =
-                widget::checkbox("Yaw Jitter", state.anti_aim.yaw_jitter, Message::YawJitter);
+                widget::checkbox("yaw jitter", state.anti_aim.yaw_jitter, Message::YawJitter);
 
             let yaw_offset = super::slider(
-                "Yaw Offset",
+                "yaw offset",
                 YAW_RANGE,
                 state.anti_aim.yaw_offset,
                 Message::YawOffset,
             );
 
-            let roll = widget::checkbox("Roll", state.anti_aim.roll, Message::Roll);
+            let roll = widget::checkbox("roll", state.anti_aim.roll, Message::Roll);
 
             content = content
                 .push(pitch)
@@ -124,7 +124,7 @@ impl Program for Ui {
                 .push(roll);
         }
 
-        let fake_lag = super::slider("Fake Lag", FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag);
+        let fake_lag = super::slider("fake lag", FAKE_LAG_RANGE, state.fake_lag, Message::FakeLag);
 
         /*let fog_color = iced_native::row![
             widget::text("Fog Color"),
@@ -132,7 +132,7 @@ impl Program for Ui {
         ];*/
 
         let thirdperson = widget::checkbox(
-            "Thirdperson",
+            "thirdperson",
             state.local.thirdperson.enabled,
             Message::Thirdperson,
         );

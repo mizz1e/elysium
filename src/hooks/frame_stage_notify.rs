@@ -31,8 +31,8 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     vars.panorama_blur.write(true);
 
     // p100
-    vars.hud.write(false);
-    vars.vgui.write(false);
+    //vars.hud.write(false);
+    //vars.vgui.write(false);
     //vars.other_models.write(2);
 
     // shadows

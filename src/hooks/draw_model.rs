@@ -7,6 +7,10 @@ use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
 use elysium_sdk::MaterialSystem;
 use elysium_sdk::Vdf;
 
+const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+const PURPLE: [f32; 4] = [0.4, 0.0, 1.0, 0.4];
+const RED: [f32; 4] = [1.0, 0.0, 0.0, 0.5];
+
 #[inline]
 unsafe fn draw_model_inner(
     model_render: &mut ModelRender,
@@ -41,8 +45,8 @@ unsafe fn draw_model_inner(
         let local = PlayerRef::from_raw(state.local.player)?;
 
         if index == local.index() {
-            flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
-            glow.set_rgba([0.7, 0.0, 1.0, 0.4]);
+            flat.set_rgba(BLACK);
+            glow.set_rgba(PURPLE);
 
             flat.set_flag(MaterialFlag::IGNORE_Z, false);
             glow.set_flag(MaterialFlag::IGNORE_Z, false);
@@ -54,12 +58,12 @@ unsafe fn draw_model_inner(
             model_render.reset_material();
         } else {
             let (rgba, ignore_z) = match player.is_enemy() {
-                false => ([0.0, 1.0, 1.0, 0.5], false),
-                true => ([1.0, 0.0, 0.0, 0.5], true),
+                false => (PURPLE, false),
+                true => (RED, true),
                 _ => ([1.0, 1.0, 1.0, 0.5], false),
             };
 
-            flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
+            flat.set_rgba(BLACK);
             glow.set_rgba(rgba);
 
             flat.set_flag(MaterialFlag::IGNORE_Z, ignore_z);
@@ -72,8 +76,8 @@ unsafe fn draw_model_inner(
             model_render.reset_material();
         }
     } else if name.starts_with("models/weapons/v_") {
-        flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
-        glow.set_rgba([0.7, 0.0, 1.0, 0.4]);
+        flat.set_rgba(BLACK);
+        glow.set_rgba(PURPLE);
 
         flat.set_flag(MaterialFlag::IGNORE_Z, false);
         glow.set_flag(MaterialFlag::IGNORE_Z, false);
@@ -84,8 +88,8 @@ unsafe fn draw_model_inner(
         (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
         model_render.reset_material();
     } else {
-        flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
-        glow.set_rgba([0.7, 0.0, 1.0, 0.4]);
+        flat.set_rgba(BLACK);
+        glow.set_rgba(PURPLE);
 
         flat.set_flag(MaterialFlag::IGNORE_Z, false);
         glow.set_flag(MaterialFlag::IGNORE_Z, false);
