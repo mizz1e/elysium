@@ -74,6 +74,7 @@ const NEW: State = State {
     anti_untrusted: true,
     anti_aim: AntiAim::new(),
     last_command: 0,
+    ffa: false,
 };
 
 /// variables that need to be shared between hooks
@@ -124,6 +125,7 @@ pub struct State {
     pub anti_untrusted: bool,
     pub anti_aim: AntiAim,
     pub last_command: i32,
+    pub ffa: bool,
 }
 
 impl State {

@@ -15,12 +15,12 @@ iced_glow = { default-features = false, git = "https://github.com/elysian6969/ic
 iced_native = { default-features = false, features = ["debug"], git = "https://github.com/elysian6969/iced" }
 libc = { default-features = false, version = "0.2" }
 libm = { default-features = false, git = "https://github.com/elysian6969/libm" }
-#link = { default-features = false, git = "https://github.com/elysian6969/link" }
-link = { default-features = false, path = "../link" }
+link = { default-features = false, git = "https://github.com/elysian6969/link" }
 num-traits = { default-features = false, version = "0.2" }
 palette = { default-features = false, version = "0.6" }
 rand = { default-features = false, version = "0.8" }
 sdl2-sys = { default-features = false, version = "0.35" }
+ubyte = { default-features = false, version = "0.10" }
 
 [profile.dev]
 opt-level = 3

@@ -7,5 +7,4 @@ version = "0.0.0"
 cake = { branch = "old", default-features = false, git = "https://github.com/elysian6969/cake" }
 dismal = { default-features = false, git = "https://github.com/elysian6969/dismal" }
 libc = { default-features = false, version = "0.2" }
-#link = { default-features = false, git = "https://github.com/elysian6969/link" }
-link = { default-features = false, path = "../../../link" }
+link = { default-features = false, git = "https://github.com/elysian6969/link" }

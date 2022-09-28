@@ -41,13 +41,21 @@ unsafe fn draw_model_inner(
         let local = PlayerRef::from_raw(state.local.player)?;
 
         if index == local.index() {
-            model_render.reset_material();
+            flat.set_rgba([0.0, 0.0, 0.0, 1.0]);
+            glow.set_rgba([0.7, 0.0, 1.0, 0.4]);
 
+            flat.set_flag(MaterialFlag::IGNORE_Z, false);
+            glow.set_flag(MaterialFlag::IGNORE_Z, false);
+
+            model_render.override_material(flat);
             (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
+            model_render.override_material(glow);
+            (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
+            model_render.reset_material();
         } else {
-            let (rgba, ignore_z) = match player.team() {
-                Team::Counter => ([0.0, 1.0, 1.0, 0.5], false),
-                Team::Terrorist => ([1.0, 0.0, 0.0, 0.5], true),
+            let (rgba, ignore_z) = match player.is_enemy() {
+                false => ([0.0, 1.0, 1.0, 0.5], false),
+                true => ([1.0, 0.0, 0.0, 0.5], true),
                 _ => ([1.0, 1.0, 1.0, 0.5], false),
             };
 

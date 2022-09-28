@@ -2,9 +2,14 @@ use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, 
 use crate::state::Local;
 use crate::State;
 use elysium_sdk::entity::EntityId;
+use elysium_sdk::material::Group;
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
 
 fn update_vars(vars: &mut Vars, engine: &Engine) {
+    let state = State::get();
+
+    state.ffa = vars.ffa.read();
+
     // misc
     vars.allow_developer.write(true);
     vars.fast_render.write(!engine.is_in_game());
@@ -27,7 +32,7 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     // p100
     vars.hud.write(false);
     vars.vgui.write(false);
-    vars.other_models.write(2);
+    //vars.other_models.write(2);
 
     // shadows
     //vars.csm.write(false);
@@ -206,27 +211,12 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         ..
     } = state.interfaces.as_ref().unwrap();
 
-    let mut index = material_system.first();
-
-    while index != material_system.invalid() {
-        let material = material_system.get(index).as_ref();
-
-        if let Some(material) = material {
-            let group = material.group();
-            let group = &*group;
-
-            match group {
-                "World textures" => {
-                    material.set_rgba([0.7, 0.4, 0.4, 1.0]);
-                }
-                "SkyBox textures" => {
-                    material.set_rgba([0.7, 0.0, 0.0, 0.7]);
-                }
-                _ => {}
-            }
+    for material in material_system.iter() {
+        match material.group() {
+            Group::World => material.set_rgba([0.7, 0.4, 0.4, 1.0]),
+            Group::Skybox => material.set_rgba([0.7, 0.0, 0.0, 0.7]),
+            _ => {}
         }
-
-        index = material_system.next(index);
     }
 
     let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();

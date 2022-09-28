@@ -69,20 +69,21 @@ impl Context {
         let ui_debug = &mut self.ui_debug;
         let hud_renderer = &mut self.hud_renderer;
         let ui_renderer = &mut self.ui_renderer;
-
-        hud_debug.render_started();
-
-        hud_renderer.with_primitives(|backend, primitives| {
-            backend.present(&context, primitives, &viewport, &["elysium"]);
-        });
-
-        hud_debug.render_finished();
-
         let state = crate::State::get();
+
+        const EMPTY: &[&str] = &[];
+
+        if let Some(interfaces) = state.interfaces.as_ref() {
+            if interfaces.engine.is_in_game() {
+                hud_renderer.with_primitives(|backend, primitives| {
+                    backend.present(&context, primitives, &viewport, EMPTY);
+                });
+            }
+        }
 
         if state.menu_open.0 {
             ui_renderer.with_primitives(|backend, primitives| {
-                backend.present(&context, primitives, &viewport, &ui_debug.overlay());
+                backend.present(&context, primitives, &viewport, EMPTY);
             });
         }
     }

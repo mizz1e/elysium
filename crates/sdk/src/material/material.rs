@@ -1,7 +1,7 @@
-use super::MaterialFlag;
+use super::{Group, MaterialFlag};
 use crate::vtable_validate;
-use cake::ffi::CUtf8Str;
 use cake::ffi::VTablePad;
+use cake::ffi::{CBytes, CUtf8Str};
 use cake::mem::UninitArray;
 
 #[repr(C)]
@@ -68,23 +68,23 @@ pub struct Material {
 impl Material {
     /// Material name.
     #[inline]
-    pub fn name(&self) -> Box<str> {
+    pub fn name(&self) -> &str {
         unsafe {
             let pointer = (self.vtable.name)(self);
             let name = CUtf8Str::from_ptr(pointer).as_str();
 
-            Box::from(name)
+            name
         }
     }
 
     /// Material texture group.
     #[inline]
-    pub fn group(&self) -> Box<str> {
+    pub fn group(&self) -> Group<'_> {
         unsafe {
             let pointer = (self.vtable.group)(self);
-            let group = CUtf8Str::from_ptr(pointer).as_str();
+            let group = CBytes::from_ptr(pointer).as_bytes();
 
-            Box::from(group)
+            Group::from_bytes(group)
         }
     }
 
@@ -105,8 +105,13 @@ impl Material {
     }
 
     #[inline]
-    pub fn set_rgba(&self, rgb: [f32; 4]) {
-        let [r, g, b, a] = rgb;
+    pub fn set_rgba(&self, rgba: [f32; 4]) {
+        // already set, don't keep setting it.
+        if self.rgba() == rgba {
+            return;
+        }
+
+        let [r, g, b, a] = rgba;
 
         self.set_rgb([r, g, b]);
         self.set_alpha(a);

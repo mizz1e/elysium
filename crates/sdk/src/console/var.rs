@@ -1,4 +1,4 @@
-use crate::UtlVec;
+use crate::vtable_validate;
 use cake::ffi::{BytePad, VTablePad};
 use core::fmt;
 use core::marker::PhantomData;
@@ -56,27 +56,49 @@ impl Kind for i32 {}
 impl Kind for bool {}
 
 #[repr(C)]
-struct VTable<T> {
+struct VTable {
     _pad0: VTablePad<15>,
-    read_f32: unsafe extern "thiscall" fn(this: *const Var<T>) -> f32,
-    write_f32: unsafe extern "thiscall" fn(this: *mut Var<T>, value: f32),
+    read_f32: unsafe extern "thiscall" fn(this: *const ()) -> f32,
+    read_i32: unsafe extern "thiscall" fn(this: *const ()) -> i32,
     _pad1: VTablePad<1>,
-    read_i32: unsafe extern "thiscall" fn(this: *const Var<T>) -> i32,
-    write_i32: unsafe extern "thiscall" fn(this: *mut Var<T>, value: i32),
+    write_f32: unsafe extern "thiscall" fn(this: *mut (), value: f32),
+    write_i32: unsafe extern "thiscall" fn(this: *mut (), value: i32),
+}
+
+vtable_validate! {
+    read_f32 => 15,
+    read_i32 => 16,
+    write_f32 => 18,
+    write_i32 => 19,
 }
 
 /// config variable
 #[repr(C)]
 pub struct Var<T> {
-    /// blah blah static
-    vtable: *const VTable<T>,
-    _pad0: BytePad<40>,
-    pub change_callback: Option<unsafe extern "thiscall" fn()>,
-    pub parent: *const Var<()>,
-    pub default_value: *const u8,
-    pub string: *const u8,
-    _pad1: BytePad<28>,
-    pub on_change_callbacks: UtlVec<unsafe extern "thiscall" fn()>,
+    vtable: *const VTable,
+    next: *const (),
+    is_registered: bool,
+    _pad0: BytePad<7>,
+    name: *const u8,
+    description: *const u8,
+    flags: i32,
+    _pad1: BytePad<4>,
+    accessor: *const (),
+    parent: *const (),
+    default_string: *const u8,
+    string: *const u8,
+    string_len: i32,
+    kind: i32,
+    integer: i32,
+    has_min: bool,
+    _pad2: BytePad<3>,
+    min_value: f32,
+    has_max: bool,
+    _pad3: BytePad<3>,
+    max_value: f32,
+    _pad4: BytePad<4>,
+    class: *const (),
+    change_callback: Option<unsafe extern "thiscall" fn()>,
     // we do be owning T, tho
     _phantom: PhantomData<T>,
 }
@@ -84,38 +106,39 @@ pub struct Var<T> {
 impl<T> fmt::Debug for Var<T> {
     #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("Var")
-            .field("vtable", &"<vtable>")
-            .field("_pad0", &self._pad0)
-            .field("change_callback", &"<change_callback>")
-            .field("parent", &self.parent)
-            .field("default_value", &self.default_value)
-            .field("string", &self.string)
-            .field("_pad1", &self._pad1)
-            .field("on_change_callbacks", &"<on_change_callbacks>")
-            .finish()
+        fmt.debug_struct("Var").finish_non_exhaustive()
     }
 }
 
 impl<T> Var<T> {
     #[inline]
+    fn as_ptr(&self) -> *const () {
+        self as *const Self as *const ()
+    }
+
+    #[inline]
+    fn as_mut_ptr(&mut self) -> *mut () {
+        self as *mut Self as *mut ()
+    }
+
+    #[inline]
     fn read_f32(&self) -> f32 {
-        unsafe { ((*self.vtable).read_f32)(self) }
+        unsafe { ((*self.vtable).read_f32)(self.as_ptr()) }
     }
 
     #[inline]
     fn write_f32(&mut self, value: f32) {
-        unsafe { ((*self.vtable).write_f32)(self, value) }
+        unsafe { ((*self.vtable).write_f32)(self.as_mut_ptr(), value) }
     }
 
     #[inline]
     fn read_i32(&self) -> i32 {
-        unsafe { ((*self.vtable).read_i32)(self) }
+        unsafe { ((*self.vtable).read_i32)(self.as_ptr()) }
     }
 
     #[inline]
     fn write_i32(&mut self, value: i32) {
-        unsafe { ((*self.vtable).write_i32)(self, value) }
+        unsafe { ((*self.vtable).write_i32)(self.as_mut_ptr(), value) }
     }
 }
 

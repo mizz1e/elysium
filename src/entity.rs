@@ -261,6 +261,16 @@ impl<'a> Player<'a> for PlayerRef<'a> {
     }
 
     #[inline]
+    fn is_enemy(&self) -> bool {
+        let state = crate::State::get();
+
+        match unsafe { PlayerRef::from_raw(state.local.player) } {
+            Some(local) => local.team() != self.team() || state.ffa,
+            None => false,
+        }
+    }
+
+    #[inline]
     fn is_scoped(&self) -> bool {
         self.as_repr().is_scoped()
     }

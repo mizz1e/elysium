@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::net::IpAddr;
 use std::str::FromStr;
+use std::time::Duration;
 
 #[repr(C)]
 struct VTable {
@@ -19,7 +20,7 @@ struct VTable {
     is_timing_out: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
     is_playback: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
     latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    avg_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    average_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
     avg_loss: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
     avg_choke: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
     avg_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
@@ -80,7 +81,7 @@ vtable_validate! {
     is_timing_out => 7,
     is_playback => 8,
     latency => 9,
-    avg_latency => 10,
+    average_latency => 10,
     avg_loss => 11,
     avg_choke => 12,
     avg_data => 13,
@@ -147,9 +148,6 @@ impl NetworkChannel {
         /// current latency (rtt), accurate but jittery
         latency(flow: Flow) -> f32,
 
-        /// average latency in seconds
-        avg_latency(flow: Flow) -> f32,
-
         /// average packet loss (0 to 1)
         avg_loss(flow: Flow) -> f32,
 
@@ -193,6 +191,23 @@ impl NetworkChannel {
 
         /// ???
         timeout_seconds() -> f32,
+    }
+
+    /// Returns the average latency.
+    #[inline]
+    pub fn average_latency(&self, flow: Flow) -> Duration {
+        let latency = unsafe { (self.vtable.average_latency)(self, flow) };
+
+        Duration::from_secs_f32(latency)
+    }
+
+    /// Returns both incoming and outgoing average latency.
+    #[inline]
+    pub fn average_latency_pair(&self) -> (Duration, Duration) {
+        let incoming = self.average_latency(Flow::Incoming);
+        let outgoing = self.average_latency(Flow::Outgoing);
+
+        (incoming, outgoing)
     }
 
     /// The IP address this channel is connected to.

@@ -4,11 +4,13 @@ use core::ptr;
 use std::ffi::OsStr;
 
 pub use flag::MaterialFlag;
+pub use group::Group;
 pub use kind::MaterialKind;
 pub use material::Material;
 pub use var::Var;
 
 mod flag;
+mod group;
 mod kind;
 mod material;
 mod var;
@@ -99,19 +101,57 @@ impl MaterialSystem {
         })
     }
 
-    pub fn first(&self) -> u16 {
+    #[inline]
+    pub fn iter(&self) -> MaterialIter<'_> {
+        MaterialIter {
+            interface: self,
+            index: self.first(),
+        }
+    }
+
+    #[inline]
+    fn first(&self) -> u16 {
         unsafe { (self.vtable.first)(self) }
     }
 
-    pub fn next(&self, index: u16) -> u16 {
+    #[inline]
+    fn next(&self, index: u16) -> u16 {
         unsafe { (self.vtable.next)(self, index) }
     }
 
-    pub fn invalid(&self) -> u16 {
+    #[inline]
+    fn invalid(&self) -> u16 {
         unsafe { (self.vtable.invalid)(self) }
     }
 
-    pub fn get(&self, index: u16) -> *const Material {
-        unsafe { (self.vtable.get)(self, index) }
+    #[inline]
+    fn get(&self, index: u16) -> Option<&Material> {
+        unsafe { (self.vtable.get)(self, index).as_ref() }
+    }
+}
+
+pub struct MaterialIter<'a> {
+    interface: &'a MaterialSystem,
+    index: u16,
+}
+
+impl<'a> Iterator for MaterialIter<'a> {
+    type Item = &'a Material;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.index != self.interface.invalid() {
+            let index = self.index;
+
+            self.index = self.interface.next(index);
+
+            let material = self.interface.get(index);
+
+            match material {
+                Some(material) => return Some(material),
+                None => continue,
+            }
+        }
+
+        None
     }
 }
