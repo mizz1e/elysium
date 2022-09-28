@@ -26,15 +26,8 @@ unsafe fn draw_model_inner(
     let model_info = &interfaces.model_info;
     let material_system = &interfaces.material_system;
 
-    let flat = state
-        .materials
-        .flat
-        .get_or_insert_with(|| material_system.from_kind(MaterialKind::Flat).unwrap());
-
-    let glow = state
-        .materials
-        .glow
-        .get_or_insert_with(|| material_system.from_kind(MaterialKind::Glow).unwrap());
+    let flat = state.materials.get(MaterialKind::Flat, material_system);
+    let glow = state.materials.get(MaterialKind::Glow, material_system);
 
     let info = info.as_ref()?;
     let name = info.name(&model_info)?;

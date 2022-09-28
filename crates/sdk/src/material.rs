@@ -22,19 +22,22 @@ struct VTable {
         this: *const MaterialSystem,
         name: *const libc::c_char,
         vdf: *const Vdf,
-    ) -> *const Material,
+    ) -> Option<&'static mut Material>,
     find: unsafe extern "thiscall" fn(
         this: *const MaterialSystem,
         name: *const libc::c_char,
         group: *const libc::c_char,
         complain: bool,
         complain_prefix: *const libc::c_char,
-    ) -> *const Material,
+    ) -> Option<&'static mut Material>,
     _pad1: VTablePad<1>,
     first: unsafe extern "thiscall" fn(this: *const MaterialSystem) -> u16,
     next: unsafe extern "thiscall" fn(this: *const MaterialSystem, index: u16) -> u16,
     invalid: unsafe extern "thiscall" fn(this: *const MaterialSystem) -> u16,
-    get: unsafe extern "thiscall" fn(this: *const MaterialSystem, index: u16) -> *const Material,
+    get: unsafe extern "thiscall" fn(
+        this: *const MaterialSystem,
+        index: u16,
+    ) -> Option<&'static mut Material>,
 }
 
 vtable_validate! {
@@ -53,7 +56,7 @@ pub struct MaterialSystem {
 
 impl MaterialSystem {
     #[inline]
-    pub fn from_vdf<S>(&self, name: S, vdf: Option<&Vdf>) -> Option<&'static Material>
+    pub fn from_vdf<S>(&self, name: S, vdf: Option<&Vdf>) -> Option<&'static mut Material>
     where
         S: AsRef<OsStr>,
     {
@@ -63,12 +66,17 @@ impl MaterialSystem {
         };
 
         ffi::with_cstr_os_str(name, |name| unsafe {
-            (self.vtable.create)(self, name.as_ptr(), vdf).as_ref()
+            (self.vtable.create)(self, name.as_ptr(), vdf)
         })
     }
 
     #[inline]
-    pub fn from_bytes<S, T, U>(&self, name: S, base: T, vdf: Option<U>) -> Option<&'static Material>
+    pub fn from_bytes<S, T, U>(
+        &self,
+        name: S,
+        base: T,
+        vdf: Option<U>,
+    ) -> Option<&'static mut Material>
     where
         S: AsRef<OsStr>,
         T: AsRef<OsStr>,
@@ -80,7 +88,7 @@ impl MaterialSystem {
     }
 
     #[inline]
-    pub fn from_kind(&self, kind: MaterialKind) -> Option<&'static Material> {
+    pub fn from_kind(&self, kind: MaterialKind) -> Option<&'static mut Material> {
         let name = kind.name();
         let base = kind.base();
         let vdf = kind.vdf();
@@ -89,14 +97,14 @@ impl MaterialSystem {
     }
 
     #[inline]
-    pub fn find<S, T>(&self, name: S, group: T) -> Option<&'static Material>
+    pub fn find<S, T>(&self, name: S, group: T) -> Option<&'static mut Material>
     where
         S: AsRef<OsStr>,
         T: AsRef<OsStr>,
     {
         ffi::with_cstr_os_str(name, |name| {
             ffi::with_cstr_os_str(group, |group| unsafe {
-                (self.vtable.find)(self, name.as_ptr(), group.as_ptr(), true, ptr::null()).as_ref()
+                (self.vtable.find)(self, name.as_ptr(), group.as_ptr(), true, ptr::null())
             })
         })
     }
@@ -125,8 +133,8 @@ impl MaterialSystem {
     }
 
     #[inline]
-    fn get(&self, index: u16) -> Option<&Material> {
-        unsafe { (self.vtable.get)(self, index).as_ref() }
+    fn get(&self, index: u16) -> Option<&'static mut Material> {
+        unsafe { (self.vtable.get)(self, index) }
     }
 }
 
@@ -136,7 +144,7 @@ pub struct MaterialIter<'a> {
 }
 
 impl<'a> Iterator for MaterialIter<'a> {
-    type Item = &'a Material;
+    type Item = &'static mut Material;
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.index != self.interface.invalid() {

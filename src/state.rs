@@ -5,6 +5,7 @@ use crate::entity::{Player as _, PlayerRef};
 use crate::ui;
 use crate::Networked;
 use elysium_math::Vec3;
+use elysium_sdk::material::Material;
 use elysium_sdk::network::Flow;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
 use iced_glow::glow;
@@ -12,6 +13,7 @@ use iced_native::{Point, Size};
 use palette::Srgba;
 use std::cell::SyncUnsafeCell;
 use std::ptr;
+use std::time::Instant;
 
 pub use cache::{Player, Players};
 pub use hooks::*;
@@ -63,11 +65,11 @@ const NEW: State = State {
     materials: Materials::new(),
     send_packet: ptr::null_mut(),
     view_angle: Vec3::splat(0.0),
-    fog: const_srgba(0.7, 0.7, 0.7, 0.2),
-    fog_start: 0.0,
-    fog_end: 30000.0,
+    fog: const_srgba(0.7, 0.7, 0.7, 0.7),
+    fog_start: 0.1,
+    fog_end: 30_000.0,
     fog_clip: 0.0,
-    bloom: 1.0,
+    bloom: 2.0,
     exposure_min: 0.5,
     exposure_max: 0.5,
     fake_lag: 1,
@@ -77,6 +79,12 @@ const NEW: State = State {
     ffa: false,
     update_materials: true,
     new_game: true,
+
+    smoke: Vec::new(),
+    players_m: Vec::new(),
+    particles: Vec::new(),
+
+    init_time: None,
 };
 
 /// variables that need to be shared between hooks
@@ -130,6 +138,12 @@ pub struct State {
     pub ffa: bool,
     pub update_materials: bool,
     pub new_game: bool,
+
+    pub smoke: Vec<&'static mut Material>,
+    pub players_m: Vec<&'static mut Material>,
+    pub particles: Vec<&'static mut Material>,
+
+    pub init_time: Option<Instant>,
 }
 
 impl State {

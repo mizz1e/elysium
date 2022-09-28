@@ -3,7 +3,7 @@ use crate::state::Local;
 use crate::State;
 use core::mem;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::material::{Group, MaterialFlag};
+use elysium_sdk::material::{Group, MaterialFlag, MaterialKind};
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
 
 fn update_vars(vars: &mut Vars, engine: &Engine) {
@@ -13,7 +13,7 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
 
     // misc
     vars.allow_developer.write(true);
-    vars.fast_render.write(!engine.is_in_game());
+    //vars.fast_render.write(!engine.is_in_game());
     vars.cheats.write(true);
     vars.developer.write(true);
 
@@ -32,14 +32,15 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
 
     let show_hud = !engine.is_in_game();
 
-    vars.hud.write(show_hud);
-    vars.vgui.write(show_hud);
+    // TODO: do more hud stuff before disabling (e.g. hook console write)
+    //vars.hud.write(show_hud);
+    //vars.vgui.write(show_hud);
 
     //vars.other_models.write(2);
 
     // shadows
     //vars.csm.write(false);
-    vars.csm_shadows.write(false);
+    /*vars.csm_shadows.write(false);
     vars.feet_shadows.write(false);
     vars.prop_shadows.write(false);
     vars.rope_shadows.write(false);
@@ -53,6 +54,7 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     vars.sprites.write(false);
 
     // translucent things
+    //
     vars.water_fog.write(false);
 
     // overlay
@@ -63,14 +65,14 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     vars.human_blood.write(false);
     vars.decals.write(false);
     vars.jiggle_bones.write(false);
-    //vars.rain.write(false);
+    //vars.rain.write(false);*/
 
     // phsyics
     vars.physics_timescale.write(0.5);
 
     // meme
-    vars.interpolate.write(false);
-    vars.lag_comp.write(0.0);
+    //vars.interpolate.write(false);
+    //vars.lag_comp.write(0.0);
 }
 
 /// Override fog controller properties.
@@ -214,22 +216,84 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         ..
     } = state.interfaces.as_ref().unwrap();
 
-    if engine.is_in_game() && state.new_game {
+    let globals = state.globals.as_ref().unwrap();
+
+    if engine.is_in_game() && !state.new_game {
         state.new_game = false;
         state.update_materials = true;
     } else {
         state.new_game = true;
     }
 
+    let _glow = state.materials.get(MaterialKind::Glow, material_system);
+
     if mem::take(&mut state.update_materials) {
+        state.smoke.clear();
+        state.particles.clear();
+
         for material in material_system.iter() {
-            match material.group() {
-                Group::ClientEffect => material.set_flag(MaterialFlag::WIREFRAME, true),
-                Group::World => material.set_rgba([0.7, 0.4, 0.4, 1.0]),
-                Group::Skybox => material.set_rgba([0.7, 0.0, 0.0, 0.7]),
+            let name = material.name();
+            let group = material.group();
+
+            match group {
+                Group::World => {
+                    material.set_rgba([0.7, 0.4, 0.4, 1.0]);
+
+                    continue;
+                }
+                Group::Skybox => {
+                    material.set_rgba([0.7, 0.0, 0.0, 0.7]);
+
+                    continue;
+                }
+                Group::Other => {
+                    if name == "particle/vistasmokev1/vistasmokev1" {
+                        state.smoke.push(material);
+
+                        continue;
+                    }
+                }
                 _ => {}
             }
+
+            if name.starts_with("__") || name.starts_with("ui") {
+                continue;
+            }
+
+            if name.starts_with("models/player") || name.starts_with("models/weapons") {
+                state.players_m.push(material);
+
+                continue;
+            }
+
+            if name.starts_with("particle") {
+                println!("{name:?} {group:?}");
+                state.particles.push(material);
+            }
         }
+    }
+
+    for material in state.smoke.iter() {
+        material.set_flag(MaterialFlag::WIREFRAME, true);
+    }
+
+    for material in state.players_m.iter() {
+        if engine.is_in_game() {
+            material.set_rgba([1.0, 1.0, 1.0, 1.0]);
+        } else {
+            use palette::{Hsl, Hue, IntoColor, Pixel, Srgb};
+
+            let rgb: Hsl = Srgb::new(1.0, 0.0, 0.0).into_color();
+            let rgb = rgb.shift_hue(state.init_time.unwrap().elapsed().as_secs_f32() * 100.0);
+            let rgb: Srgb = rgb.into_color();
+            let [r, g, b]: [f32; 3] = rgb.into_raw();
+
+            material.set_rgba([r, g, b, 1.0]);
+        }
+    }
+
+    for material in state.particles.iter() {
+        material.set_rgba([0.0, 1.0, 1.0, 1.0]);
     }
 
     let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();

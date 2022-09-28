@@ -76,7 +76,7 @@ impl Material {
         unsafe { (self.vtable.set_rgb)(self, r, g, b) }
 
         if let Some(var) = self.var("$envmaptint\0") {
-            var.set_tint(rgb);
+            var.set_vec3(rgb);
         }
     }
 

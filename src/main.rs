@@ -167,6 +167,8 @@ fn main2() {
     unsafe {
         let state = State::get();
 
+        state.init_time = Some(std::time::Instant::now());
+
         let glx = link::load_module("libGLX.so.0.0.0").expect("libGL.so.0.0.0");
         let address = glx
             .symbol("glXGetProcAddress")
