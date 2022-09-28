@@ -266,7 +266,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                 continue;
             }
 
-            if name.starts_with("particle") {
+            if name.starts_with("particle") || name.contains("vgui") {
                 println!("{name:?} {group:?}");
                 state.particles.push(material);
             }
@@ -313,17 +313,13 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     update_vars(vars, engine);
 
     if engine.is_in_game() {
-        input_system.enable_input(is_menu_open);
-
-        if is_menu_open {
-            surface.unlock_cursor();
-            input.deactivate_mouse();
+        if state.menu_open.0 {
+            vars.vgui.write(false);
+            engine.execute_command("showconsole\0", true);
         } else {
-            input.activate_mouse();
+            vars.vgui.write(true);
+            engine.execute_command("hideconsole\0", true);
         }
-    } else {
-        // apparently needs to be enabled as you're enterting a map
-        input_system.enable_input(true);
     }
 
     local_vars.player = entity_list.local_player(engine).cast();
