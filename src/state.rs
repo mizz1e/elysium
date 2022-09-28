@@ -49,7 +49,7 @@ const NEW: State = State {
     context: None,
     proc_address: None,
     menu: None,
-    menu_open: (true, false),
+    menu_open: (false, false),
     cursor_position: Point::new(0.0, 0.0),
     window_size: Size::new(0, 0),
     hooks: Hooks::new(),

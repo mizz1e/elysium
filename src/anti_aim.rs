@@ -50,10 +50,10 @@ impl AntiAim {
     #[inline]
     pub const fn new() -> Self {
         Self {
-            enabled: false,
-            pitch: Pitch::Default,
+            enabled: true,
+            pitch: Pitch::Down,
             yaw_jitter: false,
-            yaw_offset: 0.0,
+            yaw_offset: 180.0,
             roll: false,
         }
     }

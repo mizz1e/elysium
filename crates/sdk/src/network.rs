@@ -4,9 +4,12 @@ use crate::{object_validate, vtable_export, vtable_validate};
 use cake::ffi::{BytePad, CUtf8Str};
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
-use std::net::IpAddr;
-use std::str::FromStr;
+//use std::net::{SocketAddr, IpAddr, Ipv4Addr};
+use std::net::SocketAddr;
 use std::time::Duration;
+
+//const DEFAULT_IP: IpAddr = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+//const DEFAULT_PORT: u16 = 27015;
 
 #[repr(C)]
 struct VTable {
@@ -212,7 +215,7 @@ impl NetworkChannel {
 
     /// The IP address this channel is connected to.
     #[inline]
-    pub fn address(&self) -> Option<IpAddr> {
+    pub fn address(&self) -> Option<SocketAddr> {
         unsafe {
             let pointer = (self.vtable.address)(self);
 
@@ -222,7 +225,7 @@ impl NetworkChannel {
 
             let ip = CUtf8Str::from_ptr(pointer).as_str();
 
-            IpAddr::from_str(ip).ok()
+            ip.parse().ok()
         }
     }
 

@@ -30,9 +30,11 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     vars.freeze_cam.write(true);
     vars.panorama_blur.write(true);
 
-    // p100
-    //vars.hud.write(false);
-    //vars.vgui.write(false);
+    let show_hud = !engine.is_in_game();
+
+    vars.hud.write(show_hud);
+    vars.vgui.write(show_hud);
+
     //vars.other_models.write(2);
 
     // shadows

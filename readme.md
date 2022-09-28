@@ -1,6 +1,6 @@
 <h1 align="center">elysium</h1>
 
-<p align="center"><img src="assets/unknown1.png" width="500" /></p>
+<p align="center"><img src="assets/unknown.png" width="500" /></p>
 
 ### installation
 
