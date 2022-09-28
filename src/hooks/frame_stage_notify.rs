@@ -1,8 +1,9 @@
 use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, TonemapRef};
 use crate::state::Local;
 use crate::State;
+use core::mem;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::material::Group;
+use elysium_sdk::material::{Group, MaterialFlag};
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
 
 fn update_vars(vars: &mut Vars, engine: &Engine) {
@@ -211,11 +212,21 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         ..
     } = state.interfaces.as_ref().unwrap();
 
-    for material in material_system.iter() {
-        match material.group() {
-            Group::World => material.set_rgba([0.7, 0.4, 0.4, 1.0]),
-            Group::Skybox => material.set_rgba([0.7, 0.0, 0.0, 0.7]),
-            _ => {}
+    if engine.is_in_game() && state.new_game {
+        state.new_game = false;
+        state.update_materials = true;
+    } else {
+        state.new_game = true;
+    }
+
+    if mem::take(&mut state.update_materials) {
+        for material in material_system.iter() {
+            match material.group() {
+                Group::ClientEffect => material.set_flag(MaterialFlag::WIREFRAME, true),
+                Group::World => material.set_rgba([0.7, 0.4, 0.4, 1.0]),
+                Group::Skybox => material.set_rgba([0.7, 0.0, 0.0, 0.7]),
+                _ => {}
+            }
         }
     }
 

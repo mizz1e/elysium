@@ -1,28 +1,9 @@
-use super::{Group, MaterialFlag};
-use crate::vtable_validate;
+use super::{Group, MaterialFlag, Var};
+use crate::{ffi, vtable_validate};
 use cake::ffi::VTablePad;
 use cake::ffi::{CBytes, CUtf8Str};
 use cake::mem::UninitArray;
-
-#[repr(C)]
-struct VarVTable {
-    _pad0: VTablePad<12>,
-    set_tint: unsafe extern "thiscall" fn(this: *mut Var, r: f32, g: f32, b: f32),
-}
-
-#[repr(C)]
-struct Var {
-    vtable: &'static VarVTable,
-}
-
-impl Var {
-    #[inline]
-    pub fn set_tint(&mut self, rgb: [f32; 3]) {
-        let [r, g, b] = rgb;
-
-        unsafe { (self.vtable.set_tint)(self, r, g, b) }
-    }
-}
+use std::ffi::OsStr;
 
 #[repr(C)]
 struct VTable {
@@ -31,7 +12,7 @@ struct VTable {
     _pad0: VTablePad<9>,
     var: unsafe extern "thiscall" fn(
         this: *const Material,
-        name: *const u8,
+        name: *const libc::c_char,
         found: *mut bool,
         complain: bool,
     ) -> *mut Var,
@@ -148,12 +129,15 @@ impl Material {
     }
 
     #[inline]
-    fn var(&self, name: &str) -> Option<&mut Var> {
-        unsafe {
-            let mut exists = false;
-            let var = (self.vtable.var)(self, name.as_ptr(), &mut exists, true).as_mut();
+    pub fn var<S>(&self, name: S) -> Option<&mut Var>
+    where
+        S: AsRef<OsStr>,
+    {
+        let mut exists = false;
+        let var = ffi::with_cstr_os_str(name, |name| unsafe {
+            (self.vtable.var)(self, name.as_ptr(), &mut exists, true).as_mut()
+        });
 
-            exists.then(|| var).flatten()
-        }
+        exists.then(|| var).flatten()
     }
 }
