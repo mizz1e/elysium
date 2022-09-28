@@ -51,7 +51,7 @@ pub unsafe extern "C" fn poll_event(event: *mut sdl2_sys::SDL_Event) -> i32 {
 
         let interaction = menu.ui.mouse_interaction();
 
-        if !matches!(interaction, Interaction::Idle) {
+        if state.menu_open.0 && !matches!(interaction, Interaction::Idle) {
             (*event).type_ = 0;
         }
     }
