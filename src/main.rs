@@ -272,11 +272,12 @@ fn main2() {
 
             let name = cake::ffi::CUtf8Str::from_ptr(namep).as_str();
 
-            println!("create {name:?}");
-
             if name.starts_with("compositing_material") {
+                println!("create original {name:?}");
                 return original_create(this, namep, vdf);
             }
+
+            println!("create {name:?}");
 
             Some(state.materials.get(MaterialKind::Glow, material_system))
         }
@@ -302,11 +303,17 @@ fn main2() {
 
             let name = cake::ffi::CUtf8Str::from_ptr(namep).as_str();
 
-            println!("find {name:?}");
-
-            if name == "engine/preloadtexture" {
+            if name.starts_with("engine")
+                || name.starts_with("dev")
+                || name.starts_with("models")
+                || name.starts_with("skybox")
+                || name.starts_with("particle")
+            {
+                println!("find original {name:?}");
                 return original_find(this, namep, group, complain, complain_prefix);
             }
+
+            println!("find {name:?}");
 
             Some(state.materials.get(MaterialKind::Glow, material_system))
         }

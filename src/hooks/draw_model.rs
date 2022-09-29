@@ -68,8 +68,9 @@ unsafe fn draw_model_inner(
             (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
             model_render.reset_material();
 
-            // reset if red
+            // reset
             glow.set_rgba(PURPLE);
+            glow.set_flag(MaterialFlag::IGNORE_Z, false);
         }
     } else if name.starts_with("models/weapons/v_") {
         flat.set_rgba(BLACK);
