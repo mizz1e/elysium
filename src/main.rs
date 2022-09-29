@@ -303,11 +303,12 @@ fn main2() {
 
             let name = cake::ffi::CUtf8Str::from_ptr(namep).as_str();
 
-            if name.starts_with("engine")
+            if (name.starts_with("engine")
                 || name.starts_with("dev")
                 || name.starts_with("models")
                 || name.starts_with("skybox")
-                || name.starts_with("particle")
+                || name.starts_with("particle"))
+                && !name.contains("blood")
             {
                 println!("find original {name:?}");
                 return original_find(this, namep, group, complain, complain_prefix);

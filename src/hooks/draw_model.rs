@@ -98,6 +98,15 @@ unsafe fn draw_model_inner(
         model_render.reset_material();
     }
 
+    use palette::{Hsl, Hue, IntoColor, Pixel, Srgb};
+
+    let rgb: Hsl = Srgb::new(1.0, 0.0, 0.0).into_color();
+    let rgb = rgb.shift_hue(state.init_time.unwrap().elapsed().as_secs_f32() * 100.0);
+    let rgb: Srgb = rgb.into_color();
+    let [r, g, b]: [f32; 3] = rgb.into_raw();
+
+    glow.set_rgba([r, g, b, 1.0]);
+
     Some(())
 }
 
