@@ -1,11 +1,16 @@
 use clap::Parser;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 pub struct Options {
-    /// Specify address to connect to immediately.
+    /// Specify an address to connect to immediately.
     #[clap(long)]
     pub address: Option<SocketAddr>,
+
+    /// Maximum FPS.
+    #[clap(default_value = "120", long)]
+    pub fps: u16,
 
     /// Enable cheats.
     #[clap(long)]
@@ -13,11 +18,11 @@ pub struct Options {
 
     /// Specify map to load immediately.
     #[clap(long)]
-    pub map: Option<String>,
+    pub map: Option<PathBuf>,
 
-    /// Default FPS.
-    #[clap(default_value = "120", long)]
-    pub fps: u16,
+    /// Disable VAC.
+    #[clap(long)]
+    pub no_vac: bool,
 }
 
 impl Options {

@@ -6,6 +6,7 @@ use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::HitGroup;
+use elysium_sdk::WeaponInfo;
 use palette::Srgba;
 use std::fmt;
 use std::marker::PhantomData;
@@ -352,5 +353,10 @@ impl<'a> Weapon<'a> for WeaponRef<'a> {
     #[inline]
     fn next_attack_time(&self) -> f32 {
         self.as_repr().next_attack_time()
+    }
+
+    #[inline]
+    fn info(&self) -> Option<&WeaponInfo> {
+        self.as_repr().weapon_data()
     }
 }

@@ -9,6 +9,7 @@ use elysium_sdk::Vdf;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 const PURPLE: [f32; 4] = [0.4, 0.0, 1.0, 0.4];
+const ORANGE: [f32; 4] = [1.0, 0.5, 0.0, 0.5];
 const RED: [f32; 4] = [1.0, 0.0, 0.0, 0.5];
 
 #[inline]
@@ -50,9 +51,10 @@ unsafe fn draw_model_inner(
             (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
             model_render.reset_material();
         } else {
-            let (rgba, ignore_z) = match player.is_enemy() {
-                false => (PURPLE, false),
-                true => (RED, true),
+            let (rgba, ignore_z) = match (player.is_enemy(), player.flags().is_bot()) {
+                (false, true) => (PURPLE, false),
+                (true, false) => (RED, true),
+                (true, true) => (ORANGE, true),
                 _ => ([1.0, 1.0, 1.0, 0.5], false),
             };
 
@@ -105,7 +107,7 @@ unsafe fn draw_model_inner(
     let rgb: Srgb = rgb.into_color();
     let [r, g, b]: [f32; 3] = rgb.into_raw();
 
-    glow.set_rgba([r, g, b, 1.0]);
+    //glow.set_rgba([r, g, b, 1.0]);
 
     Some(())
 }

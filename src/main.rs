@@ -36,15 +36,13 @@ pub mod anti_aim;
 pub mod assets;
 pub mod entity;
 pub mod hooks;
+pub mod launcher;
 pub mod library;
 pub mod networked;
 pub mod pattern;
 pub mod state;
 
 type Main = unsafe extern "C" fn(argc: libc::c_int, argv: *const *const libc::c_char);
-
-const LAUNCHER_CLIENT: &str = "bin/linux64/launcher_client.so";
-const LAUNCHER_MAIN: &str = "LauncherMain";
 
 const fn const_cstr(string: &'static str) -> Cow<'static, CStr> {
     unsafe { Cow::Borrowed(CStr::from_bytes_with_nul_unchecked(string.as_bytes())) }
@@ -61,20 +59,6 @@ fn cow_str_from_debug(string: OsString) -> Cow<'static, str> {
     Cow::Owned(format!("{string:?}"))
 }
 
-mod launcher {
-    use super::const_cstr;
-    use std::borrow::Cow;
-    use std::ffi::CStr;
-
-    const CONNECT: Cow<'static, CStr> = const_cstr("+connect\0");
-    const MAP: Cow<'static, CStr> = const_cstr("+map\0");
-    pub const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
-    pub const FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
-    pub const VALVE_INTERNAL: Cow<'static, CStr> = const_cstr("-valveinternal\0");
-    pub const STEAM: Cow<'static, CStr> = const_cstr("-steam\0");
-    pub const FPS_144: Cow<'static, CStr> = const_cstr("144\0");
-}
-
 /// X11 DISPLAY sanity check as CSGO prefers to segmentation fault.
 #[inline]
 fn check_display() -> Result<(), Error> {
@@ -89,42 +73,11 @@ fn run() -> Result<(), Error> {
 
     check_display()?;
 
-    let args = env::args_os()
-        .map(cstring_from_osstring)
-        .chain(iter::once(Ok(launcher::FPS)))
-        .chain(iter::once(Ok(launcher::FPS_144)))
-        .chain(iter::once(Ok(launcher::NO_BREAKPAD)))
-        .chain(iter::once(Ok(launcher::VALVE_INTERNAL)))
-        .chain(iter::once(Ok(launcher::STEAM)))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(Error::InvalidArgs)?;
-
-    let args = args
-        .iter()
-        .map(|arg| arg.as_ptr())
-        .chain(iter::once(ptr::null()))
-        .collect::<Vec<_>>();
-
-    let launcher = unsafe { link::load_module(LAUNCHER_CLIENT).map_err(Error::LoadLauncher)? };
-
-    let main: Main = unsafe {
-        let address = launcher.symbol(LAUNCHER_MAIN).map_err(Error::FindMain)?;
-
-        mem::transmute(address.symbol.address)
-    };
-
-    let pretty_args = env::args_os()
-        .map(cow_str_from_debug)
-        .intersperse(Cow::Borrowed(", "))
-        .collect::<String>();
-
-    println!("\x1b[38;5;2minfo:\x1b[m starting csgo with args: {pretty_args}");
-
-    std::thread::spawn(main2);
-
-    unsafe {
-        (main)(args.len().saturating_sub(1) as _, args.as_ptr());
+    if options.i_agree_to_be_banned {
+        std::thread::spawn(main2);
     }
+
+    launcher::launch(options)?;
 
     Ok(())
 }
@@ -272,12 +225,13 @@ fn main2() {
 
             let name = cake::ffi::CUtf8Str::from_ptr(namep).as_str();
 
-            if name.starts_with("compositing_material") {
-                println!("create original {name:?}");
+            /*if name.starts_with("compositing_material") || name.contains("vgui") {*/
+            if !name.contains("decal") {
+                //println!("create original {name:?}");
                 return original_create(this, namep, vdf);
             }
 
-            println!("create {name:?}");
+            //println!("create {name:?}");
 
             Some(state.materials.get(MaterialKind::Glow, material_system))
         }
@@ -303,18 +257,22 @@ fn main2() {
 
             let name = cake::ffi::CUtf8Str::from_ptr(namep).as_str();
 
+            /*
             if (name.starts_with("engine")
                 || name.starts_with("dev")
                 || name.starts_with("models")
                 || name.starts_with("skybox")
-                || name.starts_with("particle"))
-                && !name.contains("blood")
-            {
-                println!("find original {name:?}");
+                || name.starts_with("particle")
+                || name.contains("vgui"))
+                && !(name.contains("blood")
+            {*/
+
+            if !name.contains("decal") {
+                //println!("find original {name:?}");
                 return original_find(this, namep, group, complain, complain_prefix);
             }
 
-            println!("find {name:?}");
+            //println!("find {name:?}");
 
             Some(state.materials.get(MaterialKind::Glow, material_system))
         }

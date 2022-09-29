@@ -1,10 +1,62 @@
 use crate::entity::{Entity, Player, PlayerRef, Weapon};
+use crate::state::Local;
 use crate::State;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
 use elysium_sdk::ClientMode;
-use elysium_sdk::{Command, EntityList, HitGroup, Interfaces};
+use elysium_sdk::{Command, EntityList, HitGroup, Interfaces, Vars, WeaponKind};
 use std::arch::asm;
+
+unsafe fn rage_strafe(
+    side: f32,
+    vars: &Vars,
+    local: &PlayerRef<'_>,
+    local_vars: &mut Local,
+    command: &mut Command,
+) {
+    let velocity = local.velocity();
+    let magnitude = velocity.xy().magnitude();
+    let ideal_strafe = (15.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0);
+    let mut wish_angle = command.view_angle;
+    let strafe_dir = command.movement.xy();
+    let strafe_dir_yaw_offset = strafe_dir.y.atan2(strafe_dir.x).to_degrees();
+
+    wish_angle.y -= strafe_dir_yaw_offset;
+
+    let mut wish_angle = wish_angle.sanitize_angle();
+    let yaw_delta = libm::remainderf(wish_angle.y - local_vars.old_yaw, 360.0);
+    let abs_yaw_delta = yaw_delta.abs();
+
+    local_vars.old_yaw = wish_angle.y;
+
+    let horizontal_speed = vars.horizontal_speed.read();
+
+    if abs_yaw_delta <= ideal_strafe || abs_yaw_delta >= 30.0 {
+        let velocity_dir = velocity.to_angle();
+        let velocity_yaw_delta = libm::remainderf(wish_angle.y - velocity_dir.y, 360.0);
+        let retrack = (30.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0) * 2.0;
+
+        if velocity_yaw_delta <= retrack || magnitude <= 15.0 {
+            if -retrack <= velocity_yaw_delta || magnitude <= 15.0 {
+                wish_angle.y += side * ideal_strafe;
+                command.movement.y = horizontal_speed * side;
+            } else {
+                wish_angle.y = velocity_dir.y - retrack;
+                command.movement.y = horizontal_speed;
+            }
+        } else {
+            wish_angle.y = velocity_dir.y + retrack;
+            command.movement.y = -horizontal_speed;
+        }
+    } else if yaw_delta > 0.0 {
+        command.movement.y = -horizontal_speed;
+    } else if yaw_delta < 0.0 {
+        command.movement.y = horizontal_speed
+    }
+
+    command.movement.x = 0.0;
+    command.movement = command.movement.movement(command.view_angle, wish_angle);
+}
 
 #[inline]
 unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packet: &mut bool) {
@@ -26,12 +78,19 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     local_vars.was_attacking = do_attack;
     local_vars.was_jumping = do_jump;
 
-    if do_attack {
-        if was_attacking {
-            command.attack(false);
-            local_vars.was_attacking = false;
-        } else {
-            local_vars.shift = 8;
+    if let Some(weapon) = local.active_weapon() {
+        if let Some(info) = weapon.info() {
+            if info.kind == WeaponKind::Grenade {
+            } else {
+                if do_attack {
+                    if was_attacking {
+                        command.attack(false);
+                        local_vars.was_attacking = false;
+                    } else {
+                        local_vars.shift = 8;
+                    }
+                }
+            }
         }
     }
 
@@ -50,48 +109,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
         // don't do anything fancy whilest on a ladder or noclipping
         if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
-            let velocity = local.velocity();
-            let magnitude = velocity.xy().magnitude();
-            let ideal_strafe = (15.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0);
-            let mut wish_angle = command.view_angle;
-            let strafe_dir = command.movement.xy();
-            let strafe_dir_yaw_offset = strafe_dir.y.atan2(strafe_dir.x).to_degrees();
-
-            wish_angle.y -= strafe_dir_yaw_offset;
-
-            let mut wish_angle = wish_angle.sanitize_angle();
-            let yaw_delta = libm::remainderf(wish_angle.y - local_vars.old_yaw, 360.0);
-            let abs_yaw_delta = yaw_delta.abs();
-
-            local_vars.old_yaw = wish_angle.y;
-
-            let horizontal_speed = vars.horizontal_speed.read();
-
-            if abs_yaw_delta <= ideal_strafe || abs_yaw_delta >= 30.0 {
-                let velocity_dir = velocity.to_angle();
-                let velocity_yaw_delta = libm::remainderf(wish_angle.y - velocity_dir.y, 360.0);
-                let retrack = (30.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0) * 2.0;
-
-                if velocity_yaw_delta <= retrack || magnitude <= 15.0 {
-                    if -retrack <= velocity_yaw_delta || magnitude <= 15.0 {
-                        wish_angle.y += side * ideal_strafe;
-                        command.movement.y = horizontal_speed * side;
-                    } else {
-                        wish_angle.y = velocity_dir.y - retrack;
-                        command.movement.y = horizontal_speed;
-                    }
-                } else {
-                    wish_angle.y = velocity_dir.y + retrack;
-                    command.movement.y = -horizontal_speed;
-                }
-            } else if yaw_delta > 0.0 {
-                command.movement.y = -horizontal_speed;
-            } else if yaw_delta < 0.0 {
-                command.movement.y = horizontal_speed
-            }
-
-            command.movement.x = 0.0;
-            command.movement = command.movement.movement(command.view_angle, wish_angle);
+            rage_strafe(side, vars, &local, local_vars, command);
         }
     }
 
@@ -104,7 +122,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     }
 
     // don't do anything fancy whilest on a ladder or noclipping
-    if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
+    if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) || on_ground {
         command.view_angle = state.anti_aim.apply(*send_packet, command.view_angle);
     }
 
