@@ -257,6 +257,7 @@ name = "elysium-sdk"
 version = "0.0.0"
 dependencies = [
  "cake",
+ "crossbeam-utils",
  "elysium-math",
  "elysium-mem",
  "libc",

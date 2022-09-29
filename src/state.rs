@@ -70,8 +70,8 @@ const NEW: State = State {
     fog_end: 30_000.0,
     fog_clip: 0.0,
     bloom: 2.0,
-    exposure_min: 0.5,
-    exposure_max: 0.5,
+    exposure_min: 0.2,
+    exposure_max: 0.2,
     fake_lag: 1,
     anti_untrusted: true,
     anti_aim: AntiAim::new(),
@@ -85,6 +85,10 @@ const NEW: State = State {
     particles: Vec::new(),
 
     init_time: None,
+
+    material_system: None,
+    create: ptr::null(),
+    find: ptr::null(),
 };
 
 /// variables that need to be shared between hooks
@@ -144,6 +148,10 @@ pub struct State {
     pub particles: Vec<&'static mut Material>,
 
     pub init_time: Option<Instant>,
+
+    pub material_system: Option<&'static mut elysium_sdk::MaterialSystem>,
+    pub create: *const (),
+    pub find: *const (),
 }
 
 impl State {

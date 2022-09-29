@@ -28,6 +28,14 @@ impl Materials {
         let value: *mut &'static mut Material = material
             .get_or_insert_with(|| system.from_kind(kind).expect("failed to create material"));
 
-        unsafe { *value }
+        let material = unsafe { &mut **(value as *mut *mut Material) };
+
+        if kind == MaterialKind::Glow {
+            const PURPLE: [f32; 4] = [0.4, 0.0, 1.0, 0.4];
+
+            material.set_rgba(PURPLE);
+        }
+
+        material
     }
 }

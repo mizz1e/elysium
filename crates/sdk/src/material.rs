@@ -51,10 +51,20 @@ vtable_validate! {
 
 #[repr(C)]
 pub struct MaterialSystem {
-    vtable: &'static VTable,
+    vtable: &'static mut VTable,
 }
 
 impl MaterialSystem {
+    #[inline]
+    pub fn create_address(&mut self) -> *mut *const () {
+        std::ptr::addr_of_mut!(self.vtable.create).cast()
+    }
+
+    #[inline]
+    pub fn find_address(&mut self) -> *mut *const () {
+        std::ptr::addr_of_mut!(self.vtable.find).cast()
+    }
+
     #[inline]
     pub fn from_vdf<S>(&self, name: S, vdf: Option<&Vdf>) -> Option<&'static mut Material>
     where

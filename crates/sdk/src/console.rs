@@ -1,4 +1,5 @@
-use crate::ffi;
+use crate::app_system::AppSystemVTable;
+use crate::{ffi, vtable_validate};
 use cake::ffi::VTablePad;
 use std::ffi::OsStr;
 use std::fmt;
@@ -7,18 +8,26 @@ pub use var::{Kind, Var, VarKind, Vars};
 
 mod var;
 
+#[derive(Debug)]
 #[repr(C)]
 pub struct VTable {
-    _pad0: VTablePad<15>,
-    var: unsafe extern "thiscall" fn(this: *const Console, name: *const libc::c_char) -> *const (),
+    app_system: AppSystemVTable<Console>,
+    _pad0: VTablePad<6>,
+    var: unsafe extern "C" fn(this: *const Console, name: *const libc::c_char) -> *const (),
     _pad1: VTablePad<11>,
-    write: unsafe extern "thiscall" fn(
+    write: unsafe extern "C" fn(
         this: *mut Console,
         fmt: *const libc::c_char,
         text: *const libc::c_char,
     ),
 }
 
+vtable_validate! {
+    var => 15,
+    write => 27,
+}
+
+#[derive(Debug)]
 #[repr(C)]
 pub struct Console {
     vtable: &'static VTable,

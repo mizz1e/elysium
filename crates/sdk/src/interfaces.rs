@@ -1,8 +1,10 @@
 use crate::model::{ModelInfo, ModelRender};
-use crate::{Client, Engine, EntityList, InputSystem, Trace};
+use crate::{Client, Engine, EntityList, GameConsole, InputSystem, Trace};
 use crate::{Console, Debug, Effects, Events, Filesystem, InputInternal};
 use crate::{Kinds, Localize, MaterialSystem, Movement, Panel, Panorama, Physics};
 use crate::{Prediction, Sound, Surface, VGui};
+use cake::ffi::CUtf8Str;
+use std::{fmt, mem, ptr};
 
 macro_rules! libraries {
     ($($name:ident => $string:literal),*) => {
@@ -97,6 +99,7 @@ libraries! {
 }
 
 interfaces! {
+    (GameConsole, game_console) => (Client, "GameConsole004"),
     (Client, client) => (Client, "VClient"),
     (Console, console) => (MaterialSystem, "VEngineCvar"),
     (Debug, debug) => (Engine, "VDebugOverlay"),
@@ -121,4 +124,107 @@ interfaces! {
     (Surface, surface) => (Surface, "VGUI_Surface"),
     (Trace, trace) => (Engine, "EngineTraceClient"),
     (VGui, vgui) => (Engine, "VEngineVGui")
+}
+
+#[inline]
+fn is_exact(target: &str) -> bool {
+    target.chars().rev().take(3).all(char::is_numeric)
+}
+
+/// An interface.
+#[repr(C)]
+pub struct Interface {
+    new: unsafe extern "C" fn() -> *mut u8,
+    name: CUtf8Str<'static>,
+    next: *const Interface,
+}
+
+impl Interface {
+    #[inline]
+    pub fn new(&self) -> *mut u8 {
+        unsafe {
+            let interface = (self.new)();
+            //let vtable = &mut **(interface as *mut *mut crate::app_system::AppSystemVTable<u8>);
+
+            let name = self.name();
+
+            /*let ha = !matches!(name, "GameUI011"
+            | "GameMovement001"
+            | "CustomSteamImageOnModel_IMaterialProxy003"
+            | "ItemTintColor_IMaterialProxy003"
+            | "IEffects001"
+            | "ClientAlphaPropertyMgrV001"
+            | "ClientLeafSystem002"
+            | "VClientEntityList003");*/
+
+            //if ha {
+            println!("{:?}", name);
+            //println!("{:?}", vtable);
+            //println!("{:?}", vtable.tier(interface));
+            //}
+
+            interface
+        }
+    }
+
+    #[inline]
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+
+    #[inline]
+    pub fn iter(&self) -> InterfaceIter<'_> {
+        InterfaceIter { iter: Some(self) }
+    }
+
+    #[inline]
+    pub fn get(&self, target: &str) -> *mut u8 {
+        let cmp = if is_exact(target) {
+            |name: &str, target: &str| name == target
+        } else {
+            |name: &str, target: &str| {
+                let name = unsafe { name.get_unchecked(0..name.len().saturating_sub(3)) };
+
+                name == target
+            }
+        };
+
+        for interface in self.iter() {
+            interface.new();
+        }
+
+        for interface in self.iter() {
+            let name = interface.name();
+
+            if cmp(name, target) {
+                return interface.new();
+            }
+        }
+
+        ptr::null_mut()
+    }
+}
+
+impl fmt::Debug for Interface {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Interface")
+            .field("name", &self.name())
+            .finish_non_exhaustive()
+    }
+}
+
+pub struct InterfaceIter<'a> {
+    iter: Option<&'a Interface>,
+}
+
+impl<'a> Iterator for InterfaceIter<'a> {
+    type Item = &'a Interface;
+
+    #[inline]
+    fn next(&mut self) -> Option<&'a Interface> {
+        let next = unsafe { self.iter?.next.as_ref() };
+
+        mem::replace(&mut self.iter, next)
+    }
 }

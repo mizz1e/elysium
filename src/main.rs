@@ -70,6 +70,8 @@ mod launcher {
     const MAP: Cow<'static, CStr> = const_cstr("+map\0");
     pub const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
     pub const FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
+    pub const VALVE_INTERNAL: Cow<'static, CStr> = const_cstr("-valveinternal\0");
+    pub const STEAM: Cow<'static, CStr> = const_cstr("-steam\0");
     pub const FPS_144: Cow<'static, CStr> = const_cstr("144\0");
 }
 
@@ -92,6 +94,8 @@ fn run() -> Result<(), Error> {
         .chain(iter::once(Ok(launcher::FPS)))
         .chain(iter::once(Ok(launcher::FPS_144)))
         .chain(iter::once(Ok(launcher::NO_BREAKPAD)))
+        .chain(iter::once(Ok(launcher::VALVE_INTERNAL)))
+        .chain(iter::once(Ok(launcher::STEAM)))
         .collect::<Result<Vec<_>, _>>()
         .map_err(Error::InvalidArgs)?;
 
@@ -206,6 +210,119 @@ fn main2() {
 
         hooked("SDL_PollEvent");
 
+        while !{
+            link::is_module_loaded("client_client.so")
+                && link::is_module_loaded("materialsystem_client.so")
+        } {
+            thread::sleep(Duration::from_millis(100));
+        }
+
+        use elysium_sdk::Interface;
+        use elysium_sdk::InterfaceKind;
+        use elysium_sdk::MaterialSystem;
+
+        let kind = InterfaceKind::MaterialSystem;
+        let path = kind.library().path();
+        let name = kind.name();
+        let result = link::load_module(path);
+        let module = match result {
+            Ok(module) => module,
+            Err(error) => panic!("{error:?}"),
+        };
+
+        let address = module
+            .symbol("s_pInterfaceRegs")
+            .expect("interface registry")
+            .symbol
+            .address as *const *const Interface;
+
+        let interfaces = &**address;
+        let interface = interfaces.get(name);
+        let state = State::get();
+        let material_system = &mut *(interface as *mut MaterialSystem);
+
+        let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
+        let base = bytes.as_ptr().cast::<i32>().byte_add(1);
+
+        let new = base.byte_add(4).byte_offset(base.read() as isize);
+
+        Vdf::set_from_bytes(mem::transmute(new));
+        let _flat = state.materials.get(MaterialKind::Flat, material_system);
+        let _glow = state.materials.get(MaterialKind::Glow, material_system);
+
+        let create = material_system.create_address();
+        let find = material_system.find_address();
+        state.material_system = Some(material_system);
+
+        unsafe extern "C" fn create_hook(
+            this: *const MaterialSystem,
+            namep: *const libc::c_char,
+            vdf: *const Vdf,
+        ) -> Option<&'static mut Material> {
+            let state = State::get();
+            let material_system: *mut &'static mut MaterialSystem =
+                state.material_system.as_mut().unwrap();
+            let material_system = &mut **(material_system as *mut *mut MaterialSystem);
+            let original_create: unsafe extern "C" fn(
+                this: *const MaterialSystem,
+                name: *const libc::c_char,
+                vdf: *const Vdf,
+            )
+                -> Option<&'static mut Material> = std::mem::transmute(state.create);
+
+            let name = cake::ffi::CUtf8Str::from_ptr(namep).as_str();
+
+            println!("create {name:?}");
+
+            if name.starts_with("compositing_material") {
+                return original_create(this, namep, vdf);
+            }
+
+            Some(state.materials.get(MaterialKind::Glow, material_system))
+        }
+
+        unsafe extern "C" fn find_hook(
+            this: *const MaterialSystem,
+            namep: *const libc::c_char,
+            group: *const libc::c_char,
+            complain: bool,
+            complain_prefix: *const libc::c_char,
+        ) -> Option<&'static mut Material> {
+            let state = State::get();
+            let material_system: *mut &'static mut MaterialSystem =
+                state.material_system.as_mut().unwrap();
+            let material_system = &mut **(material_system as *mut *mut MaterialSystem);
+            let original_find: unsafe extern "C" fn(
+                this: *const MaterialSystem,
+                namep: *const libc::c_char,
+                group: *const libc::c_char,
+                complain: bool,
+                complain_prefix: *const libc::c_char,
+            ) -> Option<&'static mut Material> = std::mem::transmute(state.find);
+
+            let name = cake::ffi::CUtf8Str::from_ptr(namep).as_str();
+
+            println!("find {name:?}");
+
+            if name == "engine/preloadtexture" {
+                return original_find(this, namep, group, complain, complain_prefix);
+            }
+
+            Some(state.materials.get(MaterialKind::Glow, material_system))
+        }
+
+        elysium_mem::unprotect(create, |create, prot| {
+            state.create = create.replace(create_hook as *const ());
+            hooked("MaterialSystem::Create");
+            prot
+        });
+
+        elysium_mem::unprotect(find, |find, prot| {
+            state.find = find.replace(find_hook as *const ());
+            hooked("MaterialSystem::Find");
+            prot
+        });
+
         while !link::is_module_loaded("serverbrowser_client.so") {
             thread::sleep(Duration::from_millis(100));
         }
@@ -220,7 +337,23 @@ fn main2() {
         thread::spawn(console);
 
         let interfaces = state.interfaces.as_mut().unwrap_unchecked();
+
+        let show = interfaces.game_console.show_address();
+
+        unsafe extern "C" fn show_hook(this: *const ()) {
+            println!("show console");
+        }
+
+        elysium_mem::unprotect(show, |show, prot| {
+            show.replace(show_hook as *const ());
+            hooked("GameConsole::Show");
+            prot
+        });
+
         let console = &mut interfaces.console;
+
+        println!("{console:?}");
+
         let client = &interfaces.client;
         let model_render = &interfaces.model_render;
         let material_system = &interfaces.material_system;
@@ -266,12 +399,6 @@ fn main2() {
         let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
 
         state.hooks.cl_move = Some(mem::transmute(bytes.as_ptr()));
-
-        let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
-        let base = bytes.as_ptr().cast::<i32>().byte_add(1);
-        let new = base.byte_add(4).byte_offset(base.read() as isize);
-
-        Vdf::set_from_bytes(mem::transmute(new));
 
         let address = client.create_move_address().cast::<CreateMove>();
 

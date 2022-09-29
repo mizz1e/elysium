@@ -153,8 +153,6 @@ unsafe fn create_move_inner(
         return None;
     }
 
-    *send_packet = command.command % state.fake_lag as i32 == 0;
-
     do_create_move(command, local_player, send_packet);
 
     if !(*send_packet && state.fake_lag != 0) {

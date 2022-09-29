@@ -67,6 +67,9 @@ unsafe fn draw_model_inner(
             model_render.override_material(glow);
             (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
             model_render.reset_material();
+
+            // reset if red
+            glow.set_rgba(PURPLE);
         }
     } else if name.starts_with("models/weapons/v_") {
         flat.set_rgba(BLACK);

@@ -227,7 +227,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
     let _glow = state.materials.get(MaterialKind::Glow, material_system);
 
-    if mem::take(&mut state.update_materials) {
+    /*if mem::take(&mut state.update_materials) {
         state.smoke.clear();
         state.particles.clear();
 
@@ -294,7 +294,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
     for material in state.particles.iter() {
         material.set_rgba([0.0, 1.0, 1.0, 1.0]);
-    }
+    }*/
 
     let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();
     let globals = state.globals.as_mut().unwrap();

@@ -5,6 +5,7 @@ version = "0.0.0"
 
 [dependencies]
 cake = { branch = "old", default-features = false, features = ["std"], git = "https://github.com/elysian6969/cake" }
+crossbeam-utils = { default-features = false, version = "0.8" }
 libc = { default-features = false, version = "0.2" }
 elysium-math = { default-features = false, path = "../math" }
 elysium-mem = { default-features = false, path = "../mem" }
