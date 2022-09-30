@@ -18,12 +18,40 @@ use std::time::Instant;
 pub use cache::{Player, Players};
 pub use hooks::*;
 pub use local::Local;
-pub use materials::Materials;
 
 mod cache;
 mod hooks;
 mod local;
-mod materials;
+
+// static references to hooked materials
+pub mod material {
+    use elysium_sdk::material::Material;
+    use elysium_sdk::AtomicMut;
+
+    // world & bullet decals
+    pub static DECAL: AtomicMut<Material> = AtomicMut::new();
+
+    // fire
+    pub static FIRE: AtomicMut<Material> = AtomicMut::new();
+
+    // smoke
+    pub static SMOKE: AtomicMut<Material> = AtomicMut::new();
+
+    // grenade paths
+    pub static PATH: AtomicMut<Material> = AtomicMut::new();
+
+    // impacts
+    pub static IMPACT: AtomicMut<Material> = AtomicMut::new();
+
+    // particle
+    pub static PARTICLE: AtomicMut<Material> = AtomicMut::new();
+
+    // props
+    pub static PROP: AtomicMut<Material> = AtomicMut::new();
+
+    // trees
+    pub static TREE: AtomicMut<Material> = AtomicMut::new();
+}
 
 #[repr(transparent)]
 struct Wrap(State);
@@ -62,7 +90,6 @@ const NEW: State = State {
     input: None,
     players: Players::new(),
     local: Local::new(),
-    materials: Materials::new(),
     send_packet: ptr::null_mut(),
     view_angle: Vec3::splat(0.0),
     fog: const_srgba(0.7, 0.7, 0.7, 0.7),
@@ -86,7 +113,6 @@ const NEW: State = State {
 
     init_time: None,
 
-    material_system: None,
     create: ptr::null(),
     find: ptr::null(),
 };
@@ -120,7 +146,6 @@ pub struct State {
     pub input: Option<&'static mut Input>,
     /// efficient cache of players and their data (btw why is entitylist a linked list?)
     pub players: Players,
-    pub materials: Materials,
     /// local player variables
     pub local: Local,
     /// cl_move send_packet
@@ -149,7 +174,6 @@ pub struct State {
 
     pub init_time: Option<Instant>,
 
-    pub material_system: Option<&'static mut elysium_sdk::MaterialSystem>,
     pub create: *const (),
     pub find: *const (),
 }

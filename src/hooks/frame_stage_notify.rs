@@ -1,9 +1,7 @@
 use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, TonemapRef};
 use crate::state::Local;
 use crate::State;
-use core::mem;
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::material::{Group, MaterialFlag, MaterialKind};
 use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
 
 fn update_vars(vars: &mut Vars, engine: &Engine) {
@@ -212,7 +210,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         entity_list,
         input_system,
         surface,
-        material_system,
         ..
     } = state.interfaces.as_ref().unwrap();
 
@@ -225,8 +222,8 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         state.new_game = true;
     }
 
-    if !engine.is_in_game() {
-        let glow = state.materials.get(MaterialKind::Glow, material_system);
+    /*if !engine.is_in_game() {
+        let glow = state.materials.get(material::Kind::Glow, material_system);
 
         use palette::{Hsl, Hue, IntoColor, Pixel, Srgb};
 
@@ -236,7 +233,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         let [r, g, b]: [f32; 3] = rgb.into_raw();
 
         glow.set_rgba([r, g, b, 1.0]);
-    }
+    }*/
 
     /*if mem::take(&mut state.update_materials) {
         state.smoke.clear();

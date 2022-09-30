@@ -1,7 +1,8 @@
+use crate::material::Materials;
 use crate::model::{ModelInfo, ModelRender};
 use crate::{Client, Engine, EntityList, GameConsole, InputSystem, Trace};
 use crate::{Console, Debug, Effects, Events, Filesystem, InputInternal};
-use crate::{Kinds, Localize, MaterialSystem, Movement, Panel, Panorama, Physics};
+use crate::{Kinds, Localize, Movement, Panel, Panorama, Physics};
 use crate::{Prediction, Sound, Surface, VGui};
 use cake::ffi::CUtf8Str;
 use std::{fmt, mem, ptr};
@@ -89,7 +90,7 @@ libraries! {
     Input => "./bin/linux64/inputsystem_client.so",
     Localize => "./bin/linux64/localize_client.so",
     Matchmaking => "./csgo/bin/linux64/matchmaking_client.so",
-    MaterialSystem => "./bin/linux64/materialsystem_client.so",
+    Materials => "./bin/linux64/materialsystem_client.so",
     Panorama => "./bin/linux64/panorama_gl_client.so",
     Physics => "./bin/linux64/vphysics_client.so",
     ServerBrowser => "./bin/linux64/serverbrowser_client.so",
@@ -101,7 +102,7 @@ libraries! {
 interfaces! {
     (GameConsole, game_console) => (Client, "GameConsole004"),
     (Client, client) => (Client, "VClient"),
-    (Console, console) => (MaterialSystem, "VEngineCvar"),
+    (Console, console) => (Materials, "VEngineCvar"),
     (Debug, debug) => (Engine, "VDebugOverlay"),
     (Effects, effects) => (Engine, "VEngineEffects"),
     (Engine, engine) => (Engine, "VEngineClient"),
@@ -112,7 +113,7 @@ interfaces! {
     (InputSystem, input_system) => (Input, "InputSystemVersion"),
     (Kinds, kinds) => (Matchmaking, "VENGINE_GAMETYPES_VERSION002"),
     (Localize, localize) => (Localize, "Localize_"),
-    (MaterialSystem, material_system) => (MaterialSystem, "VMaterialSystem"),
+    (Materials, materials) => (Materials, "VMaterialSystem"),
     (ModelInfo, model_info) => (Engine, "VModelInfoClient"),
     (ModelRender, model_render) => (Engine, "VEngineModel"),
     (Movement, movement) => (Client, "GameMovement"),

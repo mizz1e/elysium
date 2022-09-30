@@ -1,11 +1,8 @@
 use crate::entity::{Entity, Player, PlayerRef};
-use crate::State;
+use crate::{state, State};
 use elysium_math::Matrix3x4;
-use elysium_sdk::entity::Team;
-use elysium_sdk::material::{Material, MaterialFlag, MaterialKind};
+use elysium_sdk::material::MaterialFlag;
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
-use elysium_sdk::MaterialSystem;
-use elysium_sdk::Vdf;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 const PURPLE: [f32; 4] = [0.4, 0.0, 1.0, 0.4];
@@ -25,10 +22,10 @@ unsafe fn draw_model_inner(
     let interfaces = state.interfaces.as_ref()?;
     let entity_list = &interfaces.entity_list;
     let model_info = &interfaces.model_info;
-    let material_system = &interfaces.material_system;
+    let materials = &interfaces.materials;
 
-    let flat = state.materials.get(MaterialKind::Flat, material_system);
-    let glow = state.materials.get(MaterialKind::Glow, material_system);
+    let flat = state::material::DECAL.load_unchecked();
+    let glow = state::material::DECAL.load_unchecked();
 
     let info = info.as_ref()?;
     let name = info.name(&model_info)?;

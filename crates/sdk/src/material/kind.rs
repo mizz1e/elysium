@@ -1,26 +1,53 @@
-macro_rules! materials {
-    ($($variant:ident => ($name:literal, $base:literal, $vdf:expr)),*) => {
-        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-        #[non_exhaustive]
-        pub enum MaterialKind {
-            $($variant,)*
-        }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum Shader {
+    Lit,
+    Unlit,
+}
 
-        impl MaterialKind {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum Kind {
+    Flat,
+    Chrome,
+    Glow,
+    Pearlescent,
+    Metallic,
+    Animated,
+    Platinum,
+    Glass,
+    Crystal,
+    Silver,
+    Gold,
+    Plastic,
+}
+
+impl Shader {
+    #[inline]
+    pub const fn base(&self) -> &'static str {
+        match self {
+            Shader::Lit => "VertexLitGeneric\0",
+            Shader::Unlit => "UnlitGeneric\0",
+        }
+    }
+}
+
+macro_rules! materials {
+    ($($variant:ident => ($name:literal, $shader:ident, $vdf:expr)),*) => {
+        impl Kind {
             /// Material name passed to `Material::new`.
             #[inline]
             pub const fn name(&self) -> &'static str {
                 match self {
-                    $(MaterialKind::$variant => $name,)*
+                    $(Kind::$variant => $name,)*
                 }
             }
 
-            /// Base VDF/KeyValues object passed to the first argument of
-            /// [`Vdf::from_bytes`](crate::Vdf::from_bytes).
+            /// Returns the material this shader uses.
             #[inline]
-            pub const fn base(&self) -> &'static str {
+            pub const fn shader(&self) -> Shader {
                 match self {
-                    $(MaterialKind::$variant => $base,)*
+                    $(Kind::$variant => Shader::$shader,)*
                 }
             }
 
@@ -29,32 +56,31 @@ macro_rules! materials {
             #[inline]
             pub const fn vdf(&self) -> Option<&'static str> {
                 match self {
-                    $(MaterialKind::$variant => $vdf,)*
+                    $(Kind::$variant => $vdf,)*
                 }
             }
         }
-    };
+    }
 }
 
 materials! {
-    Normal => ("normal\0", "VertexLitGenric\0", None),
-    Flat => ("flat\0", "UnlitGeneric\0", None),
-    Chrome => ("chrome\0", "VertexLitGeneric\0", Some("
+    Flat => ("flat\0", Unlit, None),
+    Chrome => ("chrome\0", Lit, Some("
         $envmap env_cubemap
     \0")),
-    Glow => ("glow\0", "VertexLitGeneric\0", Some("
+    Glow => ("glow\0", Lit, Some("
         $additive 1
         $envmap models/effects/cube_white
         $envmapfresnel 1
         $alpha .8
     \0")),
-    Pearlescent => ("pearlescent\0", "VertexLitGeneric\0", Some("
+    Pearlescent => ("pearlescent\0", Lit, Some("
         $ambientonly 1
         $phong 1
         $pearlescent 3
         $basemapalphaphongmask 1
     \0")),
-    Metallic => ("metallic\0", "VertexLitGeneric\0", Some("
+    Metallic => ("metallic\0", Lit, Some("
         $basetexture white
         $envmap env_cubemap
         $envmapcontrast 1
@@ -68,7 +94,7 @@ materials! {
         $selfillum 1
         $znearer 0
     \0")),
-    Animated => ("animated\0", "VertexLitGeneric\0", Some("
+    Animated => ("animated\0", Lit, Some("
         $basetexture dev/zone_warning
         $envmap editor/cube_vertigo
         $envmapcontrast 1
@@ -81,18 +107,18 @@ materials! {
             }
         }
     \0")),
-    Platinum => ("platinum\0", "VertexLitGeneric\0", Some("
+    Platinum => ("platinum\0", Lit, Some("
         $basetexture models/player/ct_fbi/ct_fbi_glass
         $envmap env_cubemap
         $envmaptint [.4 .6 .7]
     \0")),
-    Glass => ("glass", "VertexLitGeneric", Some("
+    Glass => ("glass", Lit, Some("
         $additive 1
         $basetexture detail/dt_metal1
         $color [.05 .05 .05]
         $envmap editor/cube_vertigo
     \0")),
-    Crystal => ("crystal\0", "VertexLitGeneric\0", Some("
+    Crystal => ("crystal\0", Lit, Some("
         $basetexture black
         $bumpmap effects/flat_normal
         $envmap models/effects/crystal_cube_vertigo_hdr
@@ -103,7 +129,7 @@ materials! {
         $phongtint [.2 .35 .6]
         $translucent 1
     \0")),
-    Silver => ("silver\0", "VertexLitGeneric\0", Some("
+    Silver => ("silver\0", Lit, Some("
         $basetexture white
         $bumpmap effects/flat_normal
         $color2 [.05 .05 .05]
@@ -116,7 +142,7 @@ materials! {
         $phongfresnelranges [.7 .8 1]
         $phongtint [.8 .9 1]
     \0")),
-    Gold => ("gold\0", "VertexLitGeneric\0", Some("
+    Gold => ("gold\0", Lit, Some("
         $basetexture white
         $bumpmap effects/flat_normal
         $color2 [.18 .15 .06]
@@ -130,7 +156,7 @@ materials! {
         $phongfresnelranges [.7 .8 1]
         $phongtint [.6 .5 .2]
     \0")),
-    Plastic => ("plastic\0", "VertexLitGeneric\0", Some("
+    Plastic => ("plastic\0", Lit, Some("
         $additive 1
         $basetexture black
         $bumpmap models/inventory_items/trophy_majors/matte_metal_normal

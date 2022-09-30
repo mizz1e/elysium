@@ -1,6 +1,7 @@
 #![deny(warnings)]
 #![allow(incomplete_features)]
 #![feature(abi_thiscall)]
+#![feature(decl_macro)]
 #![feature(const_convert)]
 #![feature(const_maybe_uninit_uninit_array)]
 #![feature(array_methods)]
@@ -16,10 +17,11 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
-#![feature(sync_unsafe_cell)]
+#![feature(ptr_metadata)]
 
 pub use animation_layer::AnimationLayer;
 pub use animation_state::AnimationState;
+pub use atomic_mut::AtomicMut;
 pub use beam::{Beam, BeamInfo, ViewRenderBeams};
 pub use class::Class;
 pub use client::Client;
@@ -29,6 +31,7 @@ pub use engine::{Engine, PlayerInfo};
 pub use entity::EntityList;
 pub use entry::Entry;
 pub use frame::Frame;
+pub use game_console::GameConsole;
 pub use globals::Globals;
 pub use hit_group::HitGroup;
 pub use id::SteamId;
@@ -36,10 +39,7 @@ pub use input::{Command, Input};
 pub use input_system::InputSystem;
 pub use interfaces::{Interface, InterfaceKind, Interfaces, LibraryKind};
 pub use item_kind::ItemKind;
-pub use material::MaterialSystem;
 pub use network::{Flow, NetworkChannel};
-//pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
-pub use game_console::GameConsole;
 pub use render::{OverrideKind, Render};
 pub use sound::{ActiveChannels, Channel};
 pub use steam::SteamAPIContext;
@@ -54,8 +54,11 @@ pub use vdf::Vdf;
 pub use view::View;
 pub use weapon::{WeaponInfo, WeaponKind};
 
+//pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
+
 mod animation_layer;
 mod animation_state;
+mod atomic_mut;
 mod beam;
 mod class;
 mod client_mode;
