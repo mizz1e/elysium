@@ -218,7 +218,7 @@ fn setup_hooks() {
     }
 
     let blood = materials
-        .from_kind("elysium/blood\0", material::Kind::Flat)
+        .from_kind("elysium/blood\0", material::Kind::Glow)
         .unwrap();
 
     let decal = materials
@@ -226,7 +226,7 @@ fn setup_hooks() {
         .unwrap();
 
     let fire = materials
-        .from_kind("elysium/fire\0", material::Kind::Flat)
+        .from_kind("elysium/fire\0", material::Kind::Glow)
         .unwrap();
 
     let impact = materials
