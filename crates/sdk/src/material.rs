@@ -119,7 +119,7 @@ impl Materials {
     }
 
     #[inline]
-    pub unsafe fn init(&'static self) {
+    pub unsafe fn init(&self) {
         CREATE.store(self.vtable.create);
         FIND.store(self.vtable.find);
     }

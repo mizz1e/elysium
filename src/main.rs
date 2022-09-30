@@ -219,31 +219,9 @@ fn setup_hooks() {
 
     state::material::DECAL.store(Some(glow));
 
-    unsafe extern "C" fn create_hook(
-        materials: &Materials,
-        name_pointer: *const libc::c_char,
-        vdf: Option<&Vdf>,
-    ) -> Option<&'static mut Material> {
-        let name = cake::ffi::CUtf8Str::from_ptr(name_pointer).as_str();
-
-        println!("{name:?}");
-
-        materials.from_vdf(name, vdf)
-    }
-
-    unsafe extern "C" fn find_hook(
-        materials: &Materials,
-        name_pointer: *const libc::c_char,
-        group_pointer: *const libc::c_char,
-        _complain: bool,
-        _complain_prefix: *const libc::c_char,
-    ) -> Option<&'static mut Material> {
-        let name = cake::ffi::CUtf8Str::from_ptr(name_pointer).as_str();
-        let group = cake::ffi::CUtf8Str::from_ptr(group_pointer).as_str();
-
-        println!("{name:?} {group:?}");
-
-        materials.find(name, group)
+    unsafe {
+        materials.hook_create(hooks::create_material);
+        materials.hook_find(hooks::find_material);
     }
 
     sleep_until(is_browser_loaded);

@@ -1,10 +1,9 @@
-use crate::entity::{Entity, Player, PlayerRef, Weapon};
+use crate::entity::{Player, PlayerRef, Weapon};
 use crate::state::Local;
 use crate::State;
-use elysium_math::{Matrix3x4, Vec3};
-use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, Renderable};
+use elysium_sdk::entity::{MoveKind, ObserverMode};
 use elysium_sdk::ClientMode;
-use elysium_sdk::{Command, EntityList, HitGroup, Interfaces, Vars, WeaponKind};
+use elysium_sdk::{Command, Interfaces, Vars, WeaponKind};
 use std::arch::asm;
 
 unsafe fn rage_strafe(
