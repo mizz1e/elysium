@@ -5,14 +5,17 @@ use crate::{vtable_validate, Vdf};
 use cake::ffi::VTablePad;
 use crossbeam_utils::atomic::AtomicCell;
 use std::ffi::OsStr;
+use std::os::unix::ffi::OsStrExt;
 use std::{ffi, ptr};
 
-pub use flag::MaterialFlag;
+pub use category::Category;
+pub use flag::Flag;
 pub use group::Group;
 pub use kind::{Kind, Shader};
 pub use material::Material;
 pub use var::Var;
 
+mod category;
 mod flag;
 mod group;
 mod kind;
@@ -152,8 +155,10 @@ impl Materials {
     }
 
     #[inline]
-    pub fn from_kind(&self, kind: Kind) -> Option<&'static mut Material> {
-        let name = kind.name();
+    pub fn from_kind<S>(&self, name: S, kind: Kind) -> Option<&'static mut Material>
+    where
+        S: AsRef<OsStr>,
+    {
         let base = kind.shader().base();
         let vdf = kind.vdf();
 
@@ -161,15 +166,15 @@ impl Materials {
     }
 
     #[inline]
-    pub fn find<S, T>(&self, name: S, group: T) -> Option<&'static mut Material>
+    pub fn find<S>(&self, name: S, group: Option<Group>) -> Option<&'static mut Material>
     where
         S: AsRef<OsStr>,
-        T: AsRef<OsStr>,
     {
-        with_cstr_os_str(name, |name| {
-            with_cstr_os_str(group, |group| unsafe {
+        with_cstr_os_str(name, |name| match group {
+            Some(group) => with_cstr_os_str(OsStr::from_bytes(group.as_bytes()), |group| unsafe {
                 (FIND.load())(self, name.as_ptr(), group.as_ptr(), true, ptr::null())
-            })
+            }),
+            None => unsafe { (FIND.load())(self, name.as_ptr(), ptr::null(), true, ptr::null()) },
         })
     }
 

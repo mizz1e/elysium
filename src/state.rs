@@ -28,6 +28,9 @@ pub mod material {
     use elysium_sdk::material::Material;
     use elysium_sdk::AtomicMut;
 
+    // blood
+    pub static BLOOD: AtomicMut<Material> = AtomicMut::new();
+
     // world & bullet decals
     pub static DECAL: AtomicMut<Material> = AtomicMut::new();
 
@@ -36,6 +39,9 @@ pub mod material {
 
     // smoke
     pub static SMOKE: AtomicMut<Material> = AtomicMut::new();
+
+    // muzzle flash
+    pub static MUZZLE_FLASH: AtomicMut<Material> = AtomicMut::new();
 
     // grenade paths
     pub static PATH: AtomicMut<Material> = AtomicMut::new();
@@ -51,6 +57,10 @@ pub mod material {
 
     // trees
     pub static TREE: AtomicMut<Material> = AtomicMut::new();
+
+    // regular cham materials
+    pub static FLAT: AtomicMut<Material> = AtomicMut::new();
+    pub static GLOW: AtomicMut<Material> = AtomicMut::new();
 }
 
 #[repr(transparent)]
@@ -107,6 +117,7 @@ const NEW: State = State {
     update_materials: true,
     new_game: true,
 
+    world: Vec::new(),
     smoke: Vec::new(),
     players_m: Vec::new(),
     particles: Vec::new(),
@@ -168,6 +179,7 @@ pub struct State {
     pub update_materials: bool,
     pub new_game: bool,
 
+    pub world: Vec<&'static mut Material>,
     pub smoke: Vec<&'static mut Material>,
     pub players_m: Vec<&'static mut Material>,
     pub particles: Vec<&'static mut Material>,

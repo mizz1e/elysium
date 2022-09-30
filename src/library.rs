@@ -9,8 +9,6 @@ pub fn load_interfaces() -> elysium_sdk::Interfaces {
             let path = kind.library().path();
             let name = kind.name();
 
-            println!("load {path:?} {name:?}");
-
             let result = link::load_module(path);
             let module = match result {
                 Ok(module) => module,

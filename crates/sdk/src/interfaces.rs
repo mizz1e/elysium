@@ -147,7 +147,7 @@ impl Interface {
             let interface = (self.new)();
             //let vtable = &mut **(interface as *mut *mut crate::app_system::AppSystemVTable<u8>);
 
-            let name = self.name();
+            //let name = self.name();
 
             /*let ha = !matches!(name, "GameUI011"
             | "GameMovement001"
@@ -159,7 +159,7 @@ impl Interface {
             | "VClientEntityList003");*/
 
             //if ha {
-            println!("{:?}", name);
+            //println!("{:?}", name);
             //println!("{:?}", vtable);
             //println!("{:?}", vtable.tier(interface));
             //}

@@ -1,8 +1,8 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(transparent)]
-pub struct MaterialFlag(pub i32);
+pub struct Flag(pub i32);
 
-impl MaterialFlag {
+impl Flag {
     pub const DEBUG: Self = Self(1 << 0);
     pub const NO_DEBUG_OVERRIDE: Self = Self(1 << 1);
     pub const NO_DRAW: Self = Self(1 << 2);

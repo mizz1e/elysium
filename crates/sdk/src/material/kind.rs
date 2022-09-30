@@ -5,23 +5,6 @@ pub enum Shader {
     Unlit,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub enum Kind {
-    Flat,
-    Chrome,
-    Glow,
-    Pearlescent,
-    Metallic,
-    Animated,
-    Platinum,
-    Glass,
-    Crystal,
-    Silver,
-    Gold,
-    Plastic,
-}
-
 impl Shader {
     #[inline]
     pub const fn base(&self) -> &'static str {
@@ -33,16 +16,14 @@ impl Shader {
 }
 
 macro_rules! materials {
-    ($($variant:ident => ($name:literal, $shader:ident, $vdf:expr)),*) => {
-        impl Kind {
-            /// Material name passed to `Material::new`.
-            #[inline]
-            pub const fn name(&self) -> &'static str {
-                match self {
-                    $(Kind::$variant => $name,)*
-                }
-            }
+    ($($variant:ident: $shader:ident = $vdf:expr,)*) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        #[non_exhaustive]
+        pub enum Kind {
+            $($variant,)*
+        }
 
+        impl Kind {
             /// Returns the material this shader uses.
             #[inline]
             pub const fn shader(&self) -> Shader {
@@ -64,23 +45,24 @@ macro_rules! materials {
 }
 
 materials! {
-    Flat => ("flat\0", Unlit, None),
-    Chrome => ("chrome\0", Lit, Some("
+    Normal: Lit = None,
+    Flat: Unlit = None,
+    Chrome: Lit = Some("
         $envmap env_cubemap
-    \0")),
-    Glow => ("glow\0", Lit, Some("
+    \0"),
+    Glow: Lit = Some("
         $additive 1
         $envmap models/effects/cube_white
         $envmapfresnel 1
-        $alpha .8
-    \0")),
-    Pearlescent => ("pearlescent\0", Lit, Some("
+        $alpha 0.8
+    \0"),
+    Pearlescent: Lit = Some("
         $ambientonly 1
         $phong 1
         $pearlescent 3
         $basemapalphaphongmask 1
-    \0")),
-    Metallic => ("metallic\0", Lit, Some("
+    \0"),
+    Metallic: Lit = Some("
         $basetexture white
         $envmap env_cubemap
         $envmapcontrast 1
@@ -93,12 +75,12 @@ materials! {
         $normalmapalphaenvmapmask 1
         $selfillum 1
         $znearer 0
-    \0")),
-    Animated => ("animated\0", Lit, Some("
+    \0"),
+    Animated: Lit = Some("
         $basetexture dev/zone_warning
         $envmap editor/cube_vertigo
         $envmapcontrast 1
-        $envmaptint [.7 .7 .7]
+        $envmaptint [0.7 0.7 0.7]
         proxies {
             texturescroll {
                 texturescollvar $basetexturetransform
@@ -106,19 +88,19 @@ materials! {
                 texturescrollangle 90
             }
         }
-    \0")),
-    Platinum => ("platinum\0", Lit, Some("
+    \0"),
+    Platinum: Lit = Some("
         $basetexture models/player/ct_fbi/ct_fbi_glass
         $envmap env_cubemap
-        $envmaptint [.4 .6 .7]
-    \0")),
-    Glass => ("glass", Lit, Some("
+        $envmaptint [0.4 0.6 0.7]
+    \0"),
+    Glass: Lit = Some("
         $additive 1
         $basetexture detail/dt_metal1
-        $color [.05 .05 .05]
+        $color [0.05 0.05 0.05]
         $envmap editor/cube_vertigo
-    \0")),
-    Crystal => ("crystal\0", Lit, Some("
+    \0"),
+    Crystal: Lit = Some("
         $basetexture black
         $bumpmap effects/flat_normal
         $envmap models/effects/crystal_cube_vertigo_hdr
@@ -126,37 +108,37 @@ materials! {
         $phong 1
         $phongboost 2
         $phongexponent 16
-        $phongtint [.2 .35 .6]
+        $phongtint [0.2 0.35 0.6]
         $translucent 1
-    \0")),
-    Silver => ("silver\0", Lit, Some("
+    \0"),
+    Silver: Lit = Some("
         $basetexture white
         $bumpmap effects/flat_normal
-        $color2 [.05 .05 .05]
+        $color2 [0.05 0.05 0.05]
         $envmap editor/cube_vertigo
-        $envmapfresnel .6
-        $envtintmap [.2 .2 .2]
+        $envmapfresnel 0.6
+        $envtintmap [0.2 0.2 0.2]
         $phong 1
         $phongboost 2
         $phongexponent 8
-        $phongfresnelranges [.7 .8 1]
-        $phongtint [.8 .9 1]
-    \0")),
-    Gold => ("gold\0", Lit, Some("
+        $phongfresnelranges [0.7 0.8 1]
+        $phongtint [0.8 0.9 1]
+    \0"),
+    Gold: Lit = Some("
         $basetexture white
         $bumpmap effects/flat_normal
-        $color2 [.18 .15 .06]
+        $color2 [0.18 0.15 0.06]
         $envmap editor/cube_vertigo
-        $envmapfresnel .6
-        $envtintmap [.6 .5 .2]
+        $envmapfresnel 0.6
+        $envtintmap [0.6 0.5 0.2]
         $phong 1
         $phongboost 6
         $phongdisablehalflambert 1
         $phongexponent 128
-        $phongfresnelranges [.7 .8 1]
-        $phongtint [.6 .5 .2]
-    \0")),
-    Plastic => ("plastic\0", Lit, Some("
+        $phongfresnelranges [0.7 0.8 1]
+        $phongtint [0.6 0.5 0.2]
+    \0"),
+    Plastic: Lit = Some("
         $additive 1
         $basetexture black
         $bumpmap models/inventory_items/trophy_majors/matte_metal_normal
@@ -167,7 +149,7 @@ materials! {
         $phongboost 20
         $phongdisablehalflambert 1
         $phongexponent 3000
-        $phongfesnelranges [.1 .4 1]
-        $phongtint [.8 .9 1]
-    \0"))
+        $phongfesnelranges [0.1 0.4 1]
+        $phongtint [0.8 0.9 1]
+    \0"),
 }

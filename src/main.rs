@@ -188,6 +188,8 @@ fn setup_hooks() {
 
     sleep_until(is_materials_loaded);
 
+    println!("materials loaded");
+
     let kind = InterfaceKind::Materials;
     let path = kind.library().path();
     let name = kind.name();
@@ -215,9 +217,67 @@ fn setup_hooks() {
         materials.init();
     }
 
-    let glow = materials.from_kind(material::Kind::Glow).unwrap();
+    let blood = materials
+        .from_kind("elysium/blood\0", material::Kind::Flat)
+        .unwrap();
 
-    state::material::DECAL.store(Some(glow));
+    let decal = materials
+        .from_kind("elysium/decal\0", material::Kind::Glow)
+        .unwrap();
+
+    let fire = materials
+        .from_kind("elysium/fire\0", material::Kind::Flat)
+        .unwrap();
+
+    let impact = materials
+        .from_kind("elysium/impact\0", material::Kind::Glow)
+        .unwrap();
+
+    let muzzle_flash = materials
+        .from_kind("elysium/muzzle_flash\0", material::Kind::Glow)
+        .unwrap();
+
+    let path = materials
+        .from_kind("elysium/path\0", material::Kind::Glow)
+        .unwrap();
+
+    let particle = materials
+        .from_kind("elysium/particle\0", material::Kind::Glow)
+        .unwrap();
+
+    let prop = materials
+        .from_kind("elysium/prop\0", material::Kind::Glow)
+        .unwrap();
+
+    let smoke = materials
+        .from_kind("elysium/smoke\0", material::Kind::Glow)
+        .unwrap();
+
+    let tree = materials
+        .from_kind("elysium/tree\0", material::Kind::Glow)
+        .unwrap();
+
+    let flat = materials
+        .from_kind("elysium/flat\0", material::Kind::Flat)
+        .unwrap();
+
+    let glow = materials
+        .from_kind("elysium/glow\0", material::Kind::Glow)
+        .unwrap();
+
+    state::material::BLOOD.store(Some(blood));
+    state::material::DECAL.store(Some(decal));
+    state::material::FIRE.store(Some(fire));
+    state::material::MUZZLE_FLASH.store(Some(muzzle_flash));
+    state::material::PATH.store(Some(path));
+    state::material::IMPACT.store(Some(impact));
+    state::material::PARTICLE.store(Some(particle));
+    state::material::PROP.store(Some(prop));
+    state::material::SMOKE.store(Some(smoke));
+    state::material::TREE.store(Some(tree));
+
+    state::material::FLAT.store(Some(flat));
+    state::material::GLOW.store(Some(glow));
 
     unsafe {
         materials.hook_create(hooks::create_material);
@@ -225,6 +285,7 @@ fn setup_hooks() {
     }
 
     sleep_until(is_browser_loaded);
+    println!("browser loaded");
 
     unsafe {
         let interfaces = library::load_interfaces();
