@@ -218,37 +218,37 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     if engine.is_in_game() && !state.new_game {
         state.new_game = false;
         state.update_materials = true;
-
-        for material in state.world.iter() {
-            material.set_rgba([0.2, 0.2, 0.2, 1.0]);
-        }
-
-        if let Some(material) = state::material::BLOOD.load() {
-            material.set_flag(material::Flag::WIREFRAME, true);
-            material.set_rgba([1.0, 0.0, 0.0, 1.0]);
-        }
-
-        if let Some(material) = state::material::MUZZLE_FLASH.load() {
-            material.set_flag(material::Flag::WIREFRAME, true);
-            material.set_rgba([1.0, 1.0, 1.0, 1.0]);
-        }
-
-        if let Some(material) = state::material::DECAL.load() {
-            material.set_flag(material::Flag::NO_DRAW, true);
-        }
-
-        if let Some(material) = state::material::SMOKE.load() {
-            material.set_flag(material::Flag::WIREFRAME, true);
-            material.set_rgba([1.0, 0.0, 1.0, 1.0]);
-        }
-
-        if let Some(material) = state::material::FIRE.load() {
-            material.set_flag(material::Flag::WIREFRAME, true);
-            material.set_rgba([1.0, 1.0, 0.0, 1.0]);
-        }
     } else {
         state.new_game = true;
         state.world.clear();
+    }
+
+    for material in state.world.iter() {
+        material.set_rgba([0.2, 0.2, 0.2, 1.0]);
+    }
+
+    if let Some(material) = state::material::BLOOD.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 0.0, 0.0, 1.0]);
+    }
+
+    if let Some(material) = state::material::MUZZLE_FLASH.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 1.0, 1.0, 1.0]);
+    }
+
+    if let Some(material) = state::material::DECAL.load() {
+        material.set_flag(material::Flag::NO_DRAW, true);
+    }
+
+    if let Some(material) = state::material::SMOKE.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 0.0, 1.0, 1.0]);
+    }
+
+    if let Some(material) = state::material::FIRE.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 1.0, 0.0, 1.0]);
     }
 
     let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();
