@@ -227,7 +227,9 @@ unsafe fn create_move_inner(
 
     do_create_move(command, local_player, send_packet);
 
-    if !(*send_packet && state.fake_lag != 0) {
+    if state.fake_lag == 0 {
+        state.local.view_angle = command.view_angle;
+    } else if *send_packet {
         state.local.view_angle = command.view_angle;
     }
 

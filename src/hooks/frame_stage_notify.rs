@@ -338,7 +338,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                 local_player.set_view_angle(state.original_view_angle);
             }
         }
-    
+
         println!("{:?}", local_player.view_angle());
     }
 
