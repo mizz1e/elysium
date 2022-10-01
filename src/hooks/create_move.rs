@@ -123,10 +123,6 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     }
 
     if !on_ground {
-        if state.fake_lag != 0 {
-            //*send_packet = command.command % 14 as i32 == 0;
-        }
-
         // don't do anything fancy whilest on a ladder or noclipping
         if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
             rage_strafe(side, vars, &local, local_vars, command);
@@ -138,12 +134,12 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     if fake_lag != 0 {
         let fake_lag = fake_lag + 2;
 
-        //*send_packet = command.command % fake_lag as i32 == 0;
+        *send_packet = command.command % fake_lag as i32 == 0;
     }
 
     // don't do anything fancy whilest on a ladder or noclipping
     if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) || on_ground {
-        //command.view_angle = state.anti_aim.apply(*send_packet, command.view_angle);
+        command.view_angle = state.anti_aim.apply(*send_packet, command.view_angle);
     }
 
     if do_attack {
@@ -231,9 +227,9 @@ unsafe fn create_move_inner(
 
     do_create_move(command, local_player, send_packet);
 
-    //if !(*send_packet && state.fake_lag != 0) {
-    state.local.view_angle = command.view_angle;
-    //}
+    if !(*send_packet && state.fake_lag != 0) {
+        state.local.view_angle = command.view_angle;
+    }
 
     None
 }

@@ -126,6 +126,8 @@ const NEW: State = State {
     find: ptr::null(),
 
     bones: [[Matrix3x4::splat(0.0); 256]; 64],
+
+    original_view_angle: Vec3::splat(0.0),
 };
 
 /// variables that need to be shared between hooks
@@ -187,6 +189,8 @@ pub struct State {
     pub find: *const (),
 
     pub bones: [[Matrix3x4; 256]; 64],
+
+    pub original_view_angle: Vec3,
 }
 
 impl State {

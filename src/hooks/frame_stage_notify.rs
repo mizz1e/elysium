@@ -95,9 +95,11 @@ fn update_thirdperson(
     globals: &Globals,
     input: &Input,
     local_vars: &mut Local,
-    mut local: PlayerRef<'_>,
+    local: &mut PlayerRef<'_>,
 ) {
     let state = State::get();
+
+    state.original_view_angle = local.view_angle();
 
     if input.thirdperson {
         let mut view_angle = local_vars.view_angle;
@@ -311,7 +313,7 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     if local_vars.player.is_null() {
         local_vars.reset();
     } else {
-        let local_player = PlayerRef::from_raw(local_vars.player).unwrap();
+        let mut local_player = PlayerRef::from_raw(local_vars.player).unwrap();
 
         // is it even enabled
         let mut thirdperson = local_vars.thirdperson.enabled;
@@ -329,11 +331,15 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
         match frame {
             Frame::RenderStart => {
-                update_thirdperson(globals, input, local_vars, local_player);
+                update_thirdperson(globals, input, local_vars, &mut local_player);
                 update_entities(entity_list);
             }
-            _ => {}
+            _ => {
+                local_player.set_view_angle(state.original_view_angle);
+            }
         }
+    
+        println!("{:?}", local_player.view_angle());
     }
 
     (frame_stage_notify_original)(this, frame.to_i32());
