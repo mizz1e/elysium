@@ -1,6 +1,7 @@
 use crate::entity::{Entity, Player, PlayerRef};
 use crate::{state, State};
 use elysium_math::Matrix3x4;
+use elysium_sdk::entity::EntityId;
 use elysium_sdk::material;
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
 
@@ -23,6 +24,7 @@ unsafe fn draw_model_inner(
     let entity_list = &interfaces.entity_list;
     let model_info = &interfaces.model_info;
     let materials = &interfaces.materials;
+    let local = PlayerRef::from_raw(state.local.player)?;
 
     let flat = state::material::FLAT.load_unchecked();
     let glow = state::material::GLOW.load_unchecked();
@@ -33,7 +35,6 @@ unsafe fn draw_model_inner(
     if name.starts_with("models/player") {
         let index = info.entity_index;
         let player = PlayerRef::from_raw(entity_list.entity(index))?;
-        let local = PlayerRef::from_raw(state.local.player)?;
 
         if index == local.index() {
             flat.set_rgba(BLACK);
@@ -68,11 +69,38 @@ unsafe fn draw_model_inner(
             model_render.reset_material();
         }
     } else if name.starts_with("models/weapons/v_") {
+        flat.set_flag(material::Flag::IGNORE_Z, false);
+        glow.set_flag(material::Flag::IGNORE_Z, false);
+
         flat.set_rgba(BLACK);
         glow.set_rgba(PURPLE);
 
-        flat.set_flag(material::Flag::IGNORE_Z, false);
-        glow.set_flag(material::Flag::IGNORE_Z, false);
+        if local.is_scoped() {
+            flat.set_alpha(0.2);
+            glow.set_alpha(0.2);
+        }
+        /*glow.set_flag(material::Flag::IGNORE_Z, false);
+
+        if let Some(class) = weapon.client_class() {
+            match class.entity_id {
+                EntityId::CWeaponAug => {
+                    glow.set_rgba(PURPLE);
+
+                    model_render.override_material(glow);
+                    (draw_model_original)(
+                        model_render,
+                        context,
+                        draw_state,
+                        info,
+                        bone_to_world,
+                    );
+                    model_render.reset_material();
+
+                    return Some(());
+                }
+                _ => {}
+            }
+        }*/
 
         model_render.override_material(flat);
         (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
@@ -80,11 +108,11 @@ unsafe fn draw_model_inner(
         (draw_model_original)(model_render, context, draw_state, info, bone_to_world);
         model_render.reset_material();
     } else {
-        flat.set_rgba(BLACK);
-        glow.set_rgba(PURPLE);
-
         flat.set_flag(material::Flag::IGNORE_Z, false);
         glow.set_flag(material::Flag::IGNORE_Z, false);
+
+        flat.set_rgba(BLACK);
+        glow.set_rgba(PURPLE);
 
         model_render.override_material(flat);
         (draw_model_original)(model_render, context, draw_state, info, bone_to_world);

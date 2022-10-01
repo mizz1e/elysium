@@ -73,7 +73,7 @@ impl Matrix3x4 {
     pub fn x_axis(self) -> Vec3 {
         let matrix = self.to_simd();
 
-        Vec3::from_simd(simd_swizzle!(matrix, [0, 4, 9, 0]))
+        Vec3::from_simd(simd_swizzle!(matrix, [0, 4, 8, 0]))
     }
 
     /// Returns the y axis (left).
@@ -81,7 +81,7 @@ impl Matrix3x4 {
     pub fn y_axis(self) -> Vec3 {
         let matrix = self.to_simd();
 
-        Vec3::from_simd(simd_swizzle!(matrix, [1, 5, 10, 0]))
+        Vec3::from_simd(simd_swizzle!(matrix, [1, 5, 9, 0]))
     }
 
     /// Returns the z axis (up).
@@ -89,7 +89,7 @@ impl Matrix3x4 {
     pub fn z_axis(self) -> Vec3 {
         let matrix = self.to_simd();
 
-        Vec3::from_simd(simd_swizzle!(matrix, [2, 6, 11, 0]))
+        Vec3::from_simd(simd_swizzle!(matrix, [2, 6, 10, 0]))
     }
 
     /// Returns the w axis (origin).
@@ -97,7 +97,7 @@ impl Matrix3x4 {
     pub fn w_axis(self) -> Vec3 {
         let matrix = self.to_simd();
 
-        Vec3::from_simd(simd_swizzle!(matrix, [3, 7, 12, 0]))
+        Vec3::from_simd(simd_swizzle!(matrix, [3, 7, 11, 0]))
     }
 
     /// Set the x axis (forward).

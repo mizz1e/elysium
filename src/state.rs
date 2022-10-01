@@ -4,22 +4,22 @@ use crate::anti_aim::AntiAim;
 use crate::entity::{Player as _, PlayerRef};
 use crate::ui;
 use crate::Networked;
+use elysium_math::Matrix3x4;
 use elysium_math::Vec3;
-use elysium_sdk::material::Material;
+use elysium_sdk::material::BorrowedMaterial;
 use elysium_sdk::network::Flow;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
 use iced_glow::glow;
 use iced_native::{Point, Size};
 use palette::Srgba;
 use std::cell::SyncUnsafeCell;
+use std::collections::HashSet;
 use std::ptr;
 use std::time::Instant;
 
-pub use cache::{Player, Players};
 pub use hooks::*;
 pub use local::Local;
 
-mod cache;
 mod hooks;
 mod local;
 
@@ -98,7 +98,6 @@ const NEW: State = State {
     interfaces: None,
     globals: None,
     input: None,
-    players: Players::new(),
     local: Local::new(),
     send_packet: ptr::null_mut(),
     view_angle: Vec3::splat(0.0),
@@ -117,15 +116,15 @@ const NEW: State = State {
     update_materials: true,
     new_game: true,
 
-    world: Vec::new(),
-    smoke: Vec::new(),
-    players_m: Vec::new(),
-    particles: Vec::new(),
+    world: None,
+    blur: None,
 
     init_time: None,
 
     create: ptr::null(),
     find: ptr::null(),
+
+    bones: [[Matrix3x4::splat(0.0); 256]; 64],
 };
 
 /// variables that need to be shared between hooks
@@ -155,8 +154,6 @@ pub struct State {
     pub globals: Option<&'static mut Globals>,
     /// cinput
     pub input: Option<&'static mut Input>,
-    /// efficient cache of players and their data (btw why is entitylist a linked list?)
-    pub players: Players,
     /// local player variables
     pub local: Local,
     /// cl_move send_packet
@@ -179,15 +176,15 @@ pub struct State {
     pub update_materials: bool,
     pub new_game: bool,
 
-    pub world: Vec<&'static mut Material>,
-    pub smoke: Vec<&'static mut Material>,
-    pub players_m: Vec<&'static mut Material>,
-    pub particles: Vec<&'static mut Material>,
+    pub world: Option<HashSet<BorrowedMaterial>>,
+    pub blur: Option<HashSet<BorrowedMaterial>>,
 
     pub init_time: Option<Instant>,
 
     pub create: *const (),
     pub find: *const (),
+
+    pub bones: [[Matrix3x4; 256]; 64],
 }
 
 impl State {

@@ -161,7 +161,6 @@ fn update_thirdperson(
 #[inline]
 unsafe fn update_entities(entity_list: &EntityList) {
     let state = State::get();
-    let players = &mut state.players;
     let globals = state.globals.as_ref().unwrap();
     let time = globals.current_time;
     let local_vars = &state.local;
@@ -177,10 +176,25 @@ unsafe fn update_entities(entity_list: &EntityList) {
             continue;
         }
 
-        let mut bones = players[(index as usize) - 1].bones;
+        if player.is_dormant() {
+            continue;
+        }
 
-        player.setup_bones(&mut bones[..128], 0x00000100, time);
-        player.setup_bones(&mut bones[..128], 0x000FFF00, time);
+        if !player.is_alive() {
+            continue;
+        }
+
+        if !player.is_enemy() {
+            continue;
+        }
+
+        const BONE_USED_BY_HITBOX: i32 = 0x00000100;
+
+        player.setup_bones(
+            &mut state.bones[(index as usize) - 1][..128],
+            BONE_USED_BY_HITBOX,
+            time,
+        );
     }
 
     let entity_iter = entity_list
@@ -220,11 +234,20 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         state.update_materials = true;
     } else {
         state.new_game = true;
-        state.world.clear();
+        state.world.as_mut().unwrap().clear();
+        //state.blur.as_mut().unwrap().clear();
     }
 
-    for material in state.world.iter() {
+    for material in state.world.as_ref().unwrap().iter() {
+        let material = material.get();
+
         material.set_rgba([0.2, 0.2, 0.2, 1.0]);
+    }
+
+    for material in state.blur.as_ref().unwrap().iter() {
+        let material = material.get();
+
+        material.set_flag(material::Flag::NO_DRAW, true);
     }
 
     if let Some(material) = state::material::BLOOD.load() {

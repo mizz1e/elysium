@@ -22,6 +22,21 @@ mod kind;
 mod material;
 mod var;
 
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub struct BorrowedMaterial {
+    material: *mut Material,
+}
+
+impl BorrowedMaterial {
+    pub fn from_mut(material: &'static mut Material) -> Self {
+        Self { material }
+    }
+
+    pub fn get(&self) -> &'static mut Material {
+        unsafe { &mut *self.material }
+    }
+}
+
 pub mod method {
     use super::{Handle, Material, Materials};
     use crate::Vdf;

@@ -1,6 +1,7 @@
-use crate::entity::{Player, PlayerRef, Weapon};
+use crate::entity::{Entity, Player, PlayerRef, Weapon};
 use crate::state::Local;
 use crate::State;
+use elysium_math::Vec3;
 use elysium_sdk::entity::{MoveKind, ObserverMode};
 use elysium_sdk::ClientMode;
 use elysium_sdk::{Command, Interfaces, Vars, WeaponKind};
@@ -58,13 +59,28 @@ unsafe fn rage_strafe(
 }
 
 #[inline]
+fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
+    let delta = src - dst;
+    let hypot = (delta.x * delta.x + delta.y * delta.y).sqrt();
+
+    let x = (delta.z / hypot).atan().to_degrees();
+    let mut y = (delta.y / delta.x).atan().to_degrees();
+    let z = 0.0;
+
+    if delta.x >= 0.0 {
+        y += 180.0;
+    }
+
+    Vec3::from_array([x, y, z])
+}
+
+#[inline]
 unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packet: &mut bool) {
     let state = State::get();
     let vars = state.vars.as_ref().unwrap();
     let mut local_vars = &mut state.local;
     let Interfaces { entity_list, .. } = state.interfaces.as_ref().unwrap();
     let globals = state.globals.as_ref().unwrap();
-    let players = &mut state.players;
 
     let do_attack = command.in_attack();
     let do_duck = command.in_duck();
@@ -103,7 +119,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     if !on_ground {
         if state.fake_lag != 0 {
-            *send_packet = command.command % 14 as i32 == 0;
+            //*send_packet = command.command % 14 as i32 == 0;
         }
 
         // don't do anything fancy whilest on a ladder or noclipping
@@ -117,22 +133,55 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     if fake_lag != 0 {
         let fake_lag = fake_lag + 2;
 
-        *send_packet = command.command % fake_lag as i32 == 0;
+        //*send_packet = command.command % fake_lag as i32 == 0;
     }
 
     // don't do anything fancy whilest on a ladder or noclipping
     if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) || on_ground {
-        command.view_angle = state.anti_aim.apply(*send_packet, command.view_angle);
+        //command.view_angle = state.anti_aim.apply(*send_packet, command.view_angle);
     }
 
-    let player_iter = entity_list
-        .player_range()
-        .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
-
-    for (index, player) in player_iter {}
-
     if do_attack {
-        command.view_angle = state.view_angle;
+        let player_iter = entity_list
+            .player_range()
+            .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
+
+        for (index, player) in player_iter {
+            let local = PlayerRef::from_raw(local_vars.player).unwrap();
+
+            if local.index() == index {
+                continue;
+            }
+
+            if player.is_dormant() {
+                continue;
+            }
+
+            if !player.is_alive() {
+                continue;
+            }
+
+            if !player.is_enemy() {
+                continue;
+            }
+
+            const BONE_USED_BY_HITBOX: i32 = 0x00000100;
+            const BONE_USED_BY_ANYTHING: i32 = 0x0007FF00;
+
+            let index = (index as usize) - 1;
+
+            player.setup_bones(
+                &mut state.bones[index],
+                BONE_USED_BY_HITBOX | BONE_USED_BY_ANYTHING,
+                globals.current_time,
+            );
+
+            let eye_origin = local.eye_origin();
+            let head_bone = state.bones[index][8];
+            let head_origin = head_bone.w_axis();
+
+            command.view_angle = calculate_angle(eye_origin, head_origin);
+        }
     }
 
     command.fast_duck(true);
@@ -172,9 +221,9 @@ unsafe fn create_move_inner(
 
     do_create_move(command, local_player, send_packet);
 
-    if !(*send_packet && state.fake_lag != 0) {
-        state.local.view_angle = command.view_angle;
-    }
+    //if !(*send_packet && state.fake_lag != 0) {
+    state.local.view_angle = command.view_angle;
+    //}
 
     None
 }

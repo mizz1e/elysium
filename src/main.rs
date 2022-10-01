@@ -146,6 +146,9 @@ fn setup_hooks() {
 
     let state = State::get();
 
+    use std::collections::HashSet;
+    state.world = Some(HashSet::new());
+    state.blur = Some(HashSet::new());
     state.init_time = Some(std::time::Instant::now());
 
     let glx = unsafe { link::load_module("libGLX.so.0.0.0").expect("libGL.so.0.0.0") };
