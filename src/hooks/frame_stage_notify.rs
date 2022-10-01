@@ -235,13 +235,19 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     } else {
         state.new_game = true;
         state.world.as_mut().unwrap().clear();
-        //state.blur.as_mut().unwrap().clear();
+        state.blur.as_mut().unwrap().clear();
     }
 
     for material in state.world.as_ref().unwrap().iter() {
         let material = material.get();
 
         material.set_rgba([0.2, 0.2, 0.2, 1.0]);
+    }
+
+    for material in state.blur_static.as_ref().unwrap().iter() {
+        let material = material.get();
+
+        material.set_flag(material::Flag::NO_DRAW, true);
     }
 
     for material in state.blur.as_ref().unwrap().iter() {

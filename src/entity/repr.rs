@@ -333,6 +333,7 @@ impl EntityRepr {
     networked!(has_helmet_ref: bool = player.has_helmet);
     networked!(is_dead_address: u8 = base_player.is_dead);
     networked!(is_defusing_ref: bool = player.is_defusing);
+    networked!(is_immune_ref: bool = player.is_immune);
     networked!(is_scoped_ref: bool = player.is_scoped);
     networked!(lower_body_yaw_ref: f32 = player.lower_body_yaw);
     networked!(tick_base_ref: u32 = base_player.tick_base);
@@ -423,6 +424,12 @@ impl EntityRepr {
     #[inline]
     pub fn is_defusing(&self) -> bool {
         unsafe { self.is_defusing_ref().read_unaligned() }
+    }
+
+    /// Whether the player is immune to damage.
+    #[inline]
+    pub fn is_immune(&self) -> bool {
+        unsafe { self.is_immune_ref().read_unaligned() }
     }
 
     /// Whether the player is scoped.

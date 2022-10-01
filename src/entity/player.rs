@@ -32,6 +32,9 @@ pub trait Player<'a>: Entity<'a> {
     /// Whether the player is defusing a bomb.
     fn is_defusing(&self) -> bool;
 
+    /// Whether the player is immune to damage.
+    fn is_immune(&self) -> bool;
+
     /// Whether the player is an enemy or not.
     fn is_enemy(&self) -> bool;
 

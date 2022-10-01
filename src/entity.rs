@@ -262,6 +262,11 @@ impl<'a> Player<'a> for PlayerRef<'a> {
     }
 
     #[inline]
+    fn is_immune(&self) -> bool {
+        self.as_repr().is_immune()
+    }
+
+    #[inline]
     fn is_enemy(&self) -> bool {
         let state = crate::State::get();
 

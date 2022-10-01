@@ -82,6 +82,8 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     let Interfaces { entity_list, .. } = state.interfaces.as_ref().unwrap();
     let globals = state.globals.as_ref().unwrap();
 
+    command.random_seed = 0;
+
     let do_attack = command.in_attack();
     let do_duck = command.in_duck();
     let do_jump = command.in_jump();
@@ -99,7 +101,10 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
             } else {
                 if do_attack {
                     if was_attacking {
-                        command.attack(false);
+                        if !info.full_auto {
+                            command.attack(false);
+                        }
+
                         local_vars.was_attacking = false;
                     } else {
                         local_vars.shift = 8;
@@ -157,6 +162,10 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
                 continue;
             }
 
+            if player.is_immune() {
+                continue;
+            }
+
             if !player.is_alive() {
                 continue;
             }
@@ -181,6 +190,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
             let head_origin = head_bone.w_axis();
 
             command.view_angle = calculate_angle(eye_origin, head_origin);
+            command.tick_count = player.tick_base() as i32 - 1;
         }
     }
 

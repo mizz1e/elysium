@@ -18,7 +18,7 @@ pub unsafe extern "C" fn create_material(
             let borrowed = &mut *(material as *mut _);
 
             state
-                .blur
+                .blur_static
                 .as_mut()
                 .unwrap()
                 .insert(BorrowedMaterial::from_mut(borrowed));

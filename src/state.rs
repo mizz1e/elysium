@@ -118,6 +118,7 @@ const NEW: State = State {
 
     world: None,
     blur: None,
+    blur_static: None,
 
     init_time: None,
 
@@ -178,6 +179,7 @@ pub struct State {
 
     pub world: Option<HashSet<BorrowedMaterial>>,
     pub blur: Option<HashSet<BorrowedMaterial>>,
+    pub blur_static: Option<HashSet<BorrowedMaterial>>,
 
     pub init_time: Option<Instant>,
 
