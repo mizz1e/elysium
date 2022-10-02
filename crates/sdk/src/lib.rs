@@ -1,6 +1,7 @@
 #![deny(warnings)]
 #![allow(incomplete_features)]
 #![feature(abi_thiscall)]
+#![feature(decl_macro)]
 #![feature(const_convert)]
 #![feature(const_maybe_uninit_uninit_array)]
 #![feature(array_methods)]
@@ -16,29 +17,28 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
-#![feature(sync_unsafe_cell)]
+#![feature(ptr_metadata)]
+#![feature(strict_provenance)]
 
 pub use animation_layer::AnimationLayer;
 pub use animation_state::AnimationState;
+pub use atomic_mut::AtomicMut;
 pub use beam::{Beam, BeamInfo, ViewRenderBeams};
-pub use class::Class;
 pub use client::Client;
 pub use client_mode::ClientMode;
 pub use console::{Console, Var, VarKind, Vars};
 pub use engine::{Engine, PlayerInfo};
 pub use entity::EntityList;
-pub use entry::Entry;
 pub use frame::Frame;
+pub use game_console::GameConsole;
 pub use globals::Globals;
 pub use hit_group::HitGroup;
 pub use id::SteamId;
 pub use input::{Command, Input};
 pub use input_system::InputSystem;
-pub use interfaces::{InterfaceKind, Interfaces, LibraryKind};
+pub use interfaces::{Interface, InterfaceKind, Interfaces, LibraryKind};
 pub use item_kind::ItemKind;
-pub use material::MaterialSystem;
 pub use network::{Flow, NetworkChannel};
-//pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
 pub use render::{OverrideKind, Render};
 pub use sound::{ActiveChannels, Channel};
 pub use steam::SteamAPIContext;
@@ -49,25 +49,28 @@ pub use utl_mem::UtlMem;
 pub use utl_string::UtlString;
 pub use utl_vec::UtlVec;
 pub use var::{VarEntry, VarMap};
-pub use vdf::{Vdf, VdfValue};
+pub use vdf::Vdf;
 pub use view::View;
 pub use weapon::{WeaponInfo, WeaponKind};
 
+//pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
+
 mod animation_layer;
 mod animation_state;
+mod atomic_mut;
 mod beam;
-mod class;
 mod client_mode;
 mod console;
 mod engine;
-mod entry;
 mod frame;
+mod game_console;
 mod globals;
 mod hit_group;
 mod input_system;
 mod interfaces;
 mod item_kind;
 mod macros;
+pub mod networked;
 //mod panorama;
 mod physics;
 mod render;
@@ -83,6 +86,7 @@ mod vdf;
 mod view;
 mod weapon;
 
+pub mod app_system;
 pub mod client;
 pub mod entity;
 pub mod ffi;

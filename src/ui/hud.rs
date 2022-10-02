@@ -1,9 +1,13 @@
+use core::fmt;
+use core::time::Duration;
 use elysium_sdk::Flow;
 use iced_glow::Renderer;
 use iced_native::alignment::{Horizontal, Vertical};
 use iced_native::widget::{container, text};
 use iced_native::{widget, Alignment, Command, Element, Length, Program};
+use std::net::SocketAddr;
 use std::os::unix::ffi::OsStrExt;
+use ubyte::ByteUnit;
 
 pub struct Hud;
 
@@ -33,6 +37,151 @@ impl Program for Hud {
     }
 }
 
+fn collect_column<'a, Message, Renderer, I, E>(iter: I) -> widget::Column<'a, Message, Renderer>
+where
+    I: IntoIterator<Item = E>,
+    E: Into<Element<'a, Message, Renderer>>,
+{
+    let mut column = widget::Column::new();
+
+    for item in iter {
+        column = column.push(item);
+    }
+
+    column
+}
+
+struct Info {
+    level_name: Option<String>,
+    location: Option<String>,
+    address: Option<SocketAddr>,
+    net_stats: Option<NetStats>,
+}
+
+impl Info {
+    fn new(state: &crate::State) -> Self {
+        let mut level_name = None;
+        let mut location = None;
+        let mut address = None;
+        let mut net_stats = None;
+
+        if let Some(interfaces) = state.interfaces.as_ref() {
+            if let Some(name) = interfaces.engine.level_name() {
+                level_name = Some(
+                    name.to_string_lossy()
+                        .replace(char::REPLACEMENT_CHARACTER, "?"),
+                );
+            }
+
+            if let Some(name) = &state.location {
+                location = Some(
+                    name.to_string_lossy()
+                        .replace(char::REPLACEMENT_CHARACTER, "?"),
+                );
+            }
+
+            if let Some(network_channel) = interfaces.engine.network_channel() {
+                address = network_channel.address();
+
+                let (latency_incoming, latency_outgoing) = network_channel.average_latency_pair();
+
+                let packets_incoming = network_channel.avg_packets(Flow::Incoming).trunc() as u32;
+                let packets_outgoing = network_channel.avg_packets(Flow::Outgoing).trunc() as u32;
+
+                let data_incoming =
+                    ubyte::ByteUnit::Byte(network_channel.avg_data(Flow::Incoming).trunc() as u64);
+
+                let data_outgoing =
+                    ubyte::ByteUnit::Byte(network_channel.avg_data(Flow::Outgoing).trunc() as u64);
+
+                net_stats = Some(NetStats {
+                    incoming: FlowStats {
+                        direction: '>',
+                        latency: latency_incoming,
+                        packet_rate: packets_incoming,
+                        data_rate: data_incoming,
+                    },
+                    outgoing: FlowStats {
+                        direction: '<',
+                        latency: latency_outgoing,
+                        packet_rate: packets_outgoing,
+                        data_rate: data_outgoing,
+                    },
+                });
+            }
+        }
+
+        Self {
+            level_name,
+            location,
+            address,
+            net_stats,
+        }
+    }
+}
+
+impl fmt::Display for Info {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Self {
+            level_name,
+            location,
+            address,
+            net_stats,
+        } = self;
+
+        if let Some(level_name) = level_name {
+            write!(fmt, "{level_name}")?;
+
+            if let Some(location) = location {
+                write!(fmt, " at {location}")?;
+            }
+
+            if let Some(address) = address {
+                write!(fmt, " on {address}")?;
+            }
+
+            write!(fmt, "\n\n")?;
+        }
+
+        if let Some(net_stats) = net_stats {
+            write!(fmt, "{}\n", net_stats.incoming)?;
+            write!(fmt, "{}\n", net_stats.outgoing)?;
+        }
+
+        Ok(())
+    }
+}
+
+struct FlowStats {
+    direction: char,
+    latency: Duration,
+    packet_rate: u32,
+    data_rate: ByteUnit,
+}
+
+struct NetStats {
+    incoming: FlowStats,
+    outgoing: FlowStats,
+}
+
+impl fmt::Display for FlowStats {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Self {
+            direction,
+            latency,
+            packet_rate,
+            data_rate,
+        } = self;
+        let (whole, frac, suffix, _unit) = data_rate.repr();
+        let rate = whole as f64 + frac;
+
+        write!(
+            fmt,
+            " {direction} {latency:.2?} {packet_rate} pkt/s {rate:.2} {suffix}/s"
+        )
+    }
+}
+
 fn view<'a, Message, Renderer>(hud: &Hud) -> widget::Container<'a, Message, Renderer>
 where
     Message: 'a,
@@ -40,68 +189,21 @@ where
     Renderer::Theme: container::StyleSheet + text::StyleSheet,
 {
     let state = crate::State::get();
+    let info = Info::new(&state);
 
-    let mut status = String::new();
-    let mut status1 = String::new();
-    let mut status2 = String::new();
+    let status = info.to_string();
 
-    use std::time::Duration;
-    use ubyte::ByteUnit;
+    let iter = status
+        .lines()
+        .map(|line| if line.is_empty() { " " } else { line })
+        .map(widget::text);
 
-    fn display_network_status(
-        direction: &'static str,
-        latency: Duration,
-        packet_rate: u32,
-        data_rate: ByteUnit,
-    ) -> String {
-        let (whole, frac, suffix, _unit) = data_rate.repr();
-        let rate = whole as f64 + frac;
-
-        format!(" {direction} {latency:.2?} {packet_rate} pkt/s {rate:.2} {suffix}/s")
-    }
-
-    if let Some(interfaces) = state.interfaces.as_ref() {
-        if let Some(level_name) = interfaces.engine.level_name() {
-            let level_name = String::from_utf8_lossy(level_name.as_bytes());
-
-            status = format!("{level_name}");
-        }
-
-        if let Some(network_channel) = interfaces.engine.network_channel() {
-            if let Some(address) = network_channel.address() {
-                status = format!("{status} on {address}");
-            } else {
-                status = format!("{status} on local server");
-            }
-
-            let (latency_incoming, latency_outgoing) = network_channel.average_latency_pair();
-
-            let packets_incoming = network_channel.avg_packets(Flow::Incoming).trunc() as u32;
-            let packets_outgoing = network_channel.avg_packets(Flow::Outgoing).trunc() as u32;
-
-            let data_incoming =
-                ubyte::ByteUnit::Byte(network_channel.avg_data(Flow::Incoming).trunc() as u64);
-
-            let data_outgoing =
-                ubyte::ByteUnit::Byte(network_channel.avg_data(Flow::Outgoing).trunc() as u64);
-
-            status1 =
-                display_network_status(">", latency_incoming, packets_incoming, data_incoming);
-            status2 =
-                display_network_status("<", latency_outgoing, packets_outgoing, data_outgoing);
-        }
-    }
-
-    let top_left = widget::container(iced_native::column![
-        widget::text(status),
-        widget::text(" "),
-        widget::text(status1),
-        widget::text(status2)
-    ])
-    .align_x(Horizontal::Left)
-    .align_y(Vertical::Top)
-    .height(Length::Fill)
-    .width(Length::Fill);
+    let top_left = collect_column(iter);
+    let top_left = widget::container(top_left)
+        .align_x(Horizontal::Left)
+        .align_y(Vertical::Top)
+        .height(Length::Fill)
+        .width(Length::Fill);
 
     let top_centre = widget::text(" ");
     let top_right = widget::text(" ");

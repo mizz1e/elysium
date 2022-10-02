@@ -1,43 +1,83 @@
-use crate::{ffi, vtable_validate, Vdf};
-use cake::ffi::VTablePad;
-use core::ptr;
-use std::ffi::OsStr;
+#![allow(dead_code)]
 
-pub use flag::MaterialFlag;
+use crate::ffi::with_cstr_os_str;
+use crate::{vtable_validate, Vdf};
+use cake::ffi::VTablePad;
+use crossbeam_utils::atomic::AtomicCell;
+use std::ffi::OsStr;
+use std::os::unix::ffi::OsStrExt;
+use std::{ffi, ptr};
+
+pub use category::Category;
+pub use flag::Flag;
 pub use group::Group;
-pub use kind::MaterialKind;
+pub use kind::{Kind, Shader};
 pub use material::Material;
 pub use var::Var;
 
+mod category;
 mod flag;
 mod group;
 mod kind;
 mod material;
 mod var;
 
-#[repr(C)]
-struct VTable {
-    _pad0: VTablePad<83>,
-    create: unsafe extern "thiscall" fn(
-        this: *const MaterialSystem,
-        name: *const libc::c_char,
-        vdf: *const Vdf,
-    ) -> Option<&'static mut Material>,
-    find: unsafe extern "thiscall" fn(
-        this: *const MaterialSystem,
-        name: *const libc::c_char,
-        group: *const libc::c_char,
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub struct BorrowedMaterial {
+    material: *mut Material,
+}
+
+impl BorrowedMaterial {
+    pub fn from_mut(material: &'static mut Material) -> Self {
+        Self { material }
+    }
+
+    pub fn get(&self) -> &'static mut Material {
+        unsafe { &mut *self.material }
+    }
+}
+
+pub mod method {
+    use super::{Handle, Material, Materials};
+    use crate::Vdf;
+    use core::ffi;
+
+    pub type Create = unsafe extern "C" fn(
+        this: &Materials,
+        name_pointer: *const ffi::c_char,
+        vdf: Option<&Vdf>,
+    ) -> Option<&'static mut Material>;
+
+    pub type Find = unsafe extern "C" fn(
+        this: &Materials,
+        name_pointer: *const ffi::c_char,
+        group_pointer: *const ffi::c_char,
         complain: bool,
-        complain_prefix: *const libc::c_char,
-    ) -> Option<&'static mut Material>,
+        complain_prefix_pointer: *const ffi::c_char,
+    ) -> Option<&'static mut Material>;
+
+    pub type First = unsafe extern "C" fn(this: &Materials) -> Handle;
+
+    pub type Next = unsafe extern "C" fn(this: &Materials, current: Handle) -> Handle;
+
+    pub type Invalid = unsafe extern "C" fn(this: &Materials) -> Handle;
+
+    pub type Get =
+        unsafe extern "C" fn(this: &Materials, current: Handle) -> Option<&'static mut Material>;
+}
+
+pub type Handle = ffi::c_ushort;
+
+#[repr(C)]
+pub struct VTable {
+    _pad0: VTablePad<83>,
+    create: method::Create,
+    find: method::Find,
     _pad1: VTablePad<1>,
-    first: unsafe extern "thiscall" fn(this: *const MaterialSystem) -> u16,
-    next: unsafe extern "thiscall" fn(this: *const MaterialSystem, index: u16) -> u16,
-    invalid: unsafe extern "thiscall" fn(this: *const MaterialSystem) -> u16,
-    get: unsafe extern "thiscall" fn(
-        this: *const MaterialSystem,
-        index: u16,
-    ) -> Option<&'static mut Material>,
+    first: method::First,
+    next: method::Next,
+    invalid: method::Invalid,
+    get: method::Get,
 }
 
 vtable_validate! {
@@ -49,24 +89,66 @@ vtable_validate! {
     get => 89,
 }
 
-#[repr(C)]
-pub struct MaterialSystem {
-    vtable: &'static VTable,
+static CREATE: AtomicCell<method::Create> = AtomicCell::new(create);
+static FIND: AtomicCell<method::Find> = AtomicCell::new(find);
+
+unsafe extern "C" fn create(
+    _this: &Materials,
+    _name_pointer: *const libc::c_char,
+    _vdf: Option<&Vdf>,
+) -> Option<&'static mut Material> {
+    unimplemented!();
 }
 
-impl MaterialSystem {
+unsafe extern "C" fn find(
+    _this: &Materials,
+    _name_pointer: *const libc::c_char,
+    _group_pointer: *const libc::c_char,
+    _complain: bool,
+    _complain_prefix_pointer: *const libc::c_char,
+) -> Option<&'static mut Material> {
+    unimplemented!();
+}
+
+#[repr(C)]
+pub struct Materials {
+    vtable: &'static mut VTable,
+}
+
+impl Materials {
+    #[inline]
+    pub unsafe fn hook_create(&mut self, f: method::Create) {
+        let addr = ptr::addr_of_mut!(self.vtable.create);
+
+        elysium_mem::unprotect(addr, |addr, prot| {
+            addr.write(f);
+            prot
+        });
+    }
+
+    #[inline]
+    pub unsafe fn hook_find(&mut self, f: method::Find) {
+        let addr = ptr::addr_of_mut!(self.vtable.find);
+
+        elysium_mem::unprotect(addr, |addr, prot| {
+            addr.write(f);
+            prot
+        });
+    }
+
+    #[inline]
+    pub unsafe fn init(&self) {
+        CREATE.store(self.vtable.create);
+        FIND.store(self.vtable.find);
+    }
+
     #[inline]
     pub fn from_vdf<S>(&self, name: S, vdf: Option<&Vdf>) -> Option<&'static mut Material>
     where
         S: AsRef<OsStr>,
     {
-        let vdf = match vdf {
-            Some(vdf) => vdf as *const Vdf,
-            None => ptr::null(),
-        };
-
-        ffi::with_cstr_os_str(name, |name| unsafe {
-            (self.vtable.create)(self, name.as_ptr(), vdf)
+        with_cstr_os_str(name, |name| unsafe {
+            (CREATE.load())(self, name.as_ptr(), vdf)
         })
     }
 
@@ -88,24 +170,26 @@ impl MaterialSystem {
     }
 
     #[inline]
-    pub fn from_kind(&self, kind: MaterialKind) -> Option<&'static mut Material> {
-        let name = kind.name();
-        let base = kind.base();
+    pub fn from_kind<S>(&self, name: S, kind: Kind) -> Option<&'static mut Material>
+    where
+        S: AsRef<OsStr>,
+    {
+        let base = kind.shader().base();
         let vdf = kind.vdf();
 
         self.from_bytes(name, base, vdf)
     }
 
     #[inline]
-    pub fn find<S, T>(&self, name: S, group: T) -> Option<&'static mut Material>
+    pub fn find<S>(&self, name: S, group: Option<Group>) -> Option<&'static mut Material>
     where
         S: AsRef<OsStr>,
-        T: AsRef<OsStr>,
     {
-        ffi::with_cstr_os_str(name, |name| {
-            ffi::with_cstr_os_str(group, |group| unsafe {
-                (self.vtable.find)(self, name.as_ptr(), group.as_ptr(), true, ptr::null())
-            })
+        with_cstr_os_str(name, |name| match group {
+            Some(group) => with_cstr_os_str(OsStr::from_bytes(group.as_bytes()), |group| unsafe {
+                (FIND.load())(self, name.as_ptr(), group.as_ptr(), true, ptr::null())
+            }),
+            None => unsafe { (FIND.load())(self, name.as_ptr(), ptr::null(), true, ptr::null()) },
         })
     }
 
@@ -113,46 +197,46 @@ impl MaterialSystem {
     pub fn iter(&self) -> MaterialIter<'_> {
         MaterialIter {
             interface: self,
-            index: self.first(),
+            index: self.iter_first(),
         }
     }
 
     #[inline]
-    fn first(&self) -> u16 {
+    fn iter_first(&self) -> Handle {
         unsafe { (self.vtable.first)(self) }
     }
 
     #[inline]
-    fn next(&self, index: u16) -> u16 {
-        unsafe { (self.vtable.next)(self, index) }
+    fn iter_next(&self, current: Handle) -> Handle {
+        unsafe { (self.vtable.next)(self, current) }
     }
 
     #[inline]
-    fn invalid(&self) -> u16 {
+    fn iter_invalid(&self) -> Handle {
         unsafe { (self.vtable.invalid)(self) }
     }
 
     #[inline]
-    fn get(&self, index: u16) -> Option<&'static mut Material> {
-        unsafe { (self.vtable.get)(self, index) }
+    fn iter_get(&self, current: Handle) -> Option<&'static mut Material> {
+        unsafe { (self.vtable.get)(self, current) }
     }
 }
 
 pub struct MaterialIter<'a> {
-    interface: &'a MaterialSystem,
-    index: u16,
+    interface: &'a Materials,
+    index: Handle,
 }
 
 impl<'a> Iterator for MaterialIter<'a> {
     type Item = &'static mut Material;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.index != self.interface.invalid() {
+        while self.index != self.interface.iter_invalid() {
             let index = self.index;
 
-            self.index = self.interface.next(index);
+            self.index = self.interface.iter_next(index);
 
-            let material = self.interface.get(index);
+            let material = self.interface.iter_get(index);
 
             match material {
                 Some(material) => return Some(material),

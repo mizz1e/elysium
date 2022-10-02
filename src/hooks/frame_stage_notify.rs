@@ -1,10 +1,8 @@
 use crate::entity::{Entity, EntityRef, Fog, FogRef, Player, PlayerRef, Tonemap, TonemapRef};
 use crate::state::Local;
-use crate::State;
-use core::mem;
+use crate::{state, State};
 use elysium_sdk::entity::EntityId;
-use elysium_sdk::material::{Group, MaterialFlag, MaterialKind};
-use elysium_sdk::{Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
+use elysium_sdk::{material, Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
 
 fn update_vars(vars: &mut Vars, engine: &Engine) {
     let state = State::get();
@@ -97,9 +95,11 @@ fn update_thirdperson(
     globals: &Globals,
     input: &Input,
     local_vars: &mut Local,
-    mut local: PlayerRef<'_>,
+    local: &mut PlayerRef<'_>,
 ) {
     let state = State::get();
+
+    state.original_view_angle = local.view_angle();
 
     if input.thirdperson {
         let mut view_angle = local_vars.view_angle;
@@ -163,7 +163,6 @@ fn update_thirdperson(
 #[inline]
 unsafe fn update_entities(entity_list: &EntityList) {
     let state = State::get();
-    let players = &mut state.players;
     let globals = state.globals.as_ref().unwrap();
     let time = globals.current_time;
     let local_vars = &state.local;
@@ -179,10 +178,25 @@ unsafe fn update_entities(entity_list: &EntityList) {
             continue;
         }
 
-        let mut bones = players[(index as usize) - 1].bones;
+        if player.is_dormant() {
+            continue;
+        }
 
-        player.setup_bones(&mut bones[..128], 0x00000100, time);
-        player.setup_bones(&mut bones[..128], 0x000FFF00, time);
+        if !player.is_alive() {
+            continue;
+        }
+
+        if !player.is_enemy() {
+            continue;
+        }
+
+        const BONE_USED_BY_HITBOX: i32 = 0x00000100;
+
+        player.setup_bones(
+            &mut state.bones[(index as usize) - 1][..128],
+            BONE_USED_BY_HITBOX,
+            time,
+        );
     }
 
     let entity_iter = entity_list
@@ -212,7 +226,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         entity_list,
         input_system,
         surface,
-        material_system,
         ..
     } = state.interfaces.as_ref().unwrap();
 
@@ -223,77 +236,50 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         state.update_materials = true;
     } else {
         state.new_game = true;
+        state.world.as_mut().unwrap().clear();
+        state.blur.as_mut().unwrap().clear();
     }
 
-    let _glow = state.materials.get(MaterialKind::Glow, material_system);
+    for material in state.world.as_ref().unwrap().iter() {
+        let material = material.get();
 
-    if mem::take(&mut state.update_materials) {
-        state.smoke.clear();
-        state.particles.clear();
-
-        for material in material_system.iter() {
-            let name = material.name();
-            let group = material.group();
-
-            match group {
-                Group::World => {
-                    material.set_rgba([0.7, 0.4, 0.4, 1.0]);
-
-                    continue;
-                }
-                Group::Skybox => {
-                    material.set_rgba([0.7, 0.0, 0.0, 0.7]);
-
-                    continue;
-                }
-                Group::Other => {
-                    if name == "particle/vistasmokev1/vistasmokev1" {
-                        state.smoke.push(material);
-
-                        continue;
-                    }
-                }
-                _ => {}
-            }
-
-            if name.starts_with("__") || name.starts_with("ui") {
-                continue;
-            }
-
-            if name.starts_with("models/player") || name.starts_with("models/weapons") {
-                state.players_m.push(material);
-
-                continue;
-            }
-
-            if name.starts_with("particle") || name.contains("vgui") {
-                println!("{name:?} {group:?}");
-                state.particles.push(material);
-            }
-        }
+        material.set_rgba([0.2, 0.2, 0.2, 1.0]);
     }
 
-    for material in state.smoke.iter() {
-        material.set_flag(MaterialFlag::WIREFRAME, true);
+    for material in state.blur_static.as_ref().unwrap().iter() {
+        let material = material.get();
+
+        material.set_flag(material::Flag::NO_DRAW, true);
     }
 
-    for material in state.players_m.iter() {
-        if engine.is_in_game() {
-            material.set_rgba([1.0, 1.0, 1.0, 1.0]);
-        } else {
-            use palette::{Hsl, Hue, IntoColor, Pixel, Srgb};
+    for material in state.blur.as_ref().unwrap().iter() {
+        let material = material.get();
 
-            let rgb: Hsl = Srgb::new(1.0, 0.0, 0.0).into_color();
-            let rgb = rgb.shift_hue(state.init_time.unwrap().elapsed().as_secs_f32() * 100.0);
-            let rgb: Srgb = rgb.into_color();
-            let [r, g, b]: [f32; 3] = rgb.into_raw();
-
-            material.set_rgba([r, g, b, 1.0]);
-        }
+        material.set_flag(material::Flag::NO_DRAW, true);
     }
 
-    for material in state.particles.iter() {
-        material.set_rgba([0.0, 1.0, 1.0, 1.0]);
+    if let Some(material) = state::material::BLOOD.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 0.0, 0.0, 1.0]);
+    }
+
+    if let Some(material) = state::material::MUZZLE_FLASH.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 1.0, 1.0, 1.0]);
+    }
+
+    if let Some(material) = state::material::DECAL.load() {
+        material.set_flag(material::Flag::NO_DRAW, true);
+    }
+
+    if let Some(material) = state::material::SMOKE.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 0.0, 1.0, 1.0]);
+    }
+
+    if let Some(material) = state::material::FIRE.load() {
+        material.set_flag(material::Flag::WIREFRAME, true);
+        material.set_rgba([1.0, 1.0, 0.0, 1.0]);
     }
 
     let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();
@@ -314,11 +300,11 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
     if engine.is_in_game() {
         if state.menu_open.0 {
-            vars.vgui.write(false);
-            engine.execute_command("showconsole\0", true);
+            //vars.vgui.write(false);
+            //engine.execute_command("showconsole\0", true);
         } else {
-            vars.vgui.write(true);
-            engine.execute_command("hideconsole\0", true);
+            //vars.vgui.write(true);
+            //engine.execute_command("hideconsole\0", true);
         }
     }
 
@@ -327,7 +313,9 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     if local_vars.player.is_null() {
         local_vars.reset();
     } else {
-        let local_player = PlayerRef::from_raw(local_vars.player).unwrap();
+        let mut local_player = PlayerRef::from_raw(local_vars.player).unwrap();
+
+        state.location = Some(local_player.location_name());
 
         // is it even enabled
         let mut thirdperson = local_vars.thirdperson.enabled;
@@ -345,10 +333,12 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
         match frame {
             Frame::RenderStart => {
-                update_thirdperson(globals, input, local_vars, local_player);
+                update_thirdperson(globals, input, local_vars, &mut local_player);
                 update_entities(entity_list);
             }
-            _ => {}
+            _ => {
+                local_player.set_view_angle(state.original_view_angle);
+            }
         }
     }
 

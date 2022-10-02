@@ -1,11 +1,12 @@
 [package]
 edition = "2021"
 name = "elysium"
-version = "0.0.0"
+version = "0.0.1"
 
 [dependencies]
 cake = { branch = "old", default-features = false, git = "https://github.com/elysian6969/cake" }
 clap = { default-features = false, features = ["color", "derive", "std", "suggestions"], version = "3.2" }
+crossbeam-utils = { default-features = false, version = "0.8" }
 elysium-input = { default-features = false, path = "crates/input" }
 elysium-math = { default-features = false, path = "crates/math" }
 elysium-mem = { default-features = false, path = "crates/mem" }

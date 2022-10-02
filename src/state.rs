@@ -3,27 +3,65 @@
 use crate::anti_aim::AntiAim;
 use crate::entity::{Player as _, PlayerRef};
 use crate::ui;
-use crate::Networked;
+use elysium_math::Matrix3x4;
 use elysium_math::Vec3;
-use elysium_sdk::material::Material;
+use elysium_sdk::material::BorrowedMaterial;
 use elysium_sdk::network::Flow;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
 use iced_glow::glow;
 use iced_native::{Point, Size};
 use palette::Srgba;
 use std::cell::SyncUnsafeCell;
+use std::collections::HashSet;
+use std::ffi::OsStr;
 use std::ptr;
 use std::time::Instant;
 
-pub use cache::{Player, Players};
 pub use hooks::*;
 pub use local::Local;
-pub use materials::Materials;
 
-mod cache;
 mod hooks;
 mod local;
-mod materials;
+
+// static references to hooked materials
+pub mod material {
+    use elysium_sdk::material::Material;
+    use elysium_sdk::AtomicMut;
+
+    // blood
+    pub static BLOOD: AtomicMut<Material> = AtomicMut::new();
+
+    // world & bullet decals
+    pub static DECAL: AtomicMut<Material> = AtomicMut::new();
+
+    // fire
+    pub static FIRE: AtomicMut<Material> = AtomicMut::new();
+
+    // smoke
+    pub static SMOKE: AtomicMut<Material> = AtomicMut::new();
+
+    // muzzle flash
+    pub static MUZZLE_FLASH: AtomicMut<Material> = AtomicMut::new();
+
+    // grenade paths
+    pub static PATH: AtomicMut<Material> = AtomicMut::new();
+
+    // impacts
+    pub static IMPACT: AtomicMut<Material> = AtomicMut::new();
+
+    // particle
+    pub static PARTICLE: AtomicMut<Material> = AtomicMut::new();
+
+    // props
+    pub static PROP: AtomicMut<Material> = AtomicMut::new();
+
+    // trees
+    pub static TREE: AtomicMut<Material> = AtomicMut::new();
+
+    // regular cham materials
+    pub static FLAT: AtomicMut<Material> = AtomicMut::new();
+    pub static GLOW: AtomicMut<Material> = AtomicMut::new();
+}
 
 #[repr(transparent)]
 struct Wrap(State);
@@ -55,14 +93,11 @@ const NEW: State = State {
     cursor_position: Point::new(0.0, 0.0),
     window_size: Size::new(0, 0),
     hooks: Hooks::new(),
-    networked: Networked::new(),
     vars: None,
     interfaces: None,
     globals: None,
     input: None,
-    players: Players::new(),
     local: Local::new(),
-    materials: Materials::new(),
     send_packet: ptr::null_mut(),
     view_angle: Vec3::splat(0.0),
     fog: const_srgba(0.7, 0.7, 0.7, 0.7),
@@ -70,8 +105,8 @@ const NEW: State = State {
     fog_end: 30_000.0,
     fog_clip: 0.0,
     bloom: 2.0,
-    exposure_min: 0.5,
-    exposure_max: 0.5,
+    exposure_min: 0.2,
+    exposure_max: 0.2,
     fake_lag: 1,
     anti_untrusted: true,
     anti_aim: AntiAim::new(),
@@ -80,11 +115,20 @@ const NEW: State = State {
     update_materials: true,
     new_game: true,
 
-    smoke: Vec::new(),
-    players_m: Vec::new(),
-    particles: Vec::new(),
+    world: None,
+    blur: None,
+    blur_static: None,
 
     init_time: None,
+
+    create: ptr::null(),
+    find: ptr::null(),
+
+    bones: [[Matrix3x4::splat(0.0); 256]; 64],
+
+    original_view_angle: Vec3::splat(0.0),
+
+    location: None,
 };
 
 /// variables that need to be shared between hooks
@@ -104,8 +148,6 @@ pub struct State {
     pub window_size: Size<u32>,
     /// csgo, sdl, etc hooks
     pub hooks: Hooks,
-    /// netvars
-    pub networked: Networked,
     /// cvars
     pub vars: Option<Vars>,
     /// source engine interfaces
@@ -114,9 +156,6 @@ pub struct State {
     pub globals: Option<&'static mut Globals>,
     /// cinput
     pub input: Option<&'static mut Input>,
-    /// efficient cache of players and their data (btw why is entitylist a linked list?)
-    pub players: Players,
-    pub materials: Materials,
     /// local player variables
     pub local: Local,
     /// cl_move send_packet
@@ -139,11 +178,20 @@ pub struct State {
     pub update_materials: bool,
     pub new_game: bool,
 
-    pub smoke: Vec<&'static mut Material>,
-    pub players_m: Vec<&'static mut Material>,
-    pub particles: Vec<&'static mut Material>,
+    pub world: Option<HashSet<BorrowedMaterial>>,
+    pub blur: Option<HashSet<BorrowedMaterial>>,
+    pub blur_static: Option<HashSet<BorrowedMaterial>>,
 
     pub init_time: Option<Instant>,
+
+    pub create: *const (),
+    pub find: *const (),
+
+    pub bones: [[Matrix3x4; 256]; 64],
+
+    pub original_view_angle: Vec3,
+
+    pub location: Option<Box<OsStr>>,
 }
 
 impl State {

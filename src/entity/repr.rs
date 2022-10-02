@@ -1,12 +1,13 @@
 use super::{PlayerRef, WeaponRef};
-use crate::{networked, networked_mut, Networked, State};
 use cake::ffi::VTablePad;
+use core::time::Duration;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, PlayerFlags, Renderable, Team};
 use elysium_sdk::model::Model;
-use elysium_sdk::{object_validate, vtable_validate, HitGroup, WeaponInfo};
+use elysium_sdk::{networked, object_validate, vtable_validate, HitGroup, WeaponInfo};
 use palette::{Srgb, Srgba, WithAlpha};
+use std::ffi::OsStr;
 use std::mem::MaybeUninit;
 use std::ops::RangeInclusive;
 use std::ptr;
@@ -101,8 +102,6 @@ object_validate! {
 
 // generic
 impl EntityRepr {
-    networked!(render_mode_address: u8 = base_entity.render_mode);
-
     #[inline]
     fn as_ptr(&self) -> *const u8 {
         ptr::addr_of!(*self).cast()
@@ -111,28 +110,6 @@ impl EntityRepr {
     #[inline]
     fn as_mut_ptr(&mut self) -> *mut u8 {
         ptr::addr_of_mut!(*self).cast()
-    }
-
-    #[inline]
-    fn networked<T, F>(&self, f: F) -> *const T
-    where
-        F: Fn(&Networked) -> usize,
-    {
-        let state = State::get();
-        let offset = f(&state.networked);
-
-        unsafe { self.as_ptr().cast::<T>().byte_add(offset) }
-    }
-
-    #[inline]
-    fn networked_mut<T, F>(&mut self, f: F) -> *mut T
-    where
-        F: Fn(&Networked) -> usize,
-    {
-        let state = State::get();
-        let offset = f(&state.networked);
-
-        unsafe { self.as_mut_ptr().cast::<T>().byte_add(offset) }
     }
 
     #[inline]
@@ -218,30 +195,12 @@ impl EntityRepr {
 
 // fog
 impl EntityRepr {
-    networked!(rgb: i32 = fog.color_primary);
-    networked_mut!(rgb_mut: i32 = fog.color_primary);
-
-    networked!(density: f32 = fog.density);
-    networked_mut!(density_mut: f32 = fog.density);
-
-    networked!(far_z: f32 = fog.far_z);
-    networked_mut!(far_z_mut: f32 = fog.far_z);
-
-    networked!(is_enabled: bool = fog.is_enabled);
-    networked_mut!(is_enabled_mut: bool = fog.is_enabled);
-
-    networked!(start: f32 = fog.start);
-    networked_mut!(start_mut: f32 = fog.start);
-
-    networked!(end: f32 = fog.end);
-    networked_mut!(end_mut: f32 = fog.end);
-
     /// Returns the clip distance (far-Z).
     ///
     /// Distance is relative to the local players position.
     #[inline]
     pub fn clip_distance(&self) -> f32 {
-        unsafe { self.far_z().read_unaligned() }
+        networked::read!(self, fog.clip_distance)
     }
 
     /// Returns the distance range (start and end distance).
@@ -249,21 +208,19 @@ impl EntityRepr {
     /// Distance is relative to the local players position.
     #[inline]
     pub fn range(&self) -> Option<RangeInclusive<f32>> {
-        unsafe {
-            self.is_enabled().read_unaligned().then(|| {
-                let start = self.start().read_unaligned();
-                let end = self.end().read_unaligned();
+        networked::read!(self, fog.is_enabled).then(|| {
+            let start = networked::read!(self, fog.start);
+            let end = networked::read!(self, fog.end);
 
-                start..=end
-            })
-        }
+            start..=end
+        })
     }
 
     /// Returns the color (rgb) and density (alpha).
     #[inline]
     pub fn rgba(&self) -> Srgba {
-        let rgb = unsafe { self.rgb().read_unaligned() as u32 };
-        let alpha = unsafe { self.density().read_unaligned() };
+        let rgb = 0x00FF0000_u32; // networked::read!(self, fog.rgb);
+        let alpha = networked::read!(self, fog.alpha);
 
         // why is this bgr??
         let [b, g, r, _] = rgb.to_ne_bytes();
@@ -281,7 +238,7 @@ impl EntityRepr {
     /// Distance is relative to the local players position.
     #[inline]
     pub fn set_clip_distance(&mut self, distance: f32) {
-        unsafe { self.far_z_mut().write_unaligned(distance) }
+        networked::write!(self, fog.clip_distance, distance)
     }
 
     /// Set the distance range (start and end distance).
@@ -291,19 +248,17 @@ impl EntityRepr {
     /// Distance is relative to the local players position.
     #[inline]
     pub fn set_range(&mut self, range: Option<RangeInclusive<f32>>) {
-        unsafe {
-            let enabled = range
-                .inspect(|range| {
-                    let start = (*range.start()).max(0.0);
-                    let end = (*range.end()).max(start);
+        let enabled = range
+            .inspect(|range| {
+                let start = (*range.start()).max(0.0);
+                let end = (*range.end()).max(start);
 
-                    self.start_mut().write_unaligned(start);
-                    self.end_mut().write_unaligned(end);
-                })
-                .is_some();
+                networked::write!(self, fog.start, start);
+                networked::write!(self, fog.end, end);
+            })
+            .is_some();
 
-            self.is_enabled_mut().write_unaligned(enabled);
-        }
+        networked::write!(self, fog.is_enabled, enabled);
     }
 
     /// Set the color (rgb) and density (alpha).
@@ -319,26 +274,13 @@ impl EntityRepr {
         let [b, g, r, _] = rgb.to_ne_bytes();
         let rgb = u32::from_ne_bytes([r, g, b, 0]);
 
-        unsafe {
-            self.rgb_mut().write_unaligned(rgb as i32);
-            self.density_mut().write_unaligned(alpha);
-        }
+        //networked::write!(self, fog.rgb, rgb);
+        networked::write!(self, fog.alpha, alpha);
     }
 }
 
 // player
 impl EntityRepr {
-    networked!(armor_value_ref: i32 = player.armor);
-    networked!(flags_ref: i32 = player.flags);
-    networked!(has_helmet_ref: bool = player.has_helmet);
-    networked!(is_dead_address: u8 = base_player.is_dead);
-    networked!(is_defusing_ref: bool = player.is_defusing);
-    networked!(is_scoped_ref: bool = player.is_scoped);
-    networked!(lower_body_yaw_ref: f32 = player.lower_body_yaw);
-    networked!(tick_base_ref: u32 = base_player.tick_base);
-    networked!(view_offset_ref: Vec3 = base_player.view_offset);
-    networked!(velocity_ref: Vec3 = base_player.velocity);
-
     /// The player's active weapon.
     #[inline]
     pub fn active_weapon(&self) -> Option<WeaponRef<'_>> {
@@ -358,7 +300,7 @@ impl EntityRepr {
     /// The player's armor value.
     #[inline]
     pub fn armor_value(&self) -> i32 {
-        unsafe { self.armor_value_ref().read_unaligned() }
+        networked::read!(self, player.armor_value)
     }
 
     /// Returns the damage modifier for the provided hit group and ratio.
@@ -378,15 +320,15 @@ impl EntityRepr {
     /// The player's eye offset (from the player's origin).
     #[inline]
     pub fn eye_offset(&self) -> Vec3 {
-        let view_offset = unsafe { self.view_offset_ref().read_unaligned() };
+        let offset = networked::read!(self, base_player.eye_offset);
 
         // zero view offset fix
-        if view_offset == Vec3::splat(0.0) {
+        if offset == Vec3::splat(0.0) {
             let z = if self.flags().ducking() { 46.0 } else { 64.0 };
 
             Vec3::from_array([0.0, 0.0, z])
         } else {
-            view_offset
+            offset
         }
     }
 
@@ -406,43 +348,50 @@ impl EntityRepr {
     /// The player's state flags.
     #[inline]
     pub fn flags(&self) -> PlayerFlags {
-        unsafe {
-            let flags = self.flags_ref().read_unaligned();
-
-            PlayerFlags::new(flags)
-        }
+        networked::read!(self, base_player.flags)
     }
 
     /// Whether the player has a helmet.
     #[inline]
     pub fn has_helmet(&self) -> bool {
-        unsafe { self.has_helmet_ref().read_unaligned() }
+        networked::read!(self, player.has_helmet)
     }
 
     /// Whether the player is defusing a bomb.
     #[inline]
     pub fn is_defusing(&self) -> bool {
-        unsafe { self.is_defusing_ref().read_unaligned() }
+        todo!()
+        //networked::read!(self, player.is_defusing)
+    }
+
+    /// Whether the player is immune to damage.
+    #[inline]
+    pub fn is_immune(&self) -> bool {
+        networked::read!(self, player.is_immune)
     }
 
     /// Whether the player is scoped.
     #[inline]
     pub fn is_scoped(&self) -> bool {
-        unsafe { self.is_scoped_ref().read_unaligned() }
+        networked::read!(self, player.is_scoped)
+    }
+
+    #[inline]
+    pub fn location_name(&self) -> Box<OsStr> {
+        networked::read!(self, base_player.location_name)
     }
 
     /// The player's lower body yaw.
     #[inline]
     pub fn lower_body_yaw(&self) -> f32 {
-        unsafe { self.lower_body_yaw_ref().read_unaligned() }
+        networked::read!(self, player.lower_body_yaw)
     }
 
     /// The player's movement type.
     #[inline]
     pub fn move_kind(&self) -> MoveKind {
         unsafe {
-            let kind = self
-                .render_mode_address()
+            let kind = networked::addr!(self, base_entity.render_mode)
                 .byte_add(1)
                 .cast::<i32>()
                 .read_unaligned();
@@ -476,7 +425,7 @@ impl EntityRepr {
     /// [`Frame::RenderEnd`](elysium_sdk::Frame::RenderEnd).
     #[inline]
     pub unsafe fn set_view_angle(&mut self, angle: Vec3) {
-        self.is_dead_address()
+        networked::addr!(self, base_player.is_dead)
             .byte_add(4)
             .cast::<Vec3>()
             .cast_mut()
@@ -492,20 +441,20 @@ impl EntityRepr {
     /// The player's tick base.
     #[inline]
     pub fn tick_base(&self) -> u32 {
-        unsafe { self.tick_base_ref().read_unaligned() }
+        networked::read!(self, base_player.tick_base)
     }
 
     /// The player's velocity.
     #[inline]
     pub fn velocity(&self) -> Vec3 {
-        unsafe { self.velocity_ref().read_unaligned() }
+        networked::read!(self, base_player.velocity)
     }
 
     /// The player's view angle.
     #[inline]
     pub fn view_angle(&self) -> Vec3 {
         unsafe {
-            self.is_dead_address()
+            networked::addr!(self, base_player.is_dead)
                 .byte_add(4)
                 .cast::<Vec3>()
                 .read_unaligned()
@@ -572,50 +521,26 @@ mod exposure {
 
 // tonemap
 impl EntityRepr {
-    networked!(bloom_scale: f32 = tonemap.bloom_scale);
-    networked_mut!(bloom_scale_mut: f32 = tonemap.bloom_scale);
-
-    networked!(enable_bloom_scale: bool = tonemap.enable_bloom_scale);
-    networked_mut!(enable_bloom_scale_mut: bool = tonemap.enable_bloom_scale);
-
-    networked!(enable_max_exposure: bool = tonemap.enable_max_exposure);
-    networked_mut!(enable_max_exposure_mut: bool = tonemap.enable_max_exposure);
-
-    networked!(enable_min_exposure: bool = tonemap.enable_min_exposure);
-    networked_mut!(enable_min_exposure_mut: bool = tonemap.enable_min_exposure);
-
-    networked!(max_exposure: f32 = tonemap.max_exposure);
-    networked_mut!(max_exposure_mut: f32 = tonemap.max_exposure);
-
-    networked!(min_exposure: f32 = tonemap.min_exposure);
-    networked_mut!(min_exposure_mut: f32 = tonemap.min_exposure);
-
     /// Returns the bloom effect scale.
     #[inline]
     pub fn bloom(&self) -> f32 {
-        unsafe {
-            self.enable_bloom_scale()
-                .read_unaligned()
-                .then(|| self.bloom_scale().read_unaligned())
-                .unwrap_or_default()
-        }
+        networked::read!(self, tonemap.bloom_scale)
     }
 
     /// Returns the exposure range.
     #[inline]
     pub fn exposure(&self) -> Option<Exposure> {
-        unsafe {
-            let min_enabled = self.enable_min_exposure().read_unaligned();
-            let max_enabled = self.enable_max_exposure().read_unaligned();
-            let min = self.min_exposure().read_unaligned();
-            let max = self.max_exposure().read_unaligned();
+        let start = networked::read!(self, tonemap.exposure_start);
+        let end = networked::read!(self, tonemap.exposure_end);
 
-            match (min_enabled, max_enabled) {
-                (true, true) => Some(Exposure::from(min..=max)),
-                (true, false) => Some(Exposure::from(min..)),
-                (false, true) => Some(Exposure::from(..=min)),
-                (false, false) => None,
-            }
+        let start_enabled = networked::read!(self, tonemap.exposure_start_enabled);
+        let end_enabled = networked::read!(self, tonemap.exposure_end_enabled);
+
+        match (start_enabled, end_enabled) {
+            (true, true) => Some(Exposure::from(start..=end)),
+            (true, false) => Some(Exposure::from(start..)),
+            (false, true) => Some(Exposure::from(..=end)),
+            (false, false) => None,
         }
     }
 
@@ -624,12 +549,10 @@ impl EntityRepr {
     /// Non-finite or negative scale will be treated as 0.0.
     #[inline]
     pub fn set_bloom(&mut self, scale: f32) {
-        unsafe {
-            let scale = scale.max(0.0);
+        let scale = scale.max(0.0);
 
-            self.bloom_scale_mut().write_unaligned(scale);
-            self.enable_bloom_scale_mut().write_unaligned(scale != 0.0);
-        }
+        networked::write!(self, tonemap.bloom_scale, scale);
+        networked::write!(self, tonemap.bloom_scale_enabled, scale != 0.0);
     }
 
     /// Set the exposure range.
@@ -639,25 +562,19 @@ impl EntityRepr {
     pub fn set_exposure<E: Into<Exposure>>(&mut self, exposure: Option<E>) {
         let (start, end) = exposure.map(Into::into).unwrap_or_default().to_tuple();
 
-        unsafe {
-            self.min_exposure_mut().write_unaligned(start);
-            self.max_exposure_mut().write_unaligned(end);
+        networked::write!(self, tonemap.exposure_start, start);
+        networked::write!(self, tonemap.exposure_end, end);
 
-            self.enable_min_exposure_mut().write(true);
-            self.enable_max_exposure_mut().write(true);
-        }
+        networked::write!(self, tonemap.exposure_start_enabled, true);
+        networked::write!(self, tonemap.exposure_end_enabled, true);
     }
 }
 
 // weapon
 impl EntityRepr {
-    networked!(magazine_ref: i32 = base_weapon.magazine);
-    networked!(next_attack_time_ref: f32 = base_weapon.next_attack_time);
-    networked!(revolver_cock_time_ref: f32 = weapon.revolver_cock_time);
-
     #[inline]
     pub fn magazine(&self) -> Option<u32> {
-        let magazine: i32 = unsafe { self.magazine_ref().read_unaligned() };
+        let magazine = networked::read!(self, base_combat_weapon.magazine);
 
         if magazine < 0 {
             None
@@ -667,15 +584,15 @@ impl EntityRepr {
     }
 
     #[inline]
-    pub fn next_attack_time(&self) -> f32 {
-        unsafe { self.next_attack_time_ref().read_unaligned() }
+    pub fn next_attack_time(&self) -> Duration {
+        networked::read!(self, base_combat_weapon.next_primary_attack)
     }
 
     #[inline]
-    pub fn revolver_cock_time(&self) -> Option<f32> {
-        let time: f32 = unsafe { self.revolver_cock_time_ref().read_unaligned() };
+    pub fn revolver_cock_time(&self) -> Option<Duration> {
+        let time = networked::read!(self, weapon_cs_base.revolver_cock_time);
 
-        if time > 3.4028235e+38 {
+        if time > Duration::from_secs_f32(3.4028235e+38) {
             None
         } else {
             Some(time)

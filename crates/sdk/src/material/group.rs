@@ -1,73 +1,64 @@
 // https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/public/texture_group_names.h
 
-const MAP: phf::Map<&[u8], Group> = phf::phf_map! {
-    b"ClientEffect textures" => Group::ClientEffect,
-    b"CubeMap textures" => Group::Cubemap,
-    b"Decal textures" => Group::Decal,
-    b"DepthBuffer" => Group::DepthBuffer,
-    b"Displacement Verts" => Group::DisplacementVertex,
-    b"Dynamic Indices" => Group::DynamicIndex,
-    b"Dynamic Verts" => Group::DynamicVertex,
-    b"Lighting Verts" => Group::LightingVertex,
-    b"Model textures" => Group::Model,
-    b"Model Verts" => Group::ModelVertex,
-    b"Morph Targets" => Group::MorphTarget,
-    b"Other textures" => Group::Other,
-    b"Other Verts" => Group::OtherVertex,
-    b"Particle textures" => Group::Particle,
-    b"Pixel Shaders" => Group::PixelShader,
-    b"Precached" => Group::Precached,
-    b"RenderTargets" => Group::RenderTarget,
-    b"RenderTarget Surfaces" => Group::RenderTargetSurface,
-    b"Static Indices" => Group::StaticIndex,
-    b"Static Vertex" => Group::StaticVertex,
-    b"SkyBox textures" => Group::Skybox,
-    b"World textures" => Group::World,
-    b"World Verts" => Group::WorldVertex,
-    b"Unaccounted textures" => Group::Unaccounted,
-    b"Vertex Shaders" => Group::VertexShader,
-    b"VGUI textures" => Group::Vgui,
-    b"ViewModel" => Group::ViewModel,
-};
+macro_rules! group {
+    ($($group:ident => $bytes:literal,)*) => {
+        const MAP: phf::Map<&[u8], Group> = phf::phf_map! {
+            $($bytes => Group::$group,)*
+        };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Group<'a> {
-    ClientEffect,
-    Cubemap,
-    Decal,
-    DepthBuffer,
-    DisplacementVertex,
-    DynamicIndex,
-    DynamicVertex,
-    LightingVertex,
-    Model,
-    ModelVertex,
-    MorphTarget,
-    Other,
-    OtherVertex,
-    Particle,
-    PixelShader,
-    Precached,
-    RenderTarget,
-    RenderTargetSurface,
-    StaticIndex,
-    StaticVertex,
-    Skybox,
-    World,
-    WorldVertex,
-    Unaccounted,
-    VertexShader,
-    Vgui,
-    ViewModel,
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        pub enum Group<'a> {
+            $($group,)*
+            Unknown(&'a [u8]),
+        }
 
-    Unknown(&'a [u8]),
+        impl<'a> Group<'a> {
+            #[inline]
+            pub fn as_bytes(&self) -> &'a [u8] {
+                match self {
+                    $(Group::$group => $bytes,)*
+                    Group::Unknown(group) => group,
+                }
+            }
+
+            #[inline]
+            pub fn from_bytes(bytes: &'a [u8]) -> Self {
+                MAP.get(bytes)
+                    .copied()
+                    .unwrap_or_else(|| Group::Unknown(bytes))
+            }
+        }
+    };
 }
 
-impl<'a> Group<'a> {
-    #[inline]
-    pub fn from_bytes(bytes: &'a [u8]) -> Self {
-        MAP.get(bytes)
-            .copied()
-            .unwrap_or_else(|| Group::Unknown(bytes))
-    }
+group! {
+    ClientEffect => b"ClientEffect textures",
+    Cubemap => b"CubeMap textures",
+    Decal => b"Decal textures",
+    DepthBuffer => b"DepthBuffer",
+    DisplacementVertex => b"Displacement Verts",
+    DynamicIndex => b"Dynamic Indices",
+    DynamicVertex => b"Dynamic Verts",
+    LightingVertex => b"Lighting Verts",
+    Model => b"Model textures",
+    ModelVertex => b"Model Verts",
+    MorphTarget => b"Morph Targets",
+    Other => b"Other textures",
+    OtherVertex => b"Other Verts",
+    Particle => b"Particle textures",
+    PixelShader => b"Pixel Shaders",
+    Precached => b"Precached",
+    PreloadTexture => b"texture preload",
+    RenderTarget => b"RenderTargets",
+    RenderTargetSurface => b"RenderTarget Surfaces",
+    StaticIndex => b"Static Indices",
+    StaticProp => b"StaticProp textures",
+    StaticVertex => b"Static Vertex",
+    Skybox => b"SkyBox textures",
+    World => b"World textures",
+    WorldVertex => b"World Verts",
+    Unaccounted => b"Unaccounted textures",
+    VertexShader => b"Vertex Shaders",
+    Vgui => b"VGUI textures",
+    ViewModel => b"ViewModel",
 }

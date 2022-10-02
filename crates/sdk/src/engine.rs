@@ -1,8 +1,9 @@
 use super::{ffi, vtable_export, vtable_validate, NetworkChannel, SteamAPIContext, SteamId};
-use cake::ffi::{COsStr, VTablePad};
+use cake::ffi::VTablePad;
 use elysium_math::{Matrix3x4, Vec3};
-use std::ffi::OsStr;
+use std::ffi::{CStr, OsStr};
 use std::mem::MaybeUninit;
+use std::os::unix::ffi::OsStrExt;
 
 /// player information
 #[repr(C)]
@@ -198,7 +199,8 @@ impl Engine {
                 return None;
             }
 
-            let os_str = COsStr::from_ptr(pointer).as_os_str();
+            let bytes = CStr::from_ptr(pointer).to_bytes();
+            let os_str = OsStr::from_bytes(bytes);
 
             Some(Box::from(os_str))
         }

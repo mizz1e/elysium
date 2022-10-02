@@ -1,12 +1,15 @@
 //! Entity traits and references.
 // TODO: move to elysium_sdk
 
+use core::time::Duration;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::model::Model;
 use elysium_sdk::HitGroup;
+use elysium_sdk::WeaponInfo;
 use palette::Srgba;
+use std::ffi::OsStr;
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops::RangeInclusive;
@@ -261,6 +264,11 @@ impl<'a> Player<'a> for PlayerRef<'a> {
     }
 
     #[inline]
+    fn is_immune(&self) -> bool {
+        self.as_repr().is_immune()
+    }
+
+    #[inline]
     fn is_enemy(&self) -> bool {
         let state = crate::State::get();
 
@@ -273,6 +281,11 @@ impl<'a> Player<'a> for PlayerRef<'a> {
     #[inline]
     fn is_scoped(&self) -> bool {
         self.as_repr().is_scoped()
+    }
+
+    #[inline]
+    fn location_name(&self) -> Box<OsStr> {
+        self.as_repr().location_name()
     }
 
     #[inline]
@@ -350,7 +363,12 @@ impl<'a> Tonemap<'a> for TonemapRef<'a> {
 
 impl<'a> Weapon<'a> for WeaponRef<'a> {
     #[inline]
-    fn next_attack_time(&self) -> f32 {
+    fn next_attack_time(&self) -> Duration {
         self.as_repr().next_attack_time()
+    }
+
+    #[inline]
+    fn info(&self) -> Option<&WeaponInfo> {
+        self.as_repr().weapon_data()
     }
 }

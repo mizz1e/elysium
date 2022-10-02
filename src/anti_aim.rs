@@ -78,7 +78,7 @@ impl AntiAim {
             y += 7.5 - random(0.0..=15.0);
         }
 
-        if send_packet {
+        if !send_packet {
             y += 58.0;
         }
 

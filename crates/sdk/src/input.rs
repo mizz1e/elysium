@@ -21,6 +21,7 @@ pub const IN_DUCK: i32 = 1 << 2;
 pub const IN_BULLRUSH: i32 = 1 << 22;
 pub const IN_LEFT: i32 = 1 << 9;
 pub const IN_RIGHT: i32 = 1 << 10;
+pub const IN_ATTACK2: i32 = 1 << 11;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -64,6 +65,11 @@ impl Command {
     }
 
     #[inline]
+    pub const fn in_attack2(&self) -> bool {
+        self.has(IN_ATTACK2)
+    }
+
+    #[inline]
     pub const fn in_jump(&self) -> bool {
         self.has(IN_JUMP)
     }
@@ -81,6 +87,11 @@ impl Command {
     #[inline]
     pub const fn attack(&mut self, value: bool) {
         self.set(IN_ATTACK, value)
+    }
+
+    #[inline]
+    pub const fn attack2(&mut self, value: bool) {
+        self.set(IN_ATTACK2, value)
     }
 
     #[inline]

@@ -1,4 +1,4 @@
-use super::{Group, MaterialFlag, Var};
+use super::{Flag, Group, Var};
 use crate::{ffi, vtable_validate};
 use cake::ffi::VTablePad;
 use cake::ffi::{CBytes, CUtf8Str};
@@ -19,7 +19,7 @@ struct VTable {
     _pad1: VTablePad<15>,
     set_alpha: unsafe extern "thiscall" fn(this: *const Material, alpha: f32),
     set_rgb: unsafe extern "thiscall" fn(this: *const Material, red: f32, green: f32, blue: f32),
-    set_flag: unsafe extern "thiscall" fn(this: *const Material, flag: MaterialFlag, enabled: bool),
+    set_flag: unsafe extern "thiscall" fn(this: *const Material, flag: Flag, enabled: bool),
     _pad2: VTablePad<14>,
     alpha: unsafe extern "thiscall" fn(this: *const Material) -> f32,
     rgb: unsafe extern "thiscall" fn(
@@ -111,7 +111,7 @@ impl Material {
     }
 
     #[inline]
-    pub fn set_flag(&self, flag: MaterialFlag, enabled: bool) {
+    pub fn set_flag(&self, flag: Flag, enabled: bool) {
         unsafe { (self.vtable.set_flag)(self, flag, enabled) }
     }
 
