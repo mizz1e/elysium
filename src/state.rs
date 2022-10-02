@@ -3,7 +3,6 @@
 use crate::anti_aim::AntiAim;
 use crate::entity::{Player as _, PlayerRef};
 use crate::ui;
-use crate::Networked;
 use elysium_math::Matrix3x4;
 use elysium_math::Vec3;
 use elysium_sdk::material::BorrowedMaterial;
@@ -14,6 +13,7 @@ use iced_native::{Point, Size};
 use palette::Srgba;
 use std::cell::SyncUnsafeCell;
 use std::collections::HashSet;
+use std::ffi::OsStr;
 use std::ptr;
 use std::time::Instant;
 
@@ -93,7 +93,6 @@ const NEW: State = State {
     cursor_position: Point::new(0.0, 0.0),
     window_size: Size::new(0, 0),
     hooks: Hooks::new(),
-    networked: Networked::new(),
     vars: None,
     interfaces: None,
     globals: None,
@@ -128,6 +127,8 @@ const NEW: State = State {
     bones: [[Matrix3x4::splat(0.0); 256]; 64],
 
     original_view_angle: Vec3::splat(0.0),
+
+    location: None,
 };
 
 /// variables that need to be shared between hooks
@@ -147,8 +148,6 @@ pub struct State {
     pub window_size: Size<u32>,
     /// csgo, sdl, etc hooks
     pub hooks: Hooks,
-    /// netvars
-    pub networked: Networked,
     /// cvars
     pub vars: Option<Vars>,
     /// source engine interfaces
@@ -191,6 +190,8 @@ pub struct State {
     pub bones: [[Matrix3x4; 256]; 64],
 
     pub original_view_angle: Vec3,
+
+    pub location: Option<Box<OsStr>>,
 }
 
 impl State {

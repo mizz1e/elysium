@@ -2,6 +2,7 @@ use super::{Entity, PlayerRef, WeaponRef};
 use elysium_math::Vec3;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::HitGroup;
+use std::ffi::OsStr;
 
 /// Player methods.
 pub trait Player<'a>: Entity<'a> {
@@ -28,6 +29,9 @@ pub trait Player<'a>: Entity<'a> {
 
     /// Whether the player has a helmet.
     fn has_helmet(&self) -> bool;
+
+    /// Location name of the player.
+    fn location_name(&self) -> Box<OsStr>;
 
     /// Whether the player is defusing a bomb.
     fn is_defusing(&self) -> bool;

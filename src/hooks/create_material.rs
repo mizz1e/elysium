@@ -1,4 +1,3 @@
-use crate::state::material;
 use core::ffi;
 use elysium_sdk::material::{BorrowedMaterial, Material, Materials};
 use elysium_sdk::Vdf;

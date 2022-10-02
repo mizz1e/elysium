@@ -315,6 +315,8 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     } else {
         let mut local_player = PlayerRef::from_raw(local_vars.player).unwrap();
 
+        state.location = Some(local_player.location_name());
+
         // is it even enabled
         let mut thirdperson = local_vars.thirdperson.enabled;
 
@@ -338,8 +340,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
                 local_player.set_view_angle(state.original_view_angle);
             }
         }
-
-        println!("{:?}", local_player.view_angle());
     }
 
     (frame_stage_notify_original)(this, frame.to_i32());

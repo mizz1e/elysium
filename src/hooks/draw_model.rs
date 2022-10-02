@@ -1,7 +1,6 @@
 use crate::entity::{Entity, Player, PlayerRef};
 use crate::{state, State};
 use elysium_math::Matrix3x4;
-use elysium_sdk::entity::EntityId;
 use elysium_sdk::material;
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
 

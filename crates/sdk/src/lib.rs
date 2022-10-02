@@ -18,18 +18,17 @@
 #![feature(maybe_uninit_uninit_array)]
 #![feature(pointer_byte_offsets)]
 #![feature(ptr_metadata)]
+#![feature(strict_provenance)]
 
 pub use animation_layer::AnimationLayer;
 pub use animation_state::AnimationState;
 pub use atomic_mut::AtomicMut;
 pub use beam::{Beam, BeamInfo, ViewRenderBeams};
-pub use class::Class;
 pub use client::Client;
 pub use client_mode::ClientMode;
 pub use console::{Console, Var, VarKind, Vars};
 pub use engine::{Engine, PlayerInfo};
 pub use entity::EntityList;
-pub use entry::Entry;
 pub use frame::Frame;
 pub use game_console::GameConsole;
 pub use globals::Globals;
@@ -60,11 +59,9 @@ mod animation_layer;
 mod animation_state;
 mod atomic_mut;
 mod beam;
-mod class;
 mod client_mode;
 mod console;
 mod engine;
-mod entry;
 mod frame;
 mod game_console;
 mod globals;
@@ -73,6 +70,7 @@ mod input_system;
 mod interfaces;
 mod item_kind;
 mod macros;
+pub mod networked;
 //mod panorama;
 mod physics;
 mod render;

@@ -13,7 +13,8 @@
 #![feature(strict_provenance)]
 
 use elysium_sdk::material;
-use elysium_sdk::material::{Material, Materials};
+use elysium_sdk::material::Materials;
+use elysium_sdk::networked;
 use elysium_sdk::{Interface, InterfaceKind, Interfaces, LibraryKind, Vars, Vdf};
 use error::Error;
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
@@ -25,7 +26,6 @@ use std::thread;
 use std::time::Duration;
 use std::{env, ffi, mem, ptr};
 
-pub use networked::Networked;
 pub use options::Options;
 pub use state::State;
 
@@ -39,7 +39,6 @@ pub mod entity;
 pub mod hooks;
 pub mod launcher;
 pub mod library;
-pub mod networked;
 pub mod pattern;
 pub mod state;
 
@@ -351,7 +350,8 @@ fn setup_hooks() {
         state.globals = Some(globals);
         state.input = Some(input);
         state.vars = vars.ok();
-        state.networked.update(client);
+
+        networked::init(&client);
 
         /*let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_LAYERS).unwrap();
         let _animation_layers = bytes.as_ptr().byte_add(35).cast::<u32>().read();

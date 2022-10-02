@@ -43,7 +43,7 @@ pub unsafe extern "C" fn find_material(
 
     if name.contains("blur") {
         if let Some(material) = materials.find(name, group) {
-            println!("BLUR {name:?} {group:?}");
+            //println!("BLUR {name:?} {group:?}");
 
             let borrowed = &mut *(material as *mut _);
 
@@ -68,27 +68,27 @@ pub unsafe extern "C" fn find_material(
     }
 
     if name.contains("blood") {
-        println!("BLOOD {name:?}");
+        //println!("BLOOD {name:?}");
         return material::BLOOD.load();
     }
 
     if name.contains("muzzleflash") {
-        println!("MUZZLE FLASH {name:?}");
+        //println!("MUZZLE FLASH {name:?}");
         return material::MUZZLE_FLASH.load();
     }
 
     if name.contains("vistasmoke") {
-        println!("SMOKE {name:?}");
+        //println!("SMOKE {name:?}");
         return material::SMOKE.load();
     }
 
     if name.contains("fire") {
-        println!("FIRE {name:?}");
+        //println!("FIRE {name:?}");
         return material::FIRE.load();
     }
 
     if name.contains("decal") {
-        println!("DECAL {name:?}");
+        //println!("DECAL {name:?}");
         return material::DECAL.load();
     }
 

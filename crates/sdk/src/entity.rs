@@ -149,8 +149,13 @@ pub struct PlayerFlags(i32);
 
 impl PlayerFlags {
     #[inline]
-    pub const fn new(flags: i32) -> Self {
+    pub const fn from_i32(flags: i32) -> Self {
         Self(flags)
+    }
+
+    #[inline]
+    pub const fn to_i32(self) -> i32 {
+        self.0
     }
 
     #[inline]

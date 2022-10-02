@@ -1,14 +1,13 @@
 use super::Table;
 use crate::entity::EntityId;
-use cake::ffi::CUtf8Str;
-use core::fmt;
+use core::{ffi, fmt};
 
 #[non_exhaustive]
 #[repr(C)]
 pub struct Class {
     new: unsafe extern "C" fn(entity: i32, serial: i32) -> *const u8,
     new_event: unsafe extern "C" fn() -> *const u8,
-    name: *const libc::c_char,
+    name: *const ffi::c_char,
     pub table: Option<&'static Table>,
     pub(super) next: *mut Class,
     pub entity_id: EntityId,
@@ -26,12 +25,8 @@ impl Class {
     }
 
     #[inline]
-    pub fn name(&self) -> Box<str> {
-        unsafe {
-            let name = CUtf8Str::from_ptr(self.name).as_str();
-
-            Box::from(name)
-        }
+    pub fn name(&self) -> &[u8] {
+        unsafe { ffi::CStr::from_ptr(self.name).to_bytes() }
     }
 }
 
