@@ -11,7 +11,6 @@ const LAUNCHER_MAIN: &str = "LauncherMain";
 
 const CONNECT: Cow<'static, CStr> = const_cstr("+connect\0");
 const FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
-const INSECURE: Cow<'static, CStr> = const_cstr("-insecure\0");
 const MAP: Cow<'static, CStr> = const_cstr("+map\0");
 const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
 const NO_VIDEO: Cow<'static, CStr> = const_cstr("-novid\0");
@@ -56,9 +55,8 @@ unsafe fn launch_inner(options: Options) -> Result<(), Error> {
         }
     }
 
-    if options.no_vac {
-        args.push(INSECURE);
-    } else {
+    // NOTE: Omission of `-steam` implies `-insecure`.
+    if !options.no_vac {
         args.push(STEAM);
     }
 
