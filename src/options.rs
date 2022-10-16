@@ -12,10 +12,6 @@ pub struct Options {
     #[clap(default_value = "120", long)]
     pub fps: u16,
 
-    /// Enable cheats.
-    #[clap(long)]
-    pub i_agree_to_be_banned: bool,
-
     /// Specify map to load immediately.
     #[clap(long)]
     pub map: Option<PathBuf>,

@@ -186,7 +186,9 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
             let head_origin = head_bone.w_axis();
 
             command.view_angle = calculate_angle(eye_origin, head_origin);
-            command.tick_count = player.tick_base() as i32 - 1;
+            let state = State::get();
+            state.local.visualize_shot = globals.current_time + 0.2;
+            state.local.shot_view_angle = command.view_angle;
         }
     }
 

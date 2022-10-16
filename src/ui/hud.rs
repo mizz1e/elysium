@@ -6,7 +6,6 @@ use iced_native::alignment::{Horizontal, Vertical};
 use iced_native::widget::{container, text};
 use iced_native::{widget, Alignment, Command, Element, Length, Program};
 use std::net::SocketAddr;
-use std::os::unix::ffi::OsStrExt;
 use ubyte::ByteUnit;
 
 pub struct Hud;

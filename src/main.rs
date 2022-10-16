@@ -15,16 +15,14 @@
 use elysium_sdk::material;
 use elysium_sdk::material::Materials;
 use elysium_sdk::networked;
-use elysium_sdk::{Interface, InterfaceKind, Interfaces, LibraryKind, Vars, Vdf};
+use elysium_sdk::{Interface, InterfaceKind, LibraryKind, Vars, Vdf};
 use error::Error;
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 use std::borrow::Cow;
-use std::ffi::{CStr, CString, OsString};
-use std::io::Write;
-use std::os::unix::ffi::OsStringExt;
-use std::thread;
-use std::time::Duration;
-use std::{env, ffi, mem, ptr};
+use std::ffi::CStr;
+use std::os::unix::process::CommandExt;
+use std::process::Command;
+use std::{env, mem, ptr, thread};
 
 pub use options::Options;
 pub use state::State;
@@ -41,110 +39,66 @@ pub mod launcher;
 pub mod library;
 pub mod pattern;
 pub mod state;
-
-type Main = unsafe extern "C" fn(argc: libc::c_int, argv: *const *const libc::c_char);
+pub mod util;
 
 const fn const_cstr(string: &'static str) -> Cow<'static, CStr> {
     unsafe { Cow::Borrowed(CStr::from_bytes_with_nul_unchecked(string.as_bytes())) }
 }
 
-fn cstring_from_osstring(string: OsString) -> Result<Cow<'static, CStr>, ffi::NulError> {
-    let bytes = string.into_vec();
-    let string = CString::new(bytes)?;
-
-    Ok(Cow::Owned(string))
-}
-
-fn cow_str_from_debug(string: OsString) -> Cow<'static, str> {
-    Cow::Owned(format!("{string:?}"))
-}
-
-/// X11 DISPLAY sanity check as CSGO prefers to segmentation fault.
-fn check_display() -> Result<(), Error> {
-    env::var_os("DISPLAY").ok_or(Error::NoDisplay)?;
-
-    Ok(())
-}
-
 fn main() {
+    env_logger::init();
+
     if let Err(error) = run() {
-        println!("\x1b[38;5;1merror:\x1b[m {error}");
+        log::error!("failed to even run: {error}");
     }
 }
 
 fn run() -> Result<(), Error> {
+    // CLI options, duh!
     let options = Options::parse();
 
-    check_display()?;
+    // Why even try to continue if you don't even have the game?
+    // Also, we *really* need this path for below.
+    let csgo_dir = util::determine_csgo_dir().ok_or(Error::NoCsgo)?;
 
-    if options.i_agree_to_be_banned {
-        thread::spawn(setup_hooks);
+    // Automatically append "LD_LIBRARY_PATH" otherwise CSGO can't find any libraries!
+    if env::var_os("FUCK_LINKER_PATH").is_none() {
+        let current_exe = env::current_exe().map_err(|_| Error::NoCsgo)?;
+        let mut linker_path = util::var_path("LD_LIBRARY_PATH");
+
+        linker_path.push(csgo_dir.join("bin/linux64"));
+
+        let linker_path = env::join_paths(linker_path).unwrap_or_default();
+
+        Command::new(current_exe)
+            .args(env::args_os().skip(1))
+            .current_dir(csgo_dir)
+            .env("FUCK_LINKER_PATH", ":thumbs_up:")
+            .env("LD_LIBRARY_PATH", linker_path)
+            .exec();
     }
 
+    // X11 `DISPLAY` sanity check as CSGO prefers to segmentation fault.
+    //
+    // In the future, this shouldn't be needed anymore (what v2 aims to implement).
+    env::var_os("DISPLAY").ok_or(Error::NoDisplay)?;
+
+    // Spawn a seperate thread in order to hook functions in modules.
+    thread::spawn(setup);
+
+    // Actually launch the game (bin/linux64/launcher_client.so).
     launcher::launch(options)?;
 
     Ok(())
 }
 
-fn hooked(name: &str) {
-    println!("elysium | hooked \x1b[38;5;2m{name}\x1b[m");
-}
-
-fn console() {
-    let state = State::get();
-    let Interfaces { engine, .. } = state.interfaces.as_ref().unwrap();
-
-    let mut out = std::io::stdout();
-    let mut lines = std::io::stdin().lines().flatten();
-
-    while let Some(line) = {
-        let _ = write!(out, "> ");
-        let _ = out.flush();
-
-        lines.next()
-    } {
-        engine.execute_command(line, true);
-    }
-}
-
-fn is_sdl_loaded() -> bool {
-    let sdl = link::is_module_loaded("libSDL2-2.0.so.0");
-
-    // SDL may not be initialized yet, wait for VGUI to initialize it.
-    let vgui = link::is_module_loaded("vgui2_client.so");
-
-    sdl && vgui
-}
-
-fn is_materials_loaded() -> bool {
-    let materials = link::is_module_loaded("materialsystem_client.so");
-
-    // Client contains `Vdf::from_bytes`, which is needed to create materials.
-    let client = link::is_module_loaded("client_client.so");
-
-    materials && client
-}
-
-fn is_browser_loaded() -> bool {
-    let browser = link::is_module_loaded("serverbrowser_client.so");
-
-    browser
-}
-
-fn sleep_until<F>(f: F)
-where
-    F: Fn() -> bool,
-{
-    while !f() {
-        thread::sleep(Duration::from_millis(100));
-    }
-}
-
-fn setup_hooks() {
-    sleep_until(is_sdl_loaded);
+fn setup() -> Result<(), Error> {
+    // Wait for SDL to load before hooking.
+    util::sleep_until(util::is_sdl_loaded);
 
     let state = State::get();
 
+    // TODO: Clean this mess up.
     use std::collections::HashSet;
     state.world = Some(HashSet::new());
     state.blur = Some(HashSet::new());
@@ -173,8 +127,6 @@ fn setup_hooks() {
 
     state.hooks.swap_window = Some(unsafe { swap_window.replace(hooks::swap_window) });
 
-    hooked("SDL_GL_SwapWindow");
-
     let address = sdl
         .symbol("SDL_PollEvent")
         .expect("SDL_PollEvent")
@@ -187,9 +139,7 @@ fn setup_hooks() {
 
     state.hooks.poll_event = Some(unsafe { poll_event.replace(hooks::poll_event) });
 
-    hooked("SDL_PollEvent");
-
-    sleep_until(is_materials_loaded);
+    util::sleep_until(util::is_materials_loaded);
 
     println!("materials loaded");
 
@@ -287,7 +237,7 @@ fn setup_hooks() {
         materials.hook_find(hooks::find_material);
     }
 
-    sleep_until(is_browser_loaded);
+    util::sleep_until(util::is_browser_loaded);
     println!("browser loaded");
 
     unsafe {
@@ -295,8 +245,6 @@ fn setup_hooks() {
         let state = State::get();
 
         state.interfaces = Some(interfaces);
-
-        thread::spawn(console);
 
         let interfaces = state.interfaces.as_mut().unwrap_unchecked();
 
@@ -308,7 +256,6 @@ fn setup_hooks() {
 
         elysium_mem::unprotect(show, |show, prot| {
             show.replace(show_hook as *const ());
-            hooked("GameConsole::Show");
             prot
         });
 
@@ -367,7 +314,6 @@ fn setup_hooks() {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.create_move = Some(address.replace(hooks::create_move));
-            hooked("CreateMove");
             prot
         });
 
@@ -375,7 +321,6 @@ fn setup_hooks() {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.draw_model = Some(address.replace(hooks::draw_model));
-            hooked("DrawModelExecute");
             prot
         });
 
@@ -385,7 +330,6 @@ fn setup_hooks() {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.frame_stage_notify = Some(address.replace(hooks::frame_stage_notify));
-            hooked("FrameStageNotify");
             prot
         });
 
@@ -393,8 +337,9 @@ fn setup_hooks() {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.override_view = Some(address.replace(hooks::override_view));
-            hooked("OverrideView");
             prot
         });
     }
+
+    Ok(())
 }
