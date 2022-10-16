@@ -7,5 +7,5 @@
 in the directory of where you cloned this:
 
 ```bash
-cargo run
+cargo run -- --help
 ```
