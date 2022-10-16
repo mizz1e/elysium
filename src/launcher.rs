@@ -11,11 +11,13 @@ const LAUNCHER_MAIN: &str = "LauncherMain";
 
 const CONNECT: Cow<'static, CStr> = const_cstr("+connect\0");
 const FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
+const FULLSCREEN: Cow<'static, CStr> = const_cstr("-fullscreen\0");
 const MAP: Cow<'static, CStr> = const_cstr("+map\0");
 const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
 const NO_VIDEO: Cow<'static, CStr> = const_cstr("-novid\0");
 const NO_JOYSTICKS: Cow<'static, CStr> = const_cstr("-nojoy\0");
 const STEAM: Cow<'static, CStr> = const_cstr("-steam\0");
+const WINDOWED: Cow<'static, CStr> = const_cstr("-windowed\0");
 
 #[inline]
 pub fn launch(options: Options) -> Result<(), Error> {
@@ -27,7 +29,6 @@ unsafe fn launch_inner(options: Options) -> Result<(), Error> {
     let mut args = Vec::new();
 
     args.push(NO_BREAKPAD);
-    args.push(NO_VIDEO);
     args.push(NO_JOYSTICKS);
 
     if let Some(address) = options.address {
@@ -46,6 +47,10 @@ unsafe fn launch_inner(options: Options) -> Result<(), Error> {
         args.push(Cow::Owned(fps));
     }
 
+    if options.fullscreen {
+        args.push(FULLSCREEN);
+    }
+
     if let Some(path) = options.map {
         let path = path.into_os_string().into_vec();
 
@@ -55,9 +60,17 @@ unsafe fn launch_inner(options: Options) -> Result<(), Error> {
         }
     }
 
+    if options.skip_launch_video {
+        args.push(NO_VIDEO);
+    }
+
     // NOTE: Omission of `-steam` implies `-insecure`.
     if !options.no_vac {
         args.push(STEAM);
+    }
+
+    if options.windowed {
+        args.push(WINDOWED);
     }
 
     let args = args
