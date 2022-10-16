@@ -217,6 +217,7 @@ dependencies = [
  "iced_glow",
  "iced_native",
  "libc",
+ "libloading",
  "libm",
  "link",
  "log",
@@ -248,6 +249,7 @@ dependencies = [
  "dismal",
  "libc",
  "link",
+ "log",
 ]
 
 [[package]]
@@ -593,6 +595,16 @@ name = "libc"
 version = "0.2.135"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
+
+[[package]]
+name = "libloading"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd"
+dependencies = [
+ "cfg-if",
+ "winapi",
+]
 
 [[package]]
 name = "libm"

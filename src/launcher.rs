@@ -10,6 +10,7 @@ const LAUNCHER_CLIENT: &str = "launcher_client.so";
 const LAUNCHER_MAIN: &str = "LauncherMain";
 
 const CONNECT: Cow<'static, CStr> = const_cstr("+connect\0");
+const DEV: Cow<'static, CStr> = const_cstr("-dev\0");
 const FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
 const FULLSCREEN: Cow<'static, CStr> = const_cstr("-fullscreen\0");
 const MAP: Cow<'static, CStr> = const_cstr("+map\0");
@@ -18,6 +19,8 @@ const NO_VIDEO: Cow<'static, CStr> = const_cstr("-novid\0");
 const NO_JOYSTICKS: Cow<'static, CStr> = const_cstr("-nojoy\0");
 const STEAM: Cow<'static, CStr> = const_cstr("-steam\0");
 const WINDOWED: Cow<'static, CStr> = const_cstr("-windowed\0");
+
+const TEST: Cow<'static, CStr> = const_cstr("-nofbo\0");
 
 #[inline]
 pub fn launch(options: Options) -> Result<(), Error> {
@@ -28,8 +31,10 @@ pub fn launch(options: Options) -> Result<(), Error> {
 unsafe fn launch_inner(options: Options) -> Result<(), Error> {
     let mut args = Vec::new();
 
+    args.push(DEV);
     args.push(NO_BREAKPAD);
     args.push(NO_JOYSTICKS);
+    args.push(TEST);
 
     if let Some(address) = options.address {
         let address = address.to_string();

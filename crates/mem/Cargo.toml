@@ -8,3 +8,4 @@ cake = { branch = "old", default-features = false, git = "https://github.com/ely
 dismal = { default-features = false, git = "https://github.com/elysian6969/dismal" }
 libc = { default-features = false, version = "0.2" }
 link = { default-features = false, git = "https://github.com/elysian6969/link" }
+log = { default-features = false, version = "0.4" }

@@ -40,8 +40,8 @@ where
 /// returns the absolute address.
 #[inline]
 pub fn next_abs_addr<T>(bytes: &[u8]) -> Option<*const T> {
-    let ip = bytes.as_ptr().addr();
-    let insts = InstIter::from_bytes(ip, bytes);
+    let start_ip = bytes.as_ptr().addr();
+    let insts = InstIter::from_bytes(start_ip, bytes);
 
     for inst in insts {
         let ip = inst.ip();
@@ -52,11 +52,20 @@ pub fn next_abs_addr<T>(bytes: &[u8]) -> Option<*const T> {
         if let Some(addr) = abs_addr {
             let addr = ptr::from_exposed_addr(addr);
 
-            println!("elysium | {ip:0x?} {inst:0x?} {bytes:02X?} -> {addr:0x?}",);
+            let ip_diff = ip - start_ip;
+
+            log::trace!("disam {ip:0x?} {inst:0x?} {bytes:02X?} -> {addr:0x?} (we want this)");
+            log::trace!("  start ip = {start_ip:?}");
+            log::trace!("  end ip = {ip:?}");
+            log::trace!("  ip diff = {ip_diff:?}");
+            log::trace!(
+                "  bytes = {:02X?}",
+                bytes.get(..(ip_diff + bytes.len())).unwrap()
+            );
 
             return Some(addr);
         } else {
-            println!("elysium | {ip:0x?} {inst:0x?} {bytes:02X?}");
+            log::trace!("disam {ip:0x?} {inst:0x?} {bytes:02X?} (ignored)");
         }
     }
 

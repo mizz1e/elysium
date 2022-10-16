@@ -22,6 +22,7 @@ use std::borrow::Cow;
 use std::ffi::CStr;
 use std::os::unix::process::CommandExt;
 use std::process::Command;
+use std::time::Instant;
 use std::{env, mem, ptr, thread};
 
 pub use options::Options;
@@ -92,9 +93,50 @@ fn run() -> Result<(), Error> {
     Ok(())
 }
 
+use libloading::Library;
+
+fn glx() -> Option<()> {
+    log::trace!("finding glx proc address");
+
+    let glx = unsafe { Library::new("libGLX.so").ok()? };
+    let proc_addr = unsafe { *glx.get(b"glXGetProcAddress\0").ok()? };
+
+    log::trace!("found glx proc address");
+
+    State::get().proc_address = proc_addr;
+
+    Some(())
+}
+
+fn sdl() -> Option<()> {
+    log::trace!("finding sdl symbols");
+
+    let glx = unsafe { Library::new("libSDL2-2.0.so.0").ok()? };
+    let poll_event = unsafe { *glx.get(b"SDL_PollEvent\0").ok()? };
+    let swap_window = unsafe { *glx.get(b"SDL_GL_SwapWindow\0").ok()? };
+
+    log::trace!("found sdl symbols, finding original methods...");
+
+    let swap_window = unsafe { elysium_mem::next_abs_addr_mut_ptr::<SwapWindow>(swap_window)? };
+    let poll_event = unsafe { elysium_mem::next_abs_addr_mut_ptr::<PollEvent>(poll_event)? };
+
+    log::trace!("found sdl original methods, hooking...");
+
+    let state = State::get();
+
+    state.hooks.swap_window = Some(unsafe { swap_window.replace(hooks::swap_window) });
+    state.hooks.poll_event = Some(unsafe { poll_event.replace(hooks::poll_event) });
+
+    Some(())
+}
+
 fn setup() -> Result<(), Error> {
+    let now = Instant::now();
+
     // Wait for SDL to load before hooking.
     util::sleep_until(util::is_sdl_loaded);
+
+    log::trace!("sdl loaded. took {:?}", now.elapsed());
 
     let state = State::get();
 
@@ -105,43 +147,12 @@ fn setup() -> Result<(), Error> {
     state.blur_static = Some(HashSet::new());
     state.init_time = Some(std::time::Instant::now());
 
-    let glx = unsafe { link::load_module("libGLX.so.0.0.0").expect("libGL.so.0.0.0") };
-    let address = glx
-        .symbol("glXGetProcAddress")
-        .expect("glXGetProcAddress")
-        .symbol
-        .address;
-
-    state.proc_address = unsafe { mem::transmute(address) };
-
-    let sdl = unsafe { link::load_module("libSDL2-2.0.so.0").expect("libSDL2-2.0.so.0") };
-    let address = sdl
-        .symbol("SDL_GL_SwapWindow")
-        .expect("SDL_GL_SwapWindow")
-        .symbol
-        .address;
-
-    let swap_window = unsafe {
-        elysium_mem::next_abs_addr_mut_ptr::<SwapWindow>(address as _).expect("swap_window")
-    };
-
-    state.hooks.swap_window = Some(unsafe { swap_window.replace(hooks::swap_window) });
-
-    let address = sdl
-        .symbol("SDL_PollEvent")
-        .expect("SDL_PollEvent")
-        .symbol
-        .address;
-
-    let poll_event = unsafe {
-        elysium_mem::next_abs_addr_mut_ptr::<PollEvent>(address as _).expect("poll_event")
-    };
-
-    state.hooks.poll_event = Some(unsafe { poll_event.replace(hooks::poll_event) });
+    glx();
+    sdl();
 
     util::sleep_until(util::is_materials_loaded);
 
-    println!("materials loaded");
+    log::trace!("material system loaded. took {:?}", now.elapsed());
 
     let kind = InterfaceKind::Materials;
     let path = kind.library().path();
@@ -238,7 +249,8 @@ fn setup() -> Result<(), Error> {
     }
 
     util::sleep_until(util::is_browser_loaded);
-    println!("browser loaded");
+
+    log::trace!("server browser loaded. took {:?}", now.elapsed());
 
     unsafe {
         let interfaces = library::load_interfaces();
@@ -260,9 +272,6 @@ fn setup() -> Result<(), Error> {
         });
 
         let console = &mut interfaces.console;
-
-        println!("{console:?}");
-
         let client = &interfaces.client;
         let model_render = &interfaces.model_render;
         let materials = &interfaces.materials;
@@ -280,19 +289,17 @@ fn setup() -> Result<(), Error> {
                 Some(var) => {
                     let pointer = var as *const _ as _;
 
-                    println!("convar {name} found at {pointer:?}");
+                    log::info!("convar {name} found at {pointer:?}");
 
                     pointer
                 }
                 None => {
-                    println!("convar {name} missing :warning:");
+                    log::info!("convar {name} missing :warning:");
 
                     ptr::null_mut()
                 }
             }
         });
-
-        println!("{vars:?}");
 
         state.globals = Some(globals);
         state.input = Some(input);
@@ -306,7 +313,9 @@ fn setup() -> Result<(), Error> {
         let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_STATE).unwrap();
         let _animation_state = bytes.as_ptr().byte_add(52).cast::<u32>().read();*/
 
+        log::info!("find cl_move pattern in engine");
         let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
+        log::info!("found cl_move pattern in engine");
 
         state.hooks.cl_move = Some(mem::transmute(bytes.as_ptr()));
 
@@ -314,6 +323,7 @@ fn setup() -> Result<(), Error> {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.create_move = Some(address.replace(hooks::create_move));
+            log::info!("hooked clientmode createmove");
             prot
         });
 
@@ -321,6 +331,7 @@ fn setup() -> Result<(), Error> {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.draw_model = Some(address.replace(hooks::draw_model));
+            log::info!("hooked modelrender dme");
             prot
         });
 
@@ -330,6 +341,7 @@ fn setup() -> Result<(), Error> {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.frame_stage_notify = Some(address.replace(hooks::frame_stage_notify));
+            log::info!("hooked client fsn");
             prot
         });
 
@@ -337,6 +349,7 @@ fn setup() -> Result<(), Error> {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.override_view = Some(address.replace(hooks::override_view));
+            log::info!("hooked clientmode overrideview");
             prot
         });
     }

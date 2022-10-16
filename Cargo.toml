@@ -15,6 +15,7 @@ elysium-sdk = { default-features = false, path = "crates/sdk" }
 env_logger = { default-features = false, features = ["atty", "termcolor"], version = "0.9" }
 iced_glow = { default-features = false, git = "https://github.com/elysian6969/iced" }
 iced_native = { default-features = false, features = ["debug"], git = "https://github.com/elysian6969/iced" }
+libloading = { default-features = false, version = "0.7" }
 libc = { default-features = false, version = "0.2" }
 libm = { default-features = false, git = "https://github.com/elysian6969/libm" }
 link = { default-features = false, git = "https://github.com/elysian6969/link" }
