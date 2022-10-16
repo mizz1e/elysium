@@ -23,5 +23,5 @@ ubuntu users apparently have csgo installed in a different directory, modify the
 
 ```bash
 # ubuntu users apparently have csgo in a different directory(?)
-$ cp "${CARGO_TARGET_DIR:-target}/x86_64-unknown-linux-gnu/release/elysium" "${XDG_DATA_HOME:-${HOME}/.local/share}/debian-installation/steamapps/common/Counter-Strike\ Global\ Offensive/bin/linux64
+$ cp "${CARGO_TARGET_DIR:-target}/x86_64-unknown-linux-gnu/release/elysium" "${XDG_DATA_HOME:-${HOME}/.local/share}/debian-installation/steamapps/common/Counter-Strike\ Global\ Offensive/elysium"
 ```
