@@ -101,6 +101,8 @@ fn update_thirdperson(
 
     state.original_view_angle = local.view_angle();
 
+    let engine_view_angle = state.interfaces.as_ref().unwrap().engine.view_angle();
+
     if input.thirdperson {
         let mut view_angle = local_vars.view_angle;
 
@@ -126,7 +128,7 @@ fn update_thirdperson(
             }
         }
 
-        let mut view_angle = local.view_angle();
+        let mut view_angle = engine_view_angle;
 
         // rotate view model
         view_angle.z = -35.0;
