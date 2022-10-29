@@ -19,6 +19,7 @@ const NO_VIDEO: Cow<'static, CStr> = const_cstr("-novid\0");
 const NO_JOYSTICKS: Cow<'static, CStr> = const_cstr("-nojoy\0");
 const STEAM: Cow<'static, CStr> = const_cstr("-steam\0");
 const WINDOWED: Cow<'static, CStr> = const_cstr("-windowed\0");
+const VULKAN: Cow<'static, CStr> = const_cstr("-vulkan\0");
 
 const TEST: Cow<'static, CStr> = const_cstr("-nofbo\0");
 
@@ -76,6 +77,10 @@ unsafe fn launch_inner(options: Options) -> Result<(), Error> {
 
     if options.windowed {
         args.push(WINDOWED);
+    }
+
+    if options.vulkan {
+        args.push(VULKAN);
     }
 
     let args = args

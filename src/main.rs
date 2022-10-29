@@ -96,6 +96,7 @@ fn run() -> Result<(), Error> {
 
         command_line().parse(args);
 
+        framework.load("client_client.so")?;
         framework.load("engine_client.so")?;
         framework.load("filesystem_stdio_client.so")?;
         framework.load("libvstdlib_client.so")?;
@@ -123,61 +124,35 @@ fn run() -> Result<(), Error> {
     }
 
     unsafe {
+        let module = link::load_module("client_client.so").unwrap();
+        let bytes = module.bytes();
+        let opcode = &pattern::VDF_FROM_BYTES.find(bytes).unwrap().1[..5];
+
+        log::trace!("vdf from_bytes = {opcode:02X?}");
+
+        let ip = opcode.as_ptr().byte_add(1);
+        let reladdr = ip.cast::<i32>().read() as isize;
+        let absaddr = ip.byte_add(4).byte_offset(reladdr);
+
+        Vdf::set_from_bytes(mem::transmute(absaddr));
+    }
+
+    unsafe {
         let materialsystem = PtrMut::clone(&materialsystem).cast::<MaterialSystem>();
         let kind = materialsystem.shader_api_kind();
 
         log::trace!("Shader API: {kind:?}");
 
-        let offset = std::ptr::addr_of!(materialsystem.adapter)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+        let materials: &mut Materials = std::mem::transmute(materialsystem);
 
-        assert_eq!(offset, 0x621);
+        // load what we need
+        materials.init();
 
-        let offset = std::ptr::addr_of!(materialsystem.configuration_flags)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x622);
-
-        let offset = std::ptr::addr_of!(materialsystem.requested_editor_materials)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x63C);
-
-        let offset = std::ptr::addr_of!(materialsystem.shader_api_kind)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x6DB);
-
-        let offset = std::ptr::addr_of!(materialsystem.adapter_flags)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x310C);
-
-        let offset = std::ptr::addr_of!(materialsystem.requested_g_buffers)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x31E1);
-
-        log::trace!("{materialsystem:?}");
+        unsafe {
+            materials.hook_create(hooks::create_material);
+            materials.hook_find(hooks::find_material);
+        }
     }
-
-    /*unsafe {
-        framework.link(
-            PtrMut::clone(&materialsystem),
-            &[
-                ("VCvarQuery001", PtrMut::clone(&cvar_query)),
-                ("VEngineCvar007", PtrMut::clone(&cvar)),
-                ("VFileSystem017", PtrMut::clone(&filesystem)),
-                ("VMaterialSystem080", PtrMut::clone(&materialsystem)),
-            ],
-        )?;
-    }*/
 
     launcher::launch(options)?;
 
@@ -225,7 +200,7 @@ fn setup() -> Result<(), Error> {
     let now = Instant::now();
 
     // Wait for SDL to load before hooking.
-    util::sleep_until(util::is_sdl_loaded);
+    //util::sleep_until(util::is_sdl_loaded);
 
     log::trace!("sdl loaded. took {:?}", now.elapsed());
 
@@ -240,110 +215,6 @@ fn setup() -> Result<(), Error> {
 
     glx();
     sdl();
-
-    unsafe {
-        let module = link::load_module("client_client.so").unwrap();
-        let bytes = module.bytes();
-        let opcode = &pattern::VDF_FROM_BYTES.find(bytes).unwrap().1[..5];
-
-        log::trace!("vdf from_bytes = {opcode:02X?}");
-
-        let ip = opcode.as_ptr().byte_add(1);
-        let reladdr = ip.cast::<i32>().read() as isize;
-        let absaddr = ip.byte_add(4).byte_offset(reladdr);
-
-        Vdf::set_from_bytes(mem::transmute(absaddr));
-    }
-
-    util::sleep_until(util::is_materials_loaded);
-
-    log::trace!("material system loaded. took {:?}", now.elapsed());
-
-    let kind = InterfaceKind::Materials;
-    let path = kind.library().path();
-    let name = kind.name();
-    let module = unsafe { link::load_module(path).expect("materials") };
-    let address = module
-        .symbol("s_pInterfaceRegs")
-        .expect("interface registry")
-        .symbol
-        .address as *const *const Interface;
-
-    let interfaces = unsafe { &**address };
-    let interface = interfaces.get(name);
-    let materials = unsafe { &mut *(interface as *mut Materials) };
-
-    unsafe {
-        // load what we need
-        materials.init();
-    }
-
-    let blood = materials
-        .from_kind("elysium/blood\0", material::Kind::Glow)
-        .unwrap();
-
-    let decal = materials
-        .from_kind("elysium/decal\0", material::Kind::Glow)
-        .unwrap();
-
-    let fire = materials
-        .from_kind("elysium/fire\0", material::Kind::Glow)
-        .unwrap();
-
-    let impact = materials
-        .from_kind("elysium/impact\0", material::Kind::Glow)
-        .unwrap();
-
-    let muzzle_flash = materials
-        .from_kind("elysium/muzzle_flash\0", material::Kind::Glow)
-        .unwrap();
-
-    let path = materials
-        .from_kind("elysium/path\0", material::Kind::Glow)
-        .unwrap();
-
-    let particle = materials
-        .from_kind("elysium/particle\0", material::Kind::Glow)
-        .unwrap();
-
-    let prop = materials
-        .from_kind("elysium/prop\0", material::Kind::Glow)
-        .unwrap();
-
-    let smoke = materials
-        .from_kind("elysium/smoke\0", material::Kind::Glow)
-        .unwrap();
-
-    let tree = materials
-        .from_kind("elysium/tree\0", material::Kind::Glow)
-        .unwrap();
-
-    let flat = materials
-        .from_kind("elysium/flat\0", material::Kind::Flat)
-        .unwrap();
-
-    let glow = materials
-        .from_kind("elysium/glow\0", material::Kind::Glow)
-        .unwrap();
-
-    state::material::BLOOD.store(Some(blood));
-    state::material::DECAL.store(Some(decal));
-    state::material::FIRE.store(Some(fire));
-    state::material::MUZZLE_FLASH.store(Some(muzzle_flash));
-    state::material::PATH.store(Some(path));
-    state::material::IMPACT.store(Some(impact));
-    state::material::PARTICLE.store(Some(particle));
-    state::material::PROP.store(Some(prop));
-    state::material::SMOKE.store(Some(smoke));
-    state::material::TREE.store(Some(tree));
-
-    state::material::FLAT.store(Some(flat));
-    state::material::GLOW.store(Some(glow));
-
-    unsafe {
-        materials.hook_create(hooks::create_material);
-        materials.hook_find(hooks::find_material);
-    }
 
     util::sleep_until(util::is_browser_loaded);
 
