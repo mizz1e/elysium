@@ -1,9 +1,12 @@
+use crate::Error;
 use std::ffi::OsStr;
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::time::Duration;
 use std::{env, fs, thread};
 
-/// Determine the directory CSGO is installed to.
+/// Determine the directory CSGO is installed in.
 pub fn determine_csgo_dir() -> Option<PathBuf> {
     const LIB_DIRS: &str = ".steam/steam/steamapps/libraryfolders.vdf";
     const CSGO_DIR: &str = "steamapps/common/Counter-Strike Global Offensive";
@@ -30,6 +33,32 @@ pub fn determine_csgo_dir() -> Option<PathBuf> {
     let path = path.next()?;
 
     Some(path.join(CSGO_DIR))
+}
+
+// Automatically append "LD_LIBRARY_PATH" otherwise CSGO can't find any libraries!
+pub fn check_linker_path<P>(csgo_dir: P) -> Result<(), Error>
+where
+    P: AsRef<Path>,
+{
+    if env::var_os("SANE_LINKER_PATH").is_some() {
+        return Ok(());
+    }
+
+    let current_exe = env::current_exe().map_err(|_| Error::NoCsgo)?;
+    let mut linker_path = var_path("LD_LIBRARY_PATH");
+
+    linker_path.push(csgo_dir.as_ref().join("csgo/bin/linux64"));
+    linker_path.push(csgo_dir.as_ref().join("bin/linux64"));
+
+    let linker_path = env::join_paths(linker_path).unwrap_or_default();
+    let error = Command::new(current_exe)
+        .args(env::args_os().skip(1))
+        .current_dir(csgo_dir)
+        .env("SANE_LINKER_PATH", "sane")
+        .env("LD_LIBRARY_PATH", linker_path)
+        .exec();
+
+    Err(Error::Io(error))
 }
 
 /// Determine whether SDL has been loaded.

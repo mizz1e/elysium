@@ -1,4 +1,5 @@
 //#![deny(warnings)]
+#![allow(dead_code)]
 #![feature(abi_thiscall)]
 #![feature(bound_map)]
 #![feature(const_fn_floating_point_arithmetic)]
@@ -20,8 +21,6 @@ use error::Error;
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
 use std::borrow::Cow;
 use std::ffi::CStr;
-use std::os::unix::process::CommandExt;
-use std::process::Command;
 use std::time::Instant;
 use std::{env, mem, ptr, thread};
 
@@ -63,21 +62,7 @@ fn run() -> Result<(), Error> {
     let csgo_dir = util::determine_csgo_dir().ok_or(Error::NoCsgo)?;
 
     // Automatically append "LD_LIBRARY_PATH" otherwise CSGO can't find any libraries!
-    if env::var_os("FUCK_LINKER_PATH").is_none() {
-        let current_exe = env::current_exe().map_err(|_| Error::NoCsgo)?;
-        let mut linker_path = util::var_path("LD_LIBRARY_PATH");
-
-        linker_path.push(csgo_dir.join("bin/linux64"));
-
-        let linker_path = env::join_paths(linker_path).unwrap_or_default();
-
-        Command::new(current_exe)
-            .args(env::args_os().skip(1))
-            .current_dir(csgo_dir)
-            .env("FUCK_LINKER_PATH", ":thumbs_up:")
-            .env("LD_LIBRARY_PATH", linker_path)
-            .exec();
-    }
+    util::check_linker_path(&csgo_dir)?;
 
     // X11 `DISPLAY` sanity check as CSGO prefers to segmentation fault.
     //
