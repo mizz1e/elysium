@@ -1,6 +1,7 @@
 //#![deny(warnings)]
 #![allow(dead_code)]
 #![feature(abi_thiscall)]
+#![feature(arbitrary_self_types)]
 #![feature(bound_map)]
 #![feature(const_fn_floating_point_arithmetic)]
 #![feature(const_maybe_uninit_zeroed)]
@@ -9,20 +10,24 @@
 #![feature(mem_copy_fn)]
 #![feature(iter_intersperse)]
 #![feature(pointer_byte_offsets)]
+#![feature(ptr_sub_ptr)]
 #![feature(result_option_inspect)]
 #![feature(sync_unsafe_cell)]
 #![feature(strict_provenance)]
 
-use elysium_sdk::material;
-use elysium_sdk::material::Materials;
-use elysium_sdk::networked;
-use elysium_sdk::{Interface, InterfaceKind, LibraryKind, Vars, Vdf};
 use error::Error;
 use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
+
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::time::Instant;
 use std::{env, mem, ptr, thread};
+
+use elysium_framework::Framework;
+use elysium_sdk::material;
+use elysium_sdk::material::Materials;
+use elysium_sdk::networked;
+use elysium_sdk::{Interface, InterfaceKind, LibraryKind, Vars, Vdf};
 
 pub use options::Options;
 pub use state::State;
@@ -73,6 +78,8 @@ fn run() -> Result<(), Error> {
     thread::spawn(setup);
 
     // Actually launch the game (bin/linux64/launcher_client.so).
+    let _ = run2();
+
     launcher::launch(options)?;
 
     Ok(())
@@ -334,4 +341,343 @@ fn setup() -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+#[repr(C)]
+pub struct CommandLineVTable {
+    _pad0: MaybeUninit<[unsafe extern "C" fn(); 1]>,
+    parse: unsafe extern "C" fn(
+        command_line: Ptr<'_, CommandLine>,
+        len: ffi::c_int,
+        args: *const *const ffi::c_char,
+    ),
+}
+
+#[repr(C)]
+pub struct CommandLine {
+    vtable: &'static CommandLineVTable,
+}
+
+impl CommandLine {
+    pub unsafe fn parse<I, S>(self: Ptr<'_, CommandLine>, args: I)
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        let args = args
+            .into_iter()
+            .map(|arg| std::ffi::CString::new(arg.as_ref()))
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        let args = args
+            .iter()
+            .map(|arg| arg.as_ptr())
+            .chain(Some(std::ptr::null()))
+            .collect::<Vec<_>>();
+
+        let len = args.len() - 1;
+
+        unsafe {
+            (self.vtable.parse)(self, len as ffi::c_int, args.as_ptr());
+        }
+    }
+}
+
+fn run2() -> Result<(), elysium_framework::Error> {
+    let options = Options::parse();
+    let mut framework = Framework::new();
+
+    let tier0 = unsafe { libloading::Library::new("libtier0_client.so").unwrap() };
+
+    unsafe {
+        let command_line: unsafe extern "C" fn() -> Ptr<'static, CommandLine> =
+            *tier0.get(b"CommandLine\0").unwrap();
+
+        let mut args = vec!["-game", "csgo"];
+
+        if options.vulkan {
+            args.push("-vulkan");
+        } else {
+            args.push("-opengl");
+        }
+
+        command_line().parse(args);
+
+        framework.load("engine_client.so")?;
+        framework.load("filesystem_stdio_client.so")?;
+        framework.load("libvstdlib_client.so")?;
+        framework.load("materialsystem_client.so")?;
+        framework.load("studiorender_client.so")?;
+    }
+
+    let mut cvar_query =
+        unsafe { framework.new_interface::<()>("engine_client.so", "VCvarQuery001")? };
+
+    let mut filesystem =
+        unsafe { framework.new_interface::<()>("filesystem_stdio_client.so", "VFileSystem017")? };
+
+    let mut cvar =
+        unsafe { framework.new_interface::<()>("libvstdlib_client.so", "VEngineCvar007")? };
+
+    let materialsystem =
+        unsafe { framework.new_interface::<()>("materialsystem_client.so", "VMaterialSystem080")? };
+
+    unsafe {
+        framework.link(
+            PtrMut::clone(&cvar),
+            &[("VCvarQuery001", PtrMut::clone(&cvar_query))],
+        )?;
+    }
+
+    unsafe {
+        let materialsystem = PtrMut::clone(&materialsystem).cast::<MaterialSystem>();
+        let kind = materialsystem.shader_api_kind();
+
+        log::trace!("Shader API: {kind:?}");
+
+        let offset = std::ptr::addr_of!(materialsystem.adapter)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x621);
+
+        let offset = std::ptr::addr_of!(materialsystem.configuration_flags)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x622);
+
+        let offset = std::ptr::addr_of!(materialsystem.requested_editor_materials)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x63C);
+
+        let offset = std::ptr::addr_of!(materialsystem.shader_api_kind)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x6DB);
+
+        let offset = std::ptr::addr_of!(materialsystem.adapter_flags)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x310C);
+
+        let offset = std::ptr::addr_of!(materialsystem.requested_g_buffers)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x31E1);
+
+        log::trace!("{materialsystem:?}");
+    }
+
+    /*unsafe {
+        framework.link(
+            PtrMut::clone(&materialsystem),
+            &[
+                ("VCvarQuery001", PtrMut::clone(&cvar_query)),
+                ("VEngineCvar007", PtrMut::clone(&cvar)),
+                ("VFileSystem017", PtrMut::clone(&filesystem)),
+                ("VMaterialSystem080", PtrMut::clone(&materialsystem)),
+            ],
+        )?;
+    }*/
+
+    Ok(())
+}
+
+use elysium_ptr::{Ptr, PtrMut};
+use std::ffi;
+use std::mem::MaybeUninit;
+
+type Factory = unsafe extern "C" fn(name: *const ffi::c_char, result: *mut i32) -> *mut u8;
+
+unsafe extern "C" fn factory(_name: *const ffi::c_char, _result: *mut i32) -> *mut u8 {
+    println!("factory called");
+
+    std::ptr::null_mut()
+}
+
+unsafe extern "C" fn create_proxy(
+    _material_proxy: Ptr<'_, MaterialProxyFactory>,
+    _proxy_name: *const ffi::c_char,
+) -> *mut u8 {
+    println!("create proxy called");
+
+    std::ptr::null_mut()
+}
+
+unsafe extern "C" fn delete_proxy(_material_proxy: Ptr<'_, MaterialProxyFactory>, _proxy: *mut u8) {
+    println!("delete proxy called");
+}
+
+#[repr(C)]
+struct MaterialProxyFactoryVTable {
+    create_proxy: unsafe extern "C" fn(
+        material_proxy: Ptr<'_, MaterialProxyFactory>,
+        proxy_name: *const ffi::c_char,
+    ) -> *mut u8,
+    delete_proxy:
+        unsafe extern "C" fn(material_proxy: Ptr<'_, MaterialProxyFactory>, proxy: *mut u8),
+    get_factory: Factory,
+}
+
+#[repr(C)]
+struct MaterialProxyFactory {
+    vtable: &'static MaterialProxyFactoryVTable,
+}
+
+const MATERIAL_PROXY_FACTORY: MaterialProxyFactory = MaterialProxyFactory {
+    vtable: &MaterialProxyFactoryVTable {
+        create_proxy,
+        delete_proxy,
+        get_factory: factory,
+    },
+};
+
+#[repr(C)]
+struct MaterialSystemVTable {
+    _pad0: MaybeUninit<[unsafe extern "C" fn(); 3]>,
+    _init: unsafe extern "C" fn(material_system: PtrMut<'_, MaterialSystem>) -> u32,
+    _pad1: MaybeUninit<[unsafe extern "C" fn(); 6]>,
+    init: unsafe extern "C" fn(
+        material_system: PtrMut<'_, MaterialSystem>,
+        api: *const ffi::c_char,
+        material_proxy_factory: *const MaterialProxyFactory,
+        file_system_factory: Factory,
+        cvar_factory: Factory,
+    ) -> *const u8,
+    _pad2: MaybeUninit<[unsafe extern "C" fn(); 153]>,
+    shader_api_kind: unsafe extern "C" fn(material_system: PtrMut<'_, MaterialSystem>) -> u32,
+}
+
+#[repr(C)]
+struct MaterialSystem {
+    vtable: &'static MaterialSystemVTable,
+    _pad0: MaybeUninit<[u8; 1561]>,
+    adapter: u8,             // 0x621
+    configuration_flags: u8, // 0x622
+    _pad1: MaybeUninit<[u8; 25]>,
+    requested_editor_materials: u8, // 0x63C
+    _pad2: MaybeUninit<[u8; 158]>,
+    shader_api_kind: [u8; 4], // 0x6DB
+    _pad3: MaybeUninit<[u8; 10796]>,
+    adapter_flags: u32, // 0x310C
+    _pad4: MaybeUninit<[u8; 209]>,
+    requested_g_buffers: u8, // 0x31E1
+}
+
+use std::fmt;
+
+impl fmt::Debug for MaterialSystem {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("MaterialSystem")
+            .field("vtable", &(self.vtable as *const MaterialSystemVTable))
+            .field("adapter", &self.adapter)
+            .field("configuration_flags", &self.configuration_flags)
+            .field(
+                "requested_editor_materials",
+                &self.requested_editor_materials,
+            )
+            .field("shader_api_kind", &self.shader_api_kind)
+            .field("adapter_flags", &self.adapter_flags)
+            .field("requested_g_buffers", &self.requested_g_buffers)
+            .finish()
+    }
+}
+
+/// The shader API material system uses.
+///
+/// Refer to `material_system + 0x6DB`, a 32-bit integer.
+#[derive(Debug)]
+#[repr(u32)]
+pub enum ShaderApiKind {
+    /// Use DX9 (OpenGL via ToGL).
+    ///
+    /// Enabled via checking if `CommandLine->FindParm("-opengl")` is non-zero, then setting the
+    /// shader API value to `3`.
+    ///
+    /// XREF `"-opengl"` in `bin/linux64/materialsystem_client.so`.
+    Dx9 = 3,
+
+    /// Use nothing.
+    ///
+    /// Enabled via checking if `CommandLine->FindParm("-noshaderapi")` is non-zero, then setting the
+    /// shader API value to `4`.
+    ///
+    /// XREF `"-noshaderapi"` in `bin/linux64/materialsystem_client.so`.
+    Empty = 4,
+
+    /// Use Vulkan.
+    ///
+    /// Enabled via checking if `CommandLine->FindParm("-vulkan")` is non-zero, then setting the
+    /// shader API value to `2`.
+    ///
+    /// XREF `"-vulkan"` in `bin/linux64/materialsystem_client.so`.
+    Vulkan = 2,
+}
+
+impl ShaderApiKind {
+    pub const fn from_raw(value: u32) -> Option<Self> {
+        if matches!(value, 2 | 3 | 4) {
+            Some(unsafe { Self::from_raw_unchecked(value) })
+        } else {
+            None
+        }
+    }
+
+    pub const unsafe fn from_raw_unchecked(value: u32) -> Self {
+        match value {
+            2 => ShaderApiKind::Dx9,
+            3 => ShaderApiKind::Vulkan,
+            4 => ShaderApiKind::Empty,
+            _ => std::hint::unreachable_unchecked(),
+        }
+    }
+}
+
+impl MaterialSystem {
+    /// Initialize the material system.
+    pub unsafe fn _init(self: &PtrMut<'_, MaterialSystem>) -> Result<(), ()> {
+        let result = (self.vtable._init)(PtrMut::clone(self));
+
+        if result == 1 {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    /// Returns the current shader API kind.
+    pub unsafe fn shader_api_kind(self: &PtrMut<'_, MaterialSystem>) -> ShaderApiKind {
+        let kind = (self.vtable.shader_api_kind)(PtrMut::clone(self));
+
+        ShaderApiKind::from_raw(kind).unwrap()
+    }
+
+    /// Set the shader API module name.
+    ///
+    /// Must be one of `shaderapidx9`, `shaderapivk`, or `shaderapiempty`.
+    ///
+    /// # Safety
+    ///
+    /// Must be called before [`init`].
+    pub unsafe fn set_shader_api(self: &PtrMut<'_, MaterialSystem>, api: &str) -> Result<(), ()> {
+        let _api = std::ffi::CString::new(api).map_err(|_| ())?;
+
+        (self.vtable.init)(
+            PtrMut::clone(self),
+            std::ptr::null(),
+            //api.as_ptr(),
+            &MATERIAL_PROXY_FACTORY,
+            factory,
+            factory,
+        );
+
+        Ok(())
+    }
 }

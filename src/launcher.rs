@@ -11,7 +11,7 @@ const LAUNCHER_MAIN: &str = "LauncherMain";
 
 const CONNECT: Cow<'static, CStr> = const_cstr("+connect\0");
 const DEV: Cow<'static, CStr> = const_cstr("-dev\0");
-const FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
+const MAX_FPS: Cow<'static, CStr> = const_cstr("+fps_max\0");
 const FULLSCREEN: Cow<'static, CStr> = const_cstr("-fullscreen\0");
 const MAP: Cow<'static, CStr> = const_cstr("+map\0");
 const NO_BREAKPAD: Cow<'static, CStr> = const_cstr("-nobreakpad\0");
@@ -45,11 +45,11 @@ unsafe fn launch_inner(options: Options) -> Result<(), Error> {
         }
     }
 
-    let fps = options.fps.to_string();
+    let max_fps = options.max_fps.to_string();
 
-    if let Ok(fps) = CString::new(fps) {
-        args.push(FPS);
-        args.push(Cow::Owned(fps));
+    if let Ok(max_fps) = CString::new(max_fps) {
+        args.push(MAX_FPS);
+        args.push(Cow::Owned(max_fps));
     }
 
     if options.fullscreen {

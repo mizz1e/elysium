@@ -1,30 +1,49 @@
 [package]
 edition = "2021"
 name = "elysium"
-version = "0.0.1"
+version = "0.0.2"
 
 [dependencies]
 cake = { branch = "old", default-features = false, git = "https://github.com/elysian6969/cake" }
-clap = { default-features = false, features = ["color", "derive", "help", "std", "usage"], version = "4.0" }
 crossbeam-utils = { default-features = false, version = "0.8" }
 elysium-input = { default-features = false, path = "crates/input" }
 elysium-math = { default-features = false, path = "crates/math" }
 elysium-mem = { default-features = false, path = "crates/mem" }
 elysium-sdk = { default-features = false, path = "crates/sdk" }
-env_logger = { default-features = false, features = ["atty", "termcolor"], version = "0.9" }
 iced_glow = { default-features = false, git = "https://github.com/elysian6969/iced" }
 iced_native = { default-features = false, features = ["debug"], git = "https://github.com/elysian6969/iced" }
-libloading = { default-features = false, version = "0.7" }
 libc = { default-features = false, version = "0.2" }
 libm = { default-features = false, git = "https://github.com/elysian6969/libm" }
 link = { default-features = false, git = "https://github.com/elysian6969/link" }
-log = { default-features = false, version = "0.4" }
 num-traits = { default-features = false, version = "0.2" }
 palette = { default-features = false, version = "0.6" }
 rand = { default-features = false, version = "0.8" }
 sdl2-sys = { default-features = false, version = "0.35" }
 ubyte = { default-features = false, version = "0.10" }
 vdf = { default-features = false, git = "https://github.com/elysian6969/esteem", rev = "3783f7e560e1a601f7e24859ab49526aaf9da113" }
+
+[dependencies.clap]
+default-features = false
+features = ["color", "derive", "help", "std", "suggestions", "usage"]
+version = "4.0"
+
+[dependencies.elysium-framework]
+path = "crates/framework"
+
+[dependencies.elysium-ptr]
+path = "crates/ptr"
+
+[dependencies.env_logger]
+default-features = false
+features = ["atty", "termcolor"]
+version = "0.9"
+
+[dependencies.libloading]
+version = "0.7"
+
+[dependencies.log]
+default-features = false
+version = "0.4"
 
 [dependencies.once_cell]
 version = "1.16"
@@ -37,8 +56,10 @@ opt-level = 3
 
 [workspace]
 members = [
+    "crates/framework",
     "crates/input",
     "crates/math",
     "crates/mem",
+    "crates/ptr",
     "crates/sdk",
 ]

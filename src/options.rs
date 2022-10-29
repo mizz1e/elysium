@@ -8,10 +8,6 @@ pub struct Options {
     #[clap(long)]
     pub address: Option<SocketAddr>,
 
-    /// Maximum FPS (+fps_max <fps>).
-    #[clap(default_value = "120", long)]
-    pub fps: u16,
-
     /// Start fullscreen (-fullscreen).
     #[clap(long)]
     pub fullscreen: bool,
@@ -19,6 +15,10 @@ pub struct Options {
     /// Specify map to load immediately (+map <map>).
     #[clap(long)]
     pub map: Option<PathBuf>,
+
+    /// Maximum FPS (+fps_max <fps>).
+    #[clap(default_value = "120", long)]
+    pub max_fps: u16,
 
     /// Disable VAC (-insecure).
     #[clap(long)]
@@ -28,6 +28,10 @@ pub struct Options {
     #[clap(long)]
     pub skip_launch_video: bool,
 
+    /// Use vulkan for rendering.
+    #[clap(long)]
+    pub vulkan: bool,
+
     /// Start windowed (-windowed).
     #[clap(long)]
     pub windowed: bool,
@@ -36,6 +40,6 @@ pub struct Options {
 impl Options {
     #[inline]
     pub fn parse() -> Self {
-        <Options as Parser>::parse()
+        <Self as Parser>::parse()
     }
 }
