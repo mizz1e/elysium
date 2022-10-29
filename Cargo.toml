@@ -10,7 +10,6 @@ crossbeam-utils = { default-features = false, version = "0.8" }
 elysium-input = { default-features = false, path = "crates/input" }
 elysium-math = { default-features = false, path = "crates/math" }
 elysium-mem = { default-features = false, path = "crates/mem" }
-elysium-pattern = { default-features = false, path = "crates/pattern" }
 elysium-sdk = { default-features = false, path = "crates/sdk" }
 env_logger = { default-features = false, features = ["atty", "termcolor"], version = "0.9" }
 iced_glow = { default-features = false, git = "https://github.com/elysian6969/iced" }
@@ -27,6 +26,12 @@ sdl2-sys = { default-features = false, version = "0.35" }
 ubyte = { default-features = false, version = "0.10" }
 vdf = { default-features = false, git = "https://github.com/elysian6969/esteem", rev = "3783f7e560e1a601f7e24859ab49526aaf9da113" }
 
+[dependencies.once_cell]
+version = "1.16"
+
+[dependencies.regex]
+version = "1.6"
+
 [profile.dev]
 opt-level = 3
 
@@ -35,6 +40,5 @@ members = [
     "crates/input",
     "crates/math",
     "crates/mem",
-    "crates/pattern",
     "crates/sdk",
 ]

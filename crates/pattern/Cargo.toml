@@ -1,7 +1,0 @@
-[package]
-edition = "2021"
-name = "elysium-pattern"
-version = "0.0.0"
-
-[dependencies]
-regex = { default-features = false, features = ["perf", "std"], version = "1" }

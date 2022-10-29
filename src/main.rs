@@ -135,6 +135,20 @@ fn setup() -> Result<(), Error> {
     glx();
     sdl();
 
+    unsafe {
+        let module = link::load_module("client_client.so").unwrap();
+        let bytes = module.bytes();
+        let opcode = &pattern::VDF_FROM_BYTES.find(bytes).unwrap().1[..5];
+
+        log::trace!("vdf from_bytes = {opcode:02X?}");
+
+        let ip = opcode.as_ptr().byte_add(1);
+        let reladdr = ip.cast::<i32>().read() as isize;
+        let absaddr = ip.byte_add(4).byte_offset(reladdr);
+
+        Vdf::set_from_bytes(mem::transmute(absaddr));
+    }
+
     util::sleep_until(util::is_materials_loaded);
 
     log::trace!("material system loaded. took {:?}", now.elapsed());
@@ -152,14 +166,6 @@ fn setup() -> Result<(), Error> {
     let interfaces = unsafe { &**address };
     let interface = interfaces.get(name);
     let materials = unsafe { &mut *(interface as *mut Materials) };
-
-    unsafe {
-        let bytes = pattern::get(LibraryKind::Client, &pattern::VDF_FROM_BYTES).unwrap();
-        let base = bytes.as_ptr().cast::<i32>().byte_add(1);
-        let new = base.byte_add(4).byte_offset(base.read() as isize);
-
-        Vdf::set_from_bytes(mem::transmute(new));
-    }
 
     unsafe {
         // load what we need
@@ -291,18 +297,6 @@ fn setup() -> Result<(), Error> {
         state.vars = vars.ok();
 
         networked::init(&client);
-
-        /*let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_LAYERS).unwrap();
-        let _animation_layers = bytes.as_ptr().byte_add(35).cast::<u32>().read();
-
-        let bytes = pattern::get(LibraryKind::Client, &pattern::ANIMATION_STATE).unwrap();
-        let _animation_state = bytes.as_ptr().byte_add(52).cast::<u32>().read();*/
-
-        log::info!("find cl_move pattern in engine");
-        let bytes = pattern::get(LibraryKind::Engine, &pattern::CL_MOVE).unwrap();
-        log::info!("found cl_move pattern in engine");
-
-        state.hooks.cl_move = Some(mem::transmute(bytes.as_ptr()));
 
         let address = client.create_move_address().cast::<CreateMove>();
 
