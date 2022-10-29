@@ -213,12 +213,12 @@ fn setup() -> Result<(), Error> {
     state.blur_static = Some(HashSet::new());
     state.init_time = Some(std::time::Instant::now());
 
-    glx();
-    sdl();
-
     util::sleep_until(util::is_browser_loaded);
 
     log::trace!("server browser loaded. took {:?}", now.elapsed());
+
+    glx();
+    sdl();
 
     unsafe {
         let interfaces = library::load_interfaces();
