@@ -78,7 +78,106 @@ fn run() -> Result<(), Error> {
     thread::spawn(setup);
 
     // Actually launch the game (bin/linux64/launcher_client.so).
-    let _ = run2();
+    let mut framework = Framework::new();
+
+    let tier0 = unsafe { libloading::Library::new("libtier0_client.so").unwrap() };
+
+    unsafe {
+        let command_line: unsafe extern "C" fn() -> Ptr<'static, CommandLine> =
+            *tier0.get(b"CommandLine\0").unwrap();
+
+        let mut args = vec!["-game", "csgo"];
+
+        if options.vulkan {
+            args.push("-vulkan");
+        } else {
+            args.push("-opengl");
+        }
+
+        command_line().parse(args);
+
+        framework.load("engine_client.so")?;
+        framework.load("filesystem_stdio_client.so")?;
+        framework.load("libvstdlib_client.so")?;
+        framework.load("materialsystem_client.so")?;
+        framework.load("studiorender_client.so")?;
+    }
+
+    let mut cvar_query =
+        unsafe { framework.new_interface::<()>("engine_client.so", "VCvarQuery001")? };
+
+    let mut filesystem =
+        unsafe { framework.new_interface::<()>("filesystem_stdio_client.so", "VFileSystem017")? };
+
+    let mut cvar =
+        unsafe { framework.new_interface::<()>("libvstdlib_client.so", "VEngineCvar007")? };
+
+    let materialsystem =
+        unsafe { framework.new_interface::<()>("materialsystem_client.so", "VMaterialSystem080")? };
+
+    unsafe {
+        framework.link(
+            PtrMut::clone(&cvar),
+            &[("VCvarQuery001", PtrMut::clone(&cvar_query))],
+        )?;
+    }
+
+    unsafe {
+        let materialsystem = PtrMut::clone(&materialsystem).cast::<MaterialSystem>();
+        let kind = materialsystem.shader_api_kind();
+
+        log::trace!("Shader API: {kind:?}");
+
+        let offset = std::ptr::addr_of!(materialsystem.adapter)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x621);
+
+        let offset = std::ptr::addr_of!(materialsystem.configuration_flags)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x622);
+
+        let offset = std::ptr::addr_of!(materialsystem.requested_editor_materials)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x63C);
+
+        let offset = std::ptr::addr_of!(materialsystem.shader_api_kind)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x6DB);
+
+        let offset = std::ptr::addr_of!(materialsystem.adapter_flags)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x310C);
+
+        let offset = std::ptr::addr_of!(materialsystem.requested_g_buffers)
+            .cast::<u8>()
+            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
+
+        assert_eq!(offset, 0x31E1);
+
+        log::trace!("{materialsystem:?}");
+    }
+
+    /*unsafe {
+        framework.link(
+            PtrMut::clone(&materialsystem),
+            &[
+                ("VCvarQuery001", PtrMut::clone(&cvar_query)),
+                ("VEngineCvar007", PtrMut::clone(&cvar)),
+                ("VFileSystem017", PtrMut::clone(&filesystem)),
+                ("VMaterialSystem080", PtrMut::clone(&materialsystem)),
+            ],
+        )?;
+    }*/
 
     launcher::launch(options)?;
 
@@ -382,112 +481,6 @@ impl CommandLine {
             (self.vtable.parse)(self, len as ffi::c_int, args.as_ptr());
         }
     }
-}
-
-fn run2() -> Result<(), elysium_framework::Error> {
-    let options = Options::parse();
-    let mut framework = Framework::new();
-
-    let tier0 = unsafe { libloading::Library::new("libtier0_client.so").unwrap() };
-
-    unsafe {
-        let command_line: unsafe extern "C" fn() -> Ptr<'static, CommandLine> =
-            *tier0.get(b"CommandLine\0").unwrap();
-
-        let mut args = vec!["-game", "csgo"];
-
-        if options.vulkan {
-            args.push("-vulkan");
-        } else {
-            args.push("-opengl");
-        }
-
-        command_line().parse(args);
-
-        framework.load("engine_client.so")?;
-        framework.load("filesystem_stdio_client.so")?;
-        framework.load("libvstdlib_client.so")?;
-        framework.load("materialsystem_client.so")?;
-        framework.load("studiorender_client.so")?;
-    }
-
-    let mut cvar_query =
-        unsafe { framework.new_interface::<()>("engine_client.so", "VCvarQuery001")? };
-
-    let mut filesystem =
-        unsafe { framework.new_interface::<()>("filesystem_stdio_client.so", "VFileSystem017")? };
-
-    let mut cvar =
-        unsafe { framework.new_interface::<()>("libvstdlib_client.so", "VEngineCvar007")? };
-
-    let materialsystem =
-        unsafe { framework.new_interface::<()>("materialsystem_client.so", "VMaterialSystem080")? };
-
-    unsafe {
-        framework.link(
-            PtrMut::clone(&cvar),
-            &[("VCvarQuery001", PtrMut::clone(&cvar_query))],
-        )?;
-    }
-
-    unsafe {
-        let materialsystem = PtrMut::clone(&materialsystem).cast::<MaterialSystem>();
-        let kind = materialsystem.shader_api_kind();
-
-        log::trace!("Shader API: {kind:?}");
-
-        let offset = std::ptr::addr_of!(materialsystem.adapter)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x621);
-
-        let offset = std::ptr::addr_of!(materialsystem.configuration_flags)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x622);
-
-        let offset = std::ptr::addr_of!(materialsystem.requested_editor_materials)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x63C);
-
-        let offset = std::ptr::addr_of!(materialsystem.shader_api_kind)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x6DB);
-
-        let offset = std::ptr::addr_of!(materialsystem.adapter_flags)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x310C);
-
-        let offset = std::ptr::addr_of!(materialsystem.requested_g_buffers)
-            .cast::<u8>()
-            .sub_ptr(std::ptr::addr_of!(*materialsystem).cast::<u8>());
-
-        assert_eq!(offset, 0x31E1);
-
-        log::trace!("{materialsystem:?}");
-    }
-
-    /*unsafe {
-        framework.link(
-            PtrMut::clone(&materialsystem),
-            &[
-                ("VCvarQuery001", PtrMut::clone(&cvar_query)),
-                ("VEngineCvar007", PtrMut::clone(&cvar)),
-                ("VFileSystem017", PtrMut::clone(&filesystem)),
-                ("VMaterialSystem080", PtrMut::clone(&materialsystem)),
-            ],
-        )?;
-    }*/
-
-    Ok(())
 }
 
 use elysium_ptr::{Ptr, PtrMut};
