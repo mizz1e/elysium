@@ -7,11 +7,10 @@ use iced_native::{clipboard, renderer, Color, Debug, Event, Point};
 
 pub struct Context {
     pub clipboard: Null,
+    pub debug: Debug,
     pub hud: State<Hud>,
-    pub hud_debug: Debug,
     pub hud_renderer: Renderer,
     pub ui: State<Ui>,
-    pub ui_debug: Debug,
     pub ui_renderer: Renderer,
 }
 
@@ -35,43 +34,30 @@ impl Context {
         ));
 
         let clipboard = clipboard::Null;
-        let mut hud_debug = Debug::new();
-        let mut ui_debug = Debug::new();
-
-        hud_debug.toggle();
-
+        let mut debug = Debug::new();
         let hud = Hud::new();
         let ui = Ui::new();
 
-        let hud = State::new(
-            hud,
-            viewport.logical_size(),
-            &mut hud_renderer,
-            &mut hud_debug,
-        );
-
-        let ui = State::new(ui, viewport.logical_size(), &mut ui_renderer, &mut ui_debug);
+        let hud = State::new(hud, viewport.logical_size(), &mut hud_renderer, &mut debug);
+        let ui = State::new(ui, viewport.logical_size(), &mut ui_renderer, &mut debug);
 
         Self {
             clipboard,
+            debug,
             hud,
-            hud_debug,
             hud_renderer,
             ui,
-            ui_debug,
             ui_renderer,
         }
     }
 
     #[inline]
     pub fn draw(&mut self, context: &glow::Context, viewport: Viewport) {
-        let hud_debug = &mut self.hud_debug;
-        let ui_debug = &mut self.ui_debug;
+        const EMPTY: &[&str] = &[];
+
         let hud_renderer = &mut self.hud_renderer;
         let ui_renderer = &mut self.ui_renderer;
         let state = crate::State::get();
-
-        const EMPTY: &[&str] = &[];
 
         if let Some(interfaces) = state.interfaces.as_ref() {
             if interfaces.engine.is_in_game() {
@@ -102,7 +88,7 @@ impl Context {
             &theme,
             &style,
             &mut self.clipboard,
-            &mut self.hud_debug,
+            &mut self.debug,
         );
 
         let state = crate::State::get();
@@ -115,7 +101,7 @@ impl Context {
                 &theme,
                 &style,
                 &mut self.clipboard,
-                &mut self.ui_debug,
+                &mut self.debug,
             );
         }
     }

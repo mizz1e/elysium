@@ -26,7 +26,7 @@ impl Program for Hud {
     type Message = Message;
 
     #[inline]
-    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+    fn update(&mut self, _message: Self::Message) -> Command<Self::Message> {
         Command::none()
     }
 
@@ -181,7 +181,7 @@ impl fmt::Display for FlowStats {
     }
 }
 
-fn view<'a, Message, Renderer>(hud: &Hud) -> widget::Container<'a, Message, Renderer>
+fn view<'a, Message, Renderer>(_hud: &Hud) -> widget::Container<'a, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced_native::Renderer + iced_native::text::Renderer + 'a,

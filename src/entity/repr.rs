@@ -1,11 +1,10 @@
 use super::{PlayerRef, WeaponRef};
-use cake::ffi::VTablePad;
 use core::time::Duration;
 use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, PlayerFlags, Renderable, Team};
 use elysium_sdk::model::Model;
-use elysium_sdk::{networked, object_validate, vtable_validate, HitGroup, WeaponInfo};
+use elysium_sdk::{networked, HitGroup, WeaponInfo};
 use palette::{Srgb, Srgba, WithAlpha};
 use std::ffi::OsStr;
 use std::mem::MaybeUninit;
@@ -16,74 +15,49 @@ pub use exposure::Exposure;
 
 #[repr(C)]
 struct VTable {
-    _pad0: VTablePad<12>,
+    _pad0: MaybeUninit<[unsafe extern "C" fn(); 12]>,
     origin: unsafe extern "thiscall" fn(this: *const EntityRepr) -> *const Vec3,
-    _pad1: VTablePad<98>,
+    _pad1: MaybeUninit<[unsafe extern "C" fn(); 98]>,
     set_model_index: unsafe extern "thiscall" fn(this: *mut EntityRepr, index: i32),
-    _pad2: VTablePad<10>,
+    _pad2: MaybeUninit<[unsafe extern "C" fn(); 10]>,
     attachment:
         unsafe extern "thiscall" fn(this: *const EntityRepr, index: i32, origin: *mut Vec3) -> bool,
-    _pad3: VTablePad<5>,
+    _pad3: MaybeUninit<[unsafe extern "C" fn(); 5]>,
     team: unsafe extern "thiscall" fn(this: *const EntityRepr) -> Team,
-    _pad4: VTablePad<38>,
+    _pad4: MaybeUninit<[unsafe extern "C" fn(); 38]>,
     health: unsafe extern "thiscall" fn(this: *const EntityRepr) -> i32,
-    _pad5: VTablePad<40>,
+    _pad5: MaybeUninit<[unsafe extern "C" fn(); 40]>,
     is_alive: unsafe extern "thiscall" fn(this: *const EntityRepr) -> bool,
-    _pad6: VTablePad<1>,
+    _pad6: MaybeUninit<[unsafe extern "C" fn(); 1]>,
     is_player: unsafe extern "thiscall" fn(this: *const EntityRepr) -> bool,
-    _pad7: VTablePad<7>,
+    _pad7: MaybeUninit<[unsafe extern "C" fn(); 7]>,
     is_weapon: unsafe extern "thiscall" fn(this: *const EntityRepr) -> bool,
-    _pad8: VTablePad<112>,
+    _pad8: MaybeUninit<[unsafe extern "C" fn(); 112]>,
     active_weapon: unsafe extern "thiscall" fn(this: *const EntityRepr) -> *const EntityRepr,
-    _pad9: VTablePad<16>,
+    _pad9: MaybeUninit<[unsafe extern "C" fn(); 16]>,
     eye_pos: unsafe extern "thiscall" fn(this: *const EntityRepr) -> Vec3,
-    _pad10: VTablePad<1>,
+    _pad10: MaybeUninit<[unsafe extern "C" fn(); 1]>,
     weapon_sub_kind: unsafe extern "thiscall" fn(this: *const EntityRepr) -> i32,
-    _pad11: VTablePad<6>,
+    _pad11: MaybeUninit<[unsafe extern "C" fn(); 6]>,
     observer_mode: unsafe extern "thiscall" fn(this: *const EntityRepr) -> ObserverMode,
     observer_target: unsafe extern "thiscall" fn(this: *const EntityRepr) -> *const EntityRepr,
-    _pad12: VTablePad<50>,
+    _pad12: MaybeUninit<[unsafe extern "C" fn(); 50]>,
     aim_punch: unsafe extern "thiscall" fn(this: *const EntityRepr) -> Vec3,
-    _pad13: VTablePad<62>,
+    _pad13: MaybeUninit<[unsafe extern "C" fn(); 62]>,
     draw_crosshair: unsafe extern "thiscall" fn(this: *const EntityRepr),
-    _pad14: VTablePad<48>,
+    _pad14: MaybeUninit<[unsafe extern "C" fn(); 48]>,
     spread: unsafe extern "thiscall" fn(this: *const EntityRepr) -> f32,
-    _pad15: VTablePad<1>,
+    _pad15: MaybeUninit<[unsafe extern "C" fn(); 1]>,
     weapon_kind: unsafe extern "thiscall" fn(this: *const EntityRepr) -> i32,
-    _pad16: VTablePad<5>,
+    _pad16: MaybeUninit<[unsafe extern "C" fn(); 5]>,
     weapon_data: unsafe extern "thiscall" fn(this: *const EntityRepr) -> *const WeaponInfo,
-    _pad17: VTablePad<6>,
+    _pad17: MaybeUninit<[unsafe extern "C" fn(); 6]>,
     muzzle_attachment_index_1st:
         unsafe extern "thiscall" fn(this: *const EntityRepr, view_model: *const EntityRepr) -> i32,
     muzzle_attachment_index_3rd: unsafe extern "thiscall" fn(this: *const EntityRepr) -> i32,
-    _pad18: VTablePad<13>,
+    _pad18: MaybeUninit<[unsafe extern "C" fn(); 13]>,
     inaccuracy: unsafe extern "thiscall" fn(this: *const EntityRepr) -> f32,
     update_accuracy_penalty: unsafe extern "thiscall" fn(this: *mut EntityRepr),
-}
-
-vtable_validate! {
-    origin => 12,
-    set_model_index => 111,
-    attachment => 122,
-    team => 128,
-    health => 167,
-    is_alive => 208,
-    is_player => 210,
-    is_weapon => 218,
-    active_weapon => 331,
-    eye_pos => 348,
-    weapon_sub_kind => 350,
-    observer_mode => 357,
-    observer_target => 358,
-    aim_punch => 409,
-    draw_crosshair => 472,
-    spread => 521,
-    weapon_kind => 523,
-    weapon_data => 529,
-    muzzle_attachment_index_1st => 536,
-    muzzle_attachment_index_3rd => 537,
-    inaccuracy => 551,
-    update_accuracy_penalty => 552,
 }
 
 #[repr(C)]
@@ -91,13 +65,6 @@ pub(super) struct EntityRepr {
     vtable: &'static VTable,
     renderable: Renderable,
     networkable: Networkable,
-}
-
-object_validate! {
-    EntityRepr;
-    vtable => 0,
-    renderable => 8,
-    networkable => 16,
 }
 
 // generic
@@ -272,7 +239,7 @@ impl EntityRepr {
 
         // why is this bgr??
         let [b, g, r, _] = rgb.to_ne_bytes();
-        let rgb = u32::from_ne_bytes([r, g, b, 0]);
+        let _rgb = u32::from_ne_bytes([r, g, b, 0]);
 
         //networked::write!(self, fog.rgb, rgb);
         networked::write!(self, fog.alpha, alpha);

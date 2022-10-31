@@ -1,5 +1,8 @@
 use crate::state::material;
-use core::ffi;
+
+use std::ffi::CStr;
+use std::{ffi, str};
+
 use elysium_sdk::material::{BorrowedMaterial, Group, Material, Materials};
 
 pub unsafe extern "C" fn find_material(
@@ -9,13 +12,13 @@ pub unsafe extern "C" fn find_material(
     _complain: bool,
     _complain_prefix: *const ffi::c_char,
 ) -> Option<&'static mut Material> {
-    let name = cake::ffi::CUtf8Str::from_ptr(name_pointer).as_str();
+    let name = CStr::from_ptr(name_pointer).to_bytes();
+    let name = str::from_utf8(name).unwrap();
+
     let group = if group_pointer.is_null() {
         None
     } else {
-        Some(Group::from_bytes(
-            cake::ffi::CBytes::from_ptr(group_pointer).as_bytes(),
-        ))
+        Some(Group::from_bytes(CStr::from_ptr(group_pointer).to_bytes()))
     };
 
     let state = crate::State::get();

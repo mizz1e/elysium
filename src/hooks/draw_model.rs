@@ -112,14 +112,12 @@ unsafe fn draw_model_inner(
     bone_to_world: *const Matrix3x4,
 ) -> Option<()> {
     let state = State::get();
-    let draw_model_original = state.hooks.draw_model?;
     let interfaces = state.interfaces.as_ref()?;
     let entity_list = &interfaces.entity_list;
     let model_info = &interfaces.model_info;
-    let materials = &interfaces.materials;
     let local = PlayerRef::from_raw(state.local.player)?;
 
-    let flat = state::material::FLAT.load_unchecked();
+    let _flat = state::material::FLAT.load_unchecked();
     let glow = state::material::GLOW.load_unchecked();
 
     let info = info.as_ref()?;

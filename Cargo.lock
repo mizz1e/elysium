@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "ab_glyph"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04a9283dace1c41c265496614998d5b9c4a97b3eb770e804f007c5144bf03f2b"
+checksum = "4dcdbc68024b653943864d436fe8a24b028095bc1cf91a8926f8241e4aaffe59"
 dependencies = [
  "ab_glyph_rasterizer",
  "owned_ttf_parser",
@@ -67,15 +67,15 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bumpalo"
-version = "3.11.0"
+version = "3.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1ad822118d20d2c234f427000d5acc36eabe1e29a348c89b63dd60b13f28e5d"
+checksum = "572f695136211188308f16ad2ca5c851a712c464060ae6974944458eb83880ba"
 
 [[package]]
 name = "bytemuck"
-version = "1.12.1"
+version = "1.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f5715e491b5a1598fc2bef5a606847b5dc1d48ea625bd3c02c00de8285591da"
+checksum = "5aec14f5d4e6e3f927cd0c81f72e5710d95ee9019fbeb4b3021193867491bfd8"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -94,7 +94,12 @@ dependencies = [
 [[package]]
 name = "cake"
 version = "0.0.0"
-source = "git+https://github.com/elysian6969/cake?branch=old#e314cbaac7c4de3e34c55706bcb6a891dea3e82e"
+source = "git+https://github.com/elysian6969/cake?branch=old#da031e4c1e43e7cbc9cac691f313830916916378"
+
+[[package]]
+name = "cake"
+version = "0.0.0"
+source = "git+https://github.com/elysian6969/cake?rev=da031e4c1e43e7cbc9cac691f313830916916378#da031e4c1e43e7cbc9cac691f313830916916378"
 
 [[package]]
 name = "cfg-if"
@@ -104,9 +109,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap"
-version = "4.0.15"
+version = "4.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bf8832993da70a4c6d13c581f4463c2bdda27b9bf1c5498dc4365543abe6d6f"
+checksum = "335867764ed2de42325fafe6d18b8af74ba97ee0c590fa016f157535b42ab04b"
 dependencies = [
  "atty",
  "bitflags",
@@ -119,9 +124,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.0.13"
+version = "4.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42f169caba89a7d512b5418b09864543eeb4d497416c917d7137863bd2076ad"
+checksum = "16a1b0f6422af32d5da0c58e2703320f379216ee70198241c84173a8c5ac28f3"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -193,7 +198,7 @@ name = "dismal"
 version = "0.0.0"
 source = "git+https://github.com/elysian6969/dismal#0da494047408f07218a165ce8ac0c508fa0b4d99"
 dependencies = [
- "cake",
+ "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
 ]
 
 [[package]]
@@ -206,7 +211,6 @@ checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 name = "elysium"
 version = "0.0.2"
 dependencies = [
- "cake",
  "clap",
  "crossbeam-utils",
  "elysium-framework",
@@ -221,7 +225,7 @@ dependencies = [
  "libc",
  "libloading",
  "libm",
- "link",
+ "link 0.0.0 (git+https://github.com/elysian6969/link?rev=02127c0516ec4f2a69a220f3a405787369d44b5e)",
  "log",
  "num-traits",
  "once_cell",
@@ -258,10 +262,10 @@ version = "0.0.0"
 name = "elysium-mem"
 version = "0.0.0"
 dependencies = [
- "cake",
+ "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
  "dismal",
  "libc",
- "link",
+ "link 0.0.0 (git+https://github.com/elysian6969/link)",
  "log",
 ]
 
@@ -273,7 +277,7 @@ version = "0.0.2"
 name = "elysium-sdk"
 version = "0.0.0"
 dependencies = [
- "cake",
+ "cake 0.0.0 (git+https://github.com/elysian6969/cake?rev=da031e4c1e43e7cbc9cac691f313830916916378)",
  "crossbeam-utils",
  "elysium-math",
  "elysium-mem",
@@ -318,9 +322,9 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "futures"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f21eda599937fba36daeb58a22e8f5cee2d14c4a17b5b7739c7c8e5e3b8230c"
+checksum = "38390104763dc37a5145a53c29c63c1290b5d316d6086ec32c293f6736051bb0"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -333,9 +337,9 @@ dependencies = [
 
 [[package]]
 name = "futures-channel"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30bdd20c28fadd505d0fd6712cdfcb0d4b5648baf45faef7f852afb2399bb050"
+checksum = "52ba265a92256105f45b719605a571ffe2d1f0fea3807304b522c1d778f79eed"
 dependencies = [
  "futures-core",
  "futures-sink",
@@ -343,15 +347,15 @@ dependencies = [
 
 [[package]]
 name = "futures-core"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e5aa3de05362c3fb88de6531e6296e85cde7739cccad4b9dfeeb7f6ebce56bf"
+checksum = "04909a7a7e4633ae6c4a9ab280aeb86da1236243a77b694a49eacd659a4bd3ac"
 
 [[package]]
 name = "futures-executor"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ff63c23854bee61b6e9cd331d523909f238fc7636290b96826e9cfa5faa00ab"
+checksum = "7acc85df6714c176ab5edf386123fafe217be88c0840ec11f199441134a074e2"
 dependencies = [
  "futures-core",
  "futures-task",
@@ -361,15 +365,15 @@ dependencies = [
 
 [[package]]
 name = "futures-io"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbf4d2a7a308fd4578637c0b17c7e1c7ba127b8f6ba00b29f717e9655d85eb68"
+checksum = "00f5fb52a06bdcadeb54e8d3671f8888a39697dcb0b81b23b55174030427f4eb"
 
 [[package]]
 name = "futures-macro"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42cd15d1c7456c04dbdf7e88bcd69760d74f3a798d6444e16974b505b0e62f17"
+checksum = "bdfb8ce053d86b91919aad980c220b1fb8401a9394410e1c289ed7e66b61835d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -378,21 +382,21 @@ dependencies = [
 
 [[package]]
 name = "futures-sink"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b20ba5a92e727ba30e72834706623d94ac93a725410b6a6b6fbc1b07f7ba56"
+checksum = "39c15cf1a4aa79df40f1bb462fb39676d0ad9e366c2a33b590d7c66f4f81fcf9"
 
 [[package]]
 name = "futures-task"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6508c467c73851293f390476d4491cf4d227dbabcd4170f3bb6044959b294f1"
+checksum = "2ffb393ac5d9a6eaa9d3fdf37ae2776656b706e200c8e16b1bdb227f5198e6ea"
 
 [[package]]
 name = "futures-util"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44fb6cb1be61cc1d2e43b262516aafcf63b241cffdb1d3fa115f91d9c7b09c90"
+checksum = "197676987abd2f9cadff84926f410af1c183608d36641465df73ae8211dc65d6"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -408,9 +412,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
+checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
 dependencies = [
  "cfg-if",
  "libc",
@@ -507,7 +511,7 @@ dependencies = [
 [[package]]
 name = "iced_core"
 version = "0.5.0"
-source = "git+https://github.com/elysian6969/iced#e798a66afba3dac5b20e3b77c297d7881a6c1003"
+source = "git+https://github.com/iced-rs/iced?rev=ac6a3cf8eb77df69cbb6538900786faca778cf05#ac6a3cf8eb77df69cbb6538900786faca778cf05"
 dependencies = [
  "bitflags",
  "palette",
@@ -517,7 +521,7 @@ dependencies = [
 [[package]]
 name = "iced_futures"
 version = "0.4.1"
-source = "git+https://github.com/elysian6969/iced#e798a66afba3dac5b20e3b77c297d7881a6c1003"
+source = "git+https://github.com/iced-rs/iced?rev=ac6a3cf8eb77df69cbb6538900786faca778cf05#ac6a3cf8eb77df69cbb6538900786faca778cf05"
 dependencies = [
  "futures",
  "log",
@@ -528,7 +532,7 @@ dependencies = [
 [[package]]
 name = "iced_glow"
 version = "0.3.0"
-source = "git+https://github.com/elysian6969/iced#e798a66afba3dac5b20e3b77c297d7881a6c1003"
+source = "git+https://github.com/iced-rs/iced?rev=ac6a3cf8eb77df69cbb6538900786faca778cf05#ac6a3cf8eb77df69cbb6538900786faca778cf05"
 dependencies = [
  "bytemuck",
  "euclid",
@@ -543,7 +547,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.3.1"
-source = "git+https://github.com/elysian6969/iced#e798a66afba3dac5b20e3b77c297d7881a6c1003"
+source = "git+https://github.com/iced-rs/iced?rev=ac6a3cf8eb77df69cbb6538900786faca778cf05#ac6a3cf8eb77df69cbb6538900786faca778cf05"
 dependencies = [
  "bytemuck",
  "glam",
@@ -556,7 +560,7 @@ dependencies = [
 [[package]]
 name = "iced_native"
 version = "0.5.1"
-source = "git+https://github.com/elysian6969/iced#e798a66afba3dac5b20e3b77c297d7881a6c1003"
+source = "git+https://github.com/iced-rs/iced?rev=ac6a3cf8eb77df69cbb6538900786faca778cf05#ac6a3cf8eb77df69cbb6538900786faca778cf05"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -569,7 +573,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.4.0"
-source = "git+https://github.com/elysian6969/iced#e798a66afba3dac5b20e3b77c297d7881a6c1003"
+source = "git+https://github.com/iced-rs/iced?rev=ac6a3cf8eb77df69cbb6538900786faca778cf05#ac6a3cf8eb77df69cbb6538900786faca778cf05"
 dependencies = [
  "iced_core",
  "lazy_static",
@@ -602,9 +606,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.135"
+version = "0.2.137"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
+checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
 
 [[package]]
 name = "libloading"
@@ -618,15 +622,26 @@ dependencies = [
 
 [[package]]
 name = "libm"
-version = "0.2.1"
-source = "git+https://github.com/elysian6969/libm#19bbd0a1806e79ddd3fc70a21797d508bbf1d745"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "292a948cd991e376cf75541fe5b97a1081d713c618b4f1b9500f8844e49eb565"
 
 [[package]]
 name = "link"
 version = "0.0.0"
-source = "git+https://github.com/elysian6969/link#b05b0bfa5dbdaa7f7e19466e123eefcb8fba1a11"
+source = "git+https://github.com/elysian6969/link?rev=02127c0516ec4f2a69a220f3a405787369d44b5e#02127c0516ec4f2a69a220f3a405787369d44b5e"
 dependencies = [
- "cake",
+ "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
+ "libc",
+ "memchr",
+]
+
+[[package]]
+name = "link"
+version = "0.0.0"
+source = "git+https://github.com/elysian6969/link#02127c0516ec4f2a69a220f3a405787369d44b5e"
+dependencies = [
+ "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
  "libc",
  "memchr",
 ]
@@ -721,24 +736,24 @@ checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
 
 [[package]]
 name = "ordered-float"
-version = "3.2.0"
+version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "129d36517b53c461acc6e1580aeb919c8ae6708a4b1eae61c4463a615d4f0411"
+checksum = "1f74e330193f90ec45e2b257fa3ef6df087784157ac1ad2c1e71c62837b03aa7"
 dependencies = [
  "num-traits",
 ]
 
 [[package]]
 name = "os_str_bytes"
-version = "6.3.0"
+version = "6.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
+checksum = "3baf96e39c5359d2eb0dd6ccb42c62b91d9678aa68160d261b9e0ccbf9e9dea9"
 
 [[package]]
 name = "owned_ttf_parser"
-version = "0.15.2"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05e6affeb1632d6ff6a23d2cd40ffed138e82f1532571a26f527c8a284bb2fbb"
+checksum = "4665508572151759e8d60404e20dc096ef93a99801a05ac2ac6e43bf5b4ca187"
 dependencies = [
  "ttf-parser",
 ]
@@ -1008,9 +1023,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.145"
+version = "1.0.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "728eb6351430bccb993660dfffc5a72f91ccc1295abaa8ce19b27ebe4f75568b"
+checksum = "d193d69bae983fc11a79df82342761dfbf28a99fc8d203dca4c3c1b590948965"
 
 [[package]]
 name = "siphasher"
@@ -1056,9 +1071,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "syn"
-version = "1.0.102"
+version = "1.0.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fcd952facd492f9be3ef0d0b7032a6e442ee9b361d4acc2b1d0c4aaa5f613a1"
+checksum = "a864042229133ada95abf3b54fdc62ef5ccabe9515b64717bcb9a1919e59445d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1105,9 +1120,9 @@ dependencies = [
 
 [[package]]
 name = "ttf-parser"
-version = "0.15.2"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b3e06c9b9d80ed6b745c7159c40b311ad2916abb34a49e9be2653b90db0d8dd"
+checksum = "375812fa44dab6df41c195cd2f7fecb488f6c09fbaafb62807488cefab642bff"
 
 [[package]]
 name = "twox-hash"

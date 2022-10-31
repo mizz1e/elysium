@@ -44,18 +44,60 @@ where
         return Ok(());
     }
 
+    let csgo_dir = csgo_dir.as_ref();
     let current_exe = env::current_exe().map_err(|_| Error::NoCsgo)?;
     let mut linker_path = var_path("LD_LIBRARY_PATH");
 
-    linker_path.push(csgo_dir.as_ref().join("csgo/bin/linux64"));
-    linker_path.push(csgo_dir.as_ref().join("bin/linux64"));
+    let steam_dir = csgo_dir.ancestors().nth(3).ok_or(Error::NoCsgo)?;
+
+    /*/ely/data/Steam/ubuntu12_32
+    /ely/data/Steam/ubuntu12_32/panorama
+    /ely/data/Steam/ubuntu12_32/steam-runtime/pinned_libs_32
+    /ely/data/Steam/ubuntu12_32/steam-runtime/pinned_libs_64
+    /usr/lib/gcc/x86_64-pc-linux-gnu/11.3.0
+    /usr/lib/gcc/x86_64-pc-linux-gnu/11.3.0/32
+    /lib64
+    /usr/lib64
+    /usr/local/lib64
+    /lib
+    /usr/lib
+    /usr/local/lib
+    /usr/lib/llvm/14/lib
+    /usr/lib/llvm/14/lib64
+    /ely/data/Steam/ubuntu12_32/steam-runtime/lib/i386-linux-gnu
+    /ely/data/Steam/ubuntu12_32/steam-runtime/usr/lib/i386-linux-gnu
+    /ely/data/Steam/ubuntu12_32/steam-runtime/lib/x86_64-linux-gnu
+    /ely/data/Steam/ubuntu12_32/steam-runtime/usr/lib/x86_64-linux-gnu
+    /ely/data/Steam/ubuntu12_32/steam-runtime/lib
+    /ely/data/Steam/ubuntu12_32/steam-runtime/usr/lib*/
+
+    linker_path.insert(0, csgo_dir.join("bin/linux64"));
+
+    linker_path.insert(0, csgo_dir.join("csgo/bin/linux64"));
+
+    linker_path.insert(
+        0,
+        steam_dir.join("ubuntu12_32/steam-runtime/lib/x86_64-linux-gnu"),
+    );
+
+    linker_path.insert(
+        0,
+        steam_dir.join("ubuntu12_32/steam-runtime/usr/lib/x86_64-linux-gnu"),
+    );
+
+    linker_path.insert(
+        0,
+        steam_dir.join("ubuntu12_32/steam-runtime/pinned_libs_64"),
+    );
+
+    linker_path.insert(0, steam_dir.join("ubuntu12_32/panorama"));
 
     let linker_path = env::join_paths(linker_path).unwrap_or_default();
     let error = Command::new(current_exe)
         .args(env::args_os().skip(1))
         .current_dir(csgo_dir)
         .env("SANE_LINKER_PATH", "sane")
-        .env("LD_LIBRARY_PATH", linker_path)
+        .env("LD_LIBRARY_PATH", dbg!(linker_path))
         .exec();
 
     Err(Error::Io(error))

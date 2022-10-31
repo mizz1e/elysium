@@ -24,10 +24,9 @@ use std::time::Instant;
 use std::{env, mem, ptr, thread};
 
 use elysium_framework::Framework;
-use elysium_sdk::material;
 use elysium_sdk::material::Materials;
 use elysium_sdk::networked;
-use elysium_sdk::{Interface, InterfaceKind, LibraryKind, Vars, Vdf};
+use elysium_sdk::{Vars, Vdf};
 
 pub use options::Options;
 pub use state::State;
@@ -104,14 +103,12 @@ fn run() -> Result<(), Error> {
         framework.load("studiorender_client.so")?;
     }
 
-    let mut cvar_query =
-        unsafe { framework.new_interface::<()>("engine_client.so", "VCvarQuery001")? };
+    let cvar_query = unsafe { framework.new_interface::<()>("engine_client.so", "VCvarQuery001")? };
 
-    let mut filesystem =
+    let _filesystem =
         unsafe { framework.new_interface::<()>("filesystem_stdio_client.so", "VFileSystem017")? };
 
-    let mut cvar =
-        unsafe { framework.new_interface::<()>("libvstdlib_client.so", "VEngineCvar007")? };
+    let cvar = unsafe { framework.new_interface::<()>("libvstdlib_client.so", "VEngineCvar007")? };
 
     let materialsystem =
         unsafe { framework.new_interface::<()>("materialsystem_client.so", "VMaterialSystem080")? };
@@ -148,10 +145,8 @@ fn run() -> Result<(), Error> {
         // load what we need
         materials.init();
 
-        unsafe {
-            materials.hook_create(hooks::create_material);
-            materials.hook_find(hooks::find_material);
-        }
+        materials.hook_create(hooks::create_material);
+        materials.hook_find(hooks::find_material);
     }
 
     launcher::launch(options)?;
@@ -227,23 +222,9 @@ fn setup() -> Result<(), Error> {
         state.interfaces = Some(interfaces);
 
         let interfaces = state.interfaces.as_mut().unwrap_unchecked();
-
-        let show = interfaces.game_console.show_address();
-
-        unsafe extern "C" fn show_hook(this: *const ()) {
-            println!("show console");
-        }
-
-        elysium_mem::unprotect(show, |show, prot| {
-            show.replace(show_hook as *const ());
-            prot
-        });
-
         let console = &mut interfaces.console;
         let client = &interfaces.client;
         let model_render = &interfaces.model_render;
-        let materials = &interfaces.materials;
-
         let globals = &mut *(client.globals() as *mut _);
         let input = &mut *(client.input() as *mut _);
 

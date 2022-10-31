@@ -1,5 +1,6 @@
-use std::ffi;
+use std::ffi::CStr;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::{ffi, str};
 
 use elysium_sdk::material::{BorrowedMaterial, Kind, Material, Materials};
 use elysium_sdk::Vdf;
@@ -49,7 +50,8 @@ pub unsafe extern "C" fn create_material(
         );
     }
 
-    let name = cake::ffi::CUtf8Str::from_ptr(name_pointer).as_str();
+    let name = CStr::from_ptr(name_pointer).to_bytes();
+    let name = std::str::from_utf8(name).unwrap();
     let state = crate::State::get();
 
     if name.contains("blur") {

@@ -4,7 +4,7 @@ use crate::{state, State};
 use elysium_sdk::entity::EntityId;
 use elysium_sdk::{material, Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
 
-fn update_vars(vars: &mut Vars, engine: &Engine) {
+fn update_vars(vars: &mut Vars, _engine: &Engine) {
     let state = State::get();
 
     state.ffa = vars.ffa.read();
@@ -27,12 +27,6 @@ fn update_vars(vars: &mut Vars, engine: &Engine) {
     vars.html_motd.write(true);
     vars.freeze_cam.write(true);
     vars.panorama_blur.write(true);
-
-    let show_hud = !engine.is_in_game();
-
-    // TODO: do more hud stuff before disabling (e.g. hook console write)
-    //vars.hud.write(show_hud);
-    //vars.vgui.write(show_hud);
 
     //vars.other_models.write(2);
 
@@ -226,12 +220,8 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     let Interfaces {
         engine,
         entity_list,
-        input_system,
-        surface,
         ..
     } = state.interfaces.as_ref().unwrap();
-
-    let globals = state.globals.as_ref().unwrap();
 
     if engine.is_in_game() && !state.new_game {
         state.new_game = false;
@@ -289,7 +279,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
     let input = state.input.as_mut().unwrap();
     let vars = state.vars.as_mut().unwrap();
     let local_vars = &mut state.local;
-    let is_menu_open = state.menu_open.0;
     let frame = match Frame::from_raw(frame) {
         Some(frame) => frame,
         None => panic!("unexpected frame variant: {frame:?}"),
@@ -299,16 +288,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
 
     // force vars
     update_vars(vars, engine);
-
-    if engine.is_in_game() {
-        if state.menu_open.0 {
-            //vars.vgui.write(false);
-            //engine.execute_command("showconsole\0", true);
-        } else {
-            //vars.vgui.write(true);
-            //engine.execute_command("hideconsole\0", true);
-        }
-    }
 
     local_vars.player = entity_list.local_player(engine).cast();
 

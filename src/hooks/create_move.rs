@@ -85,11 +85,9 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
     command.random_seed = 0;
 
     let do_attack = command.in_attack();
-    let do_duck = command.in_duck();
     let do_jump = command.in_jump();
     let on_ground = local.flags().on_ground();
     let was_attacking = local_vars.was_attacking;
-    let was_jumping = local_vars.was_jumping;
     let side = if command.command % 2 != 0 { 1.0 } else { -1.0 };
 
     local_vars.was_attacking = do_attack;
@@ -212,7 +210,6 @@ unsafe fn create_move_inner(
 ) -> Option<()> {
     let state = State::get();
     let create_move_original = state.hooks.create_move?;
-    let globals = state.globals.as_ref()?;
 
     (create_move_original)(this, sample, command);
 
