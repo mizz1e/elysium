@@ -3,8 +3,10 @@ use std::ffi::OsStr;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Duration;
 use std::{env, fs, thread};
+use std::time::Duration;
+
+const SANE_LINKER_PATH: &str = "SANE_LINKER_PATH";
 
 /// Determine the directory CSGO is installed in.
 pub fn determine_csgo_dir() -> Option<PathBuf> {
@@ -25,82 +27,79 @@ pub fn determine_csgo_dir() -> Option<PathBuf> {
             Some(key)
         });
 
-        let has_csgo = apps.position(|app| app == 730).is_some();
-
-        has_csgo.then(|| Path::new(path))
+        apps.position(|app| app == 730).map(|_| Path::new(path))
     });
 
-    let path = path.next()?;
+    let path = path.next()?.join(CSGO_DIR);
 
-    Some(path.join(CSGO_DIR))
+    if env::var_os(SANE_LINKER_PATH).is_none() {
+        log::info!("found csgo at {path:?}");
+    }
+
+    Some(path)
 }
 
-// Automatically append "LD_LIBRARY_PATH" otherwise CSGO can't find any libraries!
-pub fn check_linker_path<P>(csgo_dir: P) -> Result<(), Error>
-where
-    P: AsRef<Path>,
-{
-    if env::var_os("SANE_LINKER_PATH").is_some() {
+/// X11 `DISPLAY` sanity check as CSGO prefers to segmentation fault.
+pub fn check_display() -> Result<(), Error> {
+    env::var_os("DISPLAY").ok_or(Error::NoDisplay)?;
+
+    Ok(())
+}
+
+/// Automatically append `LD_LIBRARY_PATH` otherwise CSGO can't find any libraries, and likes to
+/// segmentation fault!!
+pub fn check_linker_path(csgo_dir: impl AsRef<Path>) -> Result<(), Error> {
+    const LD_LIBRARY_PATH: &str = "LD_LIBRARY_PATH";
+    const BIN_LINUX64: &str = "bin/linux64";
+    const CSGO_BIN_LINUX64: &str = "csgo/bin/linux64";
+    const STEAM_RT_LIB: &str = "ubuntu12_32/steam-runtime/lib/x86_64-linux-gnu";
+    const STEAM_RT_USR_LIB: &str = "ubuntu12_32/steam-runtime/usr/lib/x86_64-linux-gnu";
+    const STEAM_RT_PINNED: &str = "ubuntu12_32/steam-runtime/pinned_libs_64";
+    const STEAM_RT_PANORAMA: &str = "ubuntu12_32/panorama";
+
+    if env::var_os(SANE_LINKER_PATH).is_some() {
         return Ok(());
     }
 
     let csgo_dir = csgo_dir.as_ref();
     let current_exe = env::current_exe().map_err(|_| Error::NoCsgo)?;
-    let mut linker_path = var_path("LD_LIBRARY_PATH");
-
     let steam_dir = csgo_dir.ancestors().nth(3).ok_or(Error::NoCsgo)?;
+    let mut linker_path = var_path(LD_LIBRARY_PATH);
 
-    /*/ely/data/Steam/ubuntu12_32
-    /ely/data/Steam/ubuntu12_32/panorama
-    /ely/data/Steam/ubuntu12_32/steam-runtime/pinned_libs_32
-    /ely/data/Steam/ubuntu12_32/steam-runtime/pinned_libs_64
-    /usr/lib/gcc/x86_64-pc-linux-gnu/11.3.0
-    /usr/lib/gcc/x86_64-pc-linux-gnu/11.3.0/32
-    /lib64
-    /usr/lib64
-    /usr/local/lib64
-    /lib
-    /usr/lib
-    /usr/local/lib
-    /usr/lib/llvm/14/lib
-    /usr/lib/llvm/14/lib64
-    /ely/data/Steam/ubuntu12_32/steam-runtime/lib/i386-linux-gnu
-    /ely/data/Steam/ubuntu12_32/steam-runtime/usr/lib/i386-linux-gnu
-    /ely/data/Steam/ubuntu12_32/steam-runtime/lib/x86_64-linux-gnu
-    /ely/data/Steam/ubuntu12_32/steam-runtime/usr/lib/x86_64-linux-gnu
-    /ely/data/Steam/ubuntu12_32/steam-runtime/lib
-    /ely/data/Steam/ubuntu12_32/steam-runtime/usr/lib*/
-
-    linker_path.insert(0, csgo_dir.join("bin/linux64"));
-
-    linker_path.insert(0, csgo_dir.join("csgo/bin/linux64"));
-
-    linker_path.insert(
-        0,
-        steam_dir.join("ubuntu12_32/steam-runtime/lib/x86_64-linux-gnu"),
-    );
-
-    linker_path.insert(
-        0,
-        steam_dir.join("ubuntu12_32/steam-runtime/usr/lib/x86_64-linux-gnu"),
-    );
-
-    linker_path.insert(
-        0,
-        steam_dir.join("ubuntu12_32/steam-runtime/pinned_libs_64"),
-    );
-
-    linker_path.insert(0, steam_dir.join("ubuntu12_32/panorama"));
+    linker_path.insert(0, csgo_dir.join(BIN_LINUX64));
+    linker_path.insert(0, csgo_dir.join(CSGO_BIN_LINUX64));
+    linker_path.insert(0, steam_dir.join(STEAM_RT_LIB));
+    linker_path.insert(0, steam_dir.join(STEAM_RT_USR_LIB));
+    linker_path.insert(0, steam_dir.join(STEAM_RT_PINNED));
+    linker_path.insert(0, steam_dir.join(STEAM_RT_PANORAMA));
 
     let linker_path = env::join_paths(linker_path).unwrap_or_default();
+
+    log::info!("set environment variable {LD_LIBRARY_PATH:?} to {linker_path:?}");
+
+    log::info!(
+        "re-executing self (glibc does not respect chaning {LD_LIBRARY_PATH:?} during program execution)"
+    );
+
     let error = Command::new(current_exe)
         .args(env::args_os().skip(1))
         .current_dir(csgo_dir)
-        .env("SANE_LINKER_PATH", "sane")
-        .env("LD_LIBRARY_PATH", dbg!(linker_path))
+        .env(SANE_LINKER_PATH, "sane")
+        .env(LD_LIBRARY_PATH, linker_path)
         .exec();
 
     Err(Error::Io(error))
+}
+
+/// Fetches the environment variable `key` from the current process, parsing it as a `PATH`,
+/// returning an empty `Vec` if the variable isn’t set or there’s another error.
+pub fn var_path<K: AsRef<OsStr>>(key: K) -> Vec<PathBuf> {
+    let path = match env::var_os(key) {
+        Some(path) => path,
+        None => return Vec::new(),
+    };
+
+    env::split_paths(&path).collect()
 }
 
 /// Determine whether SDL has been loaded.
@@ -140,15 +139,4 @@ where
     while !f() {
         thread::sleep(Duration::from_millis(100));
     }
-}
-
-/// Fetches the environment variable `key` from the current process, parsing it as a `PATH`,
-/// returning an empty `Vec` if the variable isn’t set or there’s another error.
-pub fn var_path<K: AsRef<OsStr>>(key: K) -> Vec<PathBuf> {
-    let path = match env::var_os(key) {
-        Some(path) => path,
-        None => return Vec::new(),
-    };
-
-    env::split_paths(&path).collect()
 }
