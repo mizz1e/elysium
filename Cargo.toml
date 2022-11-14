@@ -39,12 +39,10 @@ features = ["atty", "termcolor"]
 version = "0.9"
 
 [dependencies.iced_glow]
-git = "https://github.com/iced-rs/iced"
-rev = "ac6a3cf8eb77df69cbb6538900786faca778cf05"
+version = "0.4"
 
 [dependencies.iced_native]
-git = "https://github.com/iced-rs/iced"
-rev = "ac6a3cf8eb77df69cbb6538900786faca778cf05"
+version = "0.6"
 
 [dependencies.libc]
 version = "0.2"

@@ -1,11 +1,11 @@
 [package]
+
 edition = "2021"
 name = "elysium-input"
 version = "0.0.0"
 
 [dependencies.iced_native]
-git = "https://github.com/iced-rs/iced"
-rev = "ac6a3cf8eb77df69cbb6538900786faca778cf05"
+version = "0.6"
 
 [dependencies.sdl2-sys]
 version = "0.35"

@@ -2,7 +2,6 @@ use crate::anti_aim::Pitch;
 use crate::State;
 use core::ops::RangeInclusive;
 use iced_glow::Renderer;
-use iced_native::theme::Container;
 use iced_native::{widget, Command, Element, Length, Program};
 
 pub struct Ui;
@@ -151,14 +150,14 @@ impl Program for Ui {
             .center_x()
             .center_y()
             .padding(20)
-            .style(Container::Custom(style::menu));
+            .style(style::custom(style::menu));
 
         let overlay = widget::container(menu)
             .center_x()
             .center_y()
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(Container::Custom(style::overlay));
+            .style(style::custom(style::overlay));
 
         overlay.into()
     }
@@ -166,16 +165,21 @@ impl Program for Ui {
 
 mod style {
     use iced_native::widget::container;
-    use iced_native::{Background, Color, Theme};
+    use iced_native::{color, theme, Background, Color, Theme};
+
+    #[inline]
+    pub fn custom(f: fn(&Theme) -> container::Appearance) -> theme::Container {
+        theme::Container::Custom(Box::from(f))
+    }
 
     #[inline]
     pub fn menu(_theme: &Theme) -> container::Appearance {
-        background(Color::from_rgba8(0x00, 0x00, 0x00, 0.7))
+        background(color!(0x000000, 0.7))
     }
 
     #[inline]
     pub fn overlay(_theme: &Theme) -> container::Appearance {
-        background(Color::from_rgba8(0, 0, 0, 0.2))
+        background(color!(0x000000, 0.2))
     }
 
     #[inline]

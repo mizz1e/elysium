@@ -1,4 +1,4 @@
-use iced_native::{renderer, text, widget};
+use iced_native::{overlay, renderer, text, widget};
 use num_traits::FromPrimitive;
 use std::borrow::Cow;
 use std::fmt::Display;
@@ -34,7 +34,9 @@ where
     [T]: ToOwned<Owned = Vec<T>>,
     Message: 'a,
     Renderer: text::Renderer + 'a,
-    Renderer::Theme: widget::pick_list::StyleSheet + widget::text::StyleSheet,
+    Renderer::Theme: overlay::menu::StyleSheet + widget::container::StyleSheet + widget::pick_list::StyleSheet + widget::text::StyleSheet,
+    <<Renderer as iced_native::Renderer>::Theme as iced_native::overlay::menu::StyleSheet>::Style: From<<<Renderer as iced_native::Renderer>::Theme as iced_native::widget::pick_list::StyleSheet>::Style>,
+    <Renderer as iced_native::Renderer>::Theme: iced_native::widget::scrollable::StyleSheet
 {
     let text = widget::text(label);
     let pick_list = widget::pick_list(options, selected, on_selected);

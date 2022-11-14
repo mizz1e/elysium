@@ -3,8 +3,8 @@ use std::ffi::OsStr;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::{env, fs, thread};
 use std::time::Duration;
+use std::{env, fs, thread};
 
 const SANE_LINKER_PATH: &str = "SANE_LINKER_PATH";
 
