@@ -183,6 +183,8 @@ pub struct FrameStageNotify(pub(crate) unsafe extern "C" fn(*const u8, ffi::c_in
 
 /// `FrameStageNotify` hook.
 pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: ffi::c_int) {
+    debug_assert!(!this.is_null());
+
     let frame_stage_notify = elysium_sdk::with_app_mut(|app| {
         match frame {
             FRAME_RENDER_START => app.update(),

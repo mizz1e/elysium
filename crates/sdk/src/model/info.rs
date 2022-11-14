@@ -1,4 +1,4 @@
-use super::{Hdr, Model, ModelRenderInfo};
+use super::{Model, ModelRenderInfo, StudioHeader};
 use crate::{ffi, vtable_validate};
 use cake::ffi::{CUtf8Str, VTablePad};
 use std::ffi::OsStr;
@@ -21,7 +21,10 @@ struct VTable {
         materials: *mut *mut u8,
     ),
     _pad2: VTablePad<12>,
-    studio: unsafe extern "thiscall" fn(this: *const ModelInfo, model: *const Model) -> *const Hdr,
+    studio: unsafe extern "thiscall" fn(
+        this: *const ModelInfo,
+        model: *const Model,
+    ) -> *const StudioHeader,
 }
 
 vtable_validate! {
@@ -78,7 +81,7 @@ impl ModelInfo {
 
     /// Returns the studio model.
     #[inline]
-    pub fn studio(&self, model: &Model) -> *const Hdr {
+    pub fn studio(&self, model: &Model) -> *const StudioHeader {
         unsafe { (self.vtable.studio)(self, model) }
     }
 }
