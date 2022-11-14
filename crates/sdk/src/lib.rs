@@ -1,5 +1,5 @@
-#![deny(warnings)]
 #![allow(incomplete_features)]
+#![deny(warnings)]
 #![feature(abi_thiscall)]
 #![feature(decl_macro)]
 #![feature(const_convert)]
@@ -31,6 +31,7 @@ pub use engine::{Engine, PlayerInfo};
 pub use entity::EntityList;
 pub use frame::Frame;
 pub use game_console::GameConsole;
+pub use global::{set_app, with_app, with_app_mut};
 pub use globals::Globals;
 pub use hit_group::HitGroup;
 pub use id::SteamId;
@@ -39,6 +40,7 @@ pub use input_system::InputSystem;
 pub use interfaces::{Interface, InterfaceKind, Interfaces, LibraryKind};
 pub use item_kind::ItemKind;
 pub use network::{Flow, NetworkChannel};
+pub use ptr::Ptr;
 pub use render::{OverrideKind, Render};
 pub use sound::{ActiveChannels, Channel};
 pub use steam::SteamAPIContext;
@@ -53,8 +55,6 @@ pub use vdf::Vdf;
 pub use view::View;
 pub use weapon::{WeaponInfo, WeaponKind};
 
-//pub use panorama::{PanoramaEventRegistration, PanoramaUIEngine, UIEngine, UIPanel};
-
 mod animation_layer;
 mod animation_state;
 mod atomic_mut;
@@ -64,6 +64,7 @@ mod console;
 mod engine;
 mod frame;
 mod game_console;
+mod global;
 mod globals;
 mod hit_group;
 mod input_system;
@@ -71,7 +72,6 @@ mod interfaces;
 mod item_kind;
 mod macros;
 pub mod networked;
-//mod panorama;
 mod physics;
 mod render;
 mod sound;
@@ -96,33 +96,61 @@ pub mod material;
 pub mod model;
 pub mod network;
 pub mod player_model;
+pub mod ptr;
 pub mod trace;
 
+/// TODO
 #[derive(Debug)]
 pub struct Debug;
+
+/// TODO
 #[derive(Debug)]
 pub struct Effects;
+
+/// TODO
 #[derive(Debug)]
 pub struct Events;
+
+/// TODO
 #[derive(Debug)]
 pub struct Filesystem;
+
+/// TODO
 #[derive(Debug)]
 pub struct InputInternal;
+
+/// TODO
 #[derive(Debug)]
 pub struct Kinds;
+
+/// TODO
 #[derive(Debug)]
 pub struct Localize;
+
+/// TODO
 #[derive(Debug)]
 pub struct Movement;
+
+/// TODO
 #[derive(Debug)]
 pub struct Panel;
+
+/// TODO
 #[derive(Debug)]
 pub struct Panorama;
+
+/// TODO
 #[derive(Debug)]
 pub struct Physics;
+
+/// TODO
 #[derive(Debug)]
 pub struct Prediction;
+
+/// TODO
 #[derive(Debug)]
 pub struct Sound;
+
+/// TODO
 #[derive(Debug)]
 pub struct VGui;

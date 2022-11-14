@@ -15,18 +15,17 @@
 #![feature(sync_unsafe_cell)]
 #![feature(strict_provenance)]
 
-use error::Error;
-use state::{CreateMove, DrawModel, FrameStageNotify, OverrideView, PollEvent, SwapWindow};
-
-use std::borrow::Cow;
-use std::ffi::CStr;
-use std::time::Instant;
-use std::{env, mem, ptr, thread};
-
+use bevy::prelude::*;
 use elysium_framework::Framework;
 use elysium_sdk::material::Materials;
 use elysium_sdk::networked;
 use elysium_sdk::{Vars, Vdf};
+use error::Error;
+use state::{CreateMove, DrawModel, OverrideView, PollEvent, SwapWindow};
+use std::borrow::Cow;
+use std::ffi::CStr;
+use std::time::Instant;
+use std::{env, mem, ptr, thread};
 
 pub use options::Options;
 pub use state::State;
@@ -50,10 +49,14 @@ const fn const_cstr(string: &'static str) -> Cow<'static, CStr> {
 }
 
 fn main() {
-    env_logger::init();
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins);
+
+    elysium_sdk::set_app(app);
 
     if let Err(error) = run() {
-        log::error!("failed to even run: {error}");
+        tracing::error!("failed to even run: {error}");
     }
 }
 
@@ -125,7 +128,7 @@ fn run() -> Result<(), Error> {
         let bytes = module.bytes();
         let opcode = &pattern::VDF_FROM_BYTES.find(bytes).unwrap().1[..5];
 
-        log::trace!("vdf from_bytes = {opcode:02X?}");
+        tracing::trace!("vdf from_bytes = {opcode:02X?}");
 
         let ip = opcode.as_ptr().byte_add(1);
         let reladdr = ip.cast::<i32>().read() as isize;
@@ -138,7 +141,7 @@ fn run() -> Result<(), Error> {
         let materialsystem = PtrMut::clone(&materialsystem).cast::<MaterialSystem>();
         let kind = materialsystem.shader_api_kind();
 
-        log::trace!("Shader API: {kind:?}");
+        tracing::trace!("Shader API: {kind:?}");
 
         let materials: &mut Materials = std::mem::transmute(materialsystem);
 
@@ -157,12 +160,12 @@ fn run() -> Result<(), Error> {
 use libloading::Library;
 
 fn glx() -> Option<()> {
-    log::trace!("finding glx proc address");
+    tracing::trace!("finding glx proc address");
 
     let glx = unsafe { Library::new("libGLX.so").ok()? };
     let proc_addr = unsafe { *glx.get(b"glXGetProcAddress\0").ok()? };
 
-    log::trace!("found glx proc address");
+    tracing::trace!("found glx proc address");
 
     State::get().proc_address = proc_addr;
 
@@ -170,18 +173,18 @@ fn glx() -> Option<()> {
 }
 
 fn sdl() -> Option<()> {
-    log::trace!("finding sdl symbols");
+    tracing::trace!("finding sdl symbols");
 
     let glx = unsafe { Library::new("libSDL2-2.0.so.0").ok()? };
     let poll_event = unsafe { *glx.get(b"SDL_PollEvent\0").ok()? };
     let swap_window = unsafe { *glx.get(b"SDL_GL_SwapWindow\0").ok()? };
 
-    log::trace!("found sdl symbols, finding original methods...");
+    tracing::trace!("found sdl symbols, finding original methods...");
 
     let swap_window = unsafe { elysium_mem::next_abs_addr_mut_ptr::<SwapWindow>(swap_window)? };
     let poll_event = unsafe { elysium_mem::next_abs_addr_mut_ptr::<PollEvent>(poll_event)? };
 
-    log::trace!("found sdl original methods, hooking...");
+    tracing::trace!("found sdl original methods, hooking...");
 
     let state = State::get();
 
@@ -197,7 +200,7 @@ fn setup() -> Result<(), Error> {
     // Wait for SDL to load before hooking.
     //util::sleep_until(util::is_sdl_loaded);
 
-    log::trace!("sdl loaded. took {:?}", now.elapsed());
+    tracing::trace!("sdl loaded. took {:?}", now.elapsed());
 
     let state = State::get();
 
@@ -210,7 +213,7 @@ fn setup() -> Result<(), Error> {
 
     util::sleep_until(util::is_browser_loaded);
 
-    log::trace!("server browser loaded. took {:?}", now.elapsed());
+    tracing::trace!("server browser loaded. took {:?}", now.elapsed());
 
     glx();
     sdl();
@@ -238,12 +241,12 @@ fn setup() -> Result<(), Error> {
                 Some(var) => {
                     let pointer = var as *const _ as _;
 
-                    log::info!("convar {name} found at {pointer:?}");
+                    tracing::info!("convar {name} found at {pointer:?}");
 
                     pointer
                 }
                 None => {
-                    log::info!("convar {name} missing :warning:");
+                    tracing::info!("convar {name} missing :warning:");
 
                     ptr::null_mut()
                 }
@@ -260,7 +263,7 @@ fn setup() -> Result<(), Error> {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.create_move = Some(address.replace(hooks::create_move));
-            log::info!("hooked clientmode createmove");
+            tracing::info!("hooked clientmode createmove");
             prot
         });
 
@@ -268,25 +271,23 @@ fn setup() -> Result<(), Error> {
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.draw_model = Some(address.replace(hooks::draw_model));
-            log::info!("hooked modelrender dme");
+            tracing::info!("hooked modelrender dme");
             prot
         });
 
-        let address = client
-            .frame_stage_notify_address()
-            .cast::<FrameStageNotify>();
+        let address = client.frame_stage_notify_address().cast();
 
-        elysium_mem::unprotect(address, |address, prot| {
-            state.hooks.frame_stage_notify = Some(address.replace(hooks::frame_stage_notify));
-            log::info!("hooked client fsn");
-            prot
+        elysium_sdk::with_app_mut(|app| {
+            app.insert_resource(hooks::FrameStageNotify(
+                elysium_sdk::ptr::replace_protected(address, hooks::frame_stage_notify),
+            ));
         });
 
         let address = client.override_view_address().cast::<OverrideView>();
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.override_view = Some(address.replace(hooks::override_view));
-            log::info!("hooked clientmode overrideview");
+            tracing::info!("hooked clientmode overrideview");
             prot
         });
     }

@@ -15,6 +15,10 @@ default-features = false
 features = ["color", "derive", "help", "std", "suggestions", "usage"]
 version = "4.0"
 
+[dependencies.bevy]
+default-features = false
+version = "0.8"
+
 [dependencies.elysium-framework]
 path = "crates/framework"
 
@@ -32,11 +36,6 @@ path = "crates/ptr"
 
 [dependencies.elysium-sdk]
 path = "crates/sdk"
-
-[dependencies.env_logger]
-default-features = false
-features = ["atty", "termcolor"]
-version = "0.9"
 
 [dependencies.iced_glow]
 version = "0.4"
@@ -58,10 +57,6 @@ default-features = false
 git = "https://github.com/elysian6969/link"
 rev = "02127c0516ec4f2a69a220f3a405787369d44b5e"
 
-[dependencies.log]
-default-features = false
-version = "0.4"
-
 [dependencies.once_cell]
 version = "1.16"
 
@@ -70,6 +65,11 @@ version = "1.6"
 
 [dependencies.sdl2-sys]
 version = "0.35"
+
+[dependencies.tracing]
+default-features = false
+features = ["std"]
+version = "0.1"
 
 [dependencies.ubyte]
 version = "0.10"

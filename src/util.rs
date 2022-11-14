@@ -33,7 +33,7 @@ pub fn determine_csgo_dir() -> Option<PathBuf> {
     let path = path.next()?.join(CSGO_DIR);
 
     if env::var_os(SANE_LINKER_PATH).is_none() {
-        log::info!("found csgo at {path:?}");
+        tracing::info!("found csgo at {path:?}");
     }
 
     Some(path)
@@ -75,9 +75,9 @@ pub fn check_linker_path(csgo_dir: impl AsRef<Path>) -> Result<(), Error> {
 
     let linker_path = env::join_paths(linker_path).unwrap_or_default();
 
-    log::info!("set environment variable {LD_LIBRARY_PATH:?} to {linker_path:?}");
+    tracing::info!("set environment variable {LD_LIBRARY_PATH:?} to {linker_path:?}");
 
-    log::info!(
+    tracing::info!(
         "re-executing self (glibc does not respect chaning {LD_LIBRARY_PATH:?} during program execution)"
     );
 

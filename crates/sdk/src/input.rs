@@ -5,23 +5,123 @@ use cake::ffi::{BytePad, VTablePad};
 use core::{fmt, ptr};
 use elysium_math::Vec3;
 
-pub use button::Button;
 pub use joystick::Joystick;
 pub use mouse::Mouse;
 pub use state::State;
 
-mod button;
 mod joystick;
 mod mouse;
 mod state;
 
-pub const IN_ATTACK: i32 = 1 << 0;
-pub const IN_JUMP: i32 = 1 << 1;
-pub const IN_DUCK: i32 = 1 << 2;
-pub const IN_BULLRUSH: i32 = 1 << 22;
-pub const IN_LEFT: i32 = 1 << 9;
-pub const IN_RIGHT: i32 = 1 << 10;
-pub const IN_ATTACK2: i32 = 1 << 11;
+bitflags::bitflags! {
+    /// Movement state flags.
+    ///
+    /// [`game/shared/in_buttons.h`](https://github.com/alliedmodders/hl2sdk/blob/csgo/game/shared/in_buttons.h).
+    #[repr(transparent)]
+    pub struct Button: i32 {
+        /// Attack with the current weapon.
+        ///
+        /// You cannot attack if you do not have any weapons.
+        const ATTACK = 1 << 0;
+
+        /// Jump.
+        ///
+        /// You can only jump if you are on the ground.
+        const JUMP = 1 << 1;
+
+        /// Duck (Go into a crouching position).
+        const DUCK = 1 << 2;
+
+        /// Move forward.
+        ///
+        /// Used for animations.
+        const MOVE_FORWARD = 1 << 3;
+
+        /// Move backward.
+        ///
+        /// Used for animations.
+        const MOVE_BACKWARD = 1 << 4;
+
+        /// Interact with something.
+        ///
+        /// Plant a bomb, defuse a bomb, open a door, so on.
+        const USE = 1 << 5;
+
+        /// TODO.
+        const CANCEL = 1 << 6;
+
+        /// TODO.
+        const LEFT = 1 << 7;
+
+        /// TODO.
+        const RIGHT = 1 << 8;
+
+        /// Move to the left.
+        ///
+        /// Used for animations.
+        const MOVE_LEFT = 1 << 9;
+
+        /// Move to the right.
+        ///
+        /// Used for animations.
+        const MOVE_RIGHT = 1 << 10;
+
+        /// Secondary attack with the current weapon.
+        ///
+        /// Switch firing mode, quick fire a revolver, etc.
+        ///
+        /// You cannot attack if you do not have any weapons.
+        const ATTACK_SECONDARY = 1 << 11;
+
+        /// TODO.
+        const RUN = 1 << 12;
+
+        /// Reload the current weapon.
+        ///
+        /// You cannot reload if you do not have any weapons.
+        const RELOAD = 1 << 13;
+
+        /// TODO.
+        const ALT = 1 << 14;
+
+        /// TODO.
+        const ALT_SECONDARY = 1 << 15;
+
+        /// TODO.
+        const SCOREBOARD = 1 << 16;
+
+        /// TODO.
+        const SPEED = 1 << 17;
+
+        /// TODO.
+        const WALK = 1 << 18;
+
+        /// TODO.
+        const ZOOM = 1 << 19;
+
+        /// TODO.
+        const WEAPON = 1 << 20;
+
+        /// TODO.
+        const WEAPON_SECONDARY = 1 << 21;
+
+        /// Enables fast duck.
+        ///
+        /// Must be enabled for the duration of ducking normally.
+        ///
+        /// See [`CCSGameMovement::CheckParameters` in `game/shared/cstrike15/cs_gamemovement.cpp`](https://github.com/elysian6969/cstrike/blob/master/game/shared/cstrike15/cs_gamemovement.cpp#L169) for why this works.
+        const FAST_DUCK = 1 << 22;
+
+        /// TODO.
+        const GRENADE = 1 << 23;
+
+        /// TODO.
+        const GRENADE_SECONDARY = 1 << 24;
+
+        /// TODO.
+        const LOOK_SPIN = 1 << 25;
+    }
+}
 
 #[derive(Debug)]
 #[repr(C)]
@@ -32,7 +132,7 @@ pub struct Command {
     pub view_angle: Vec3,
     pub aim_direction: Vec3,
     pub movement: Vec3,
-    state: i32,
+    pub buttons: Button,
     pub impulse: u8,
     pub weapon_select: i32,
     pub weapon_subtype: i32,
@@ -42,72 +142,6 @@ pub struct Command {
     pub has_been_predicted: bool,
     pub head_angles: Vec3,
     pub head_offset: Vec3,
-}
-
-impl Command {
-    #[inline]
-    const fn has(&self, flag: i32) -> bool {
-        (self.state & flag) != 0
-    }
-
-    #[inline]
-    const fn set(&mut self, flag: i32, value: bool) {
-        if value {
-            self.state |= flag;
-        } else {
-            self.state &= !flag;
-        }
-    }
-
-    #[inline]
-    pub const fn in_attack(&self) -> bool {
-        self.has(IN_ATTACK)
-    }
-
-    #[inline]
-    pub const fn in_attack2(&self) -> bool {
-        self.has(IN_ATTACK2)
-    }
-
-    #[inline]
-    pub const fn in_jump(&self) -> bool {
-        self.has(IN_JUMP)
-    }
-
-    #[inline]
-    pub const fn in_duck(&self) -> bool {
-        self.has(IN_DUCK)
-    }
-
-    #[inline]
-    pub const fn in_fast_duck(&self) -> bool {
-        self.has(IN_BULLRUSH)
-    }
-
-    #[inline]
-    pub const fn attack(&mut self, value: bool) {
-        self.set(IN_ATTACK, value)
-    }
-
-    #[inline]
-    pub const fn attack2(&mut self, value: bool) {
-        self.set(IN_ATTACK2, value)
-    }
-
-    #[inline]
-    pub const fn jump(&mut self, value: bool) {
-        self.set(IN_JUMP, value)
-    }
-
-    #[inline]
-    pub const fn duck(&mut self, value: bool) {
-        self.set(IN_DUCK, value)
-    }
-
-    #[inline]
-    pub const fn fast_duck(&mut self, value: bool) {
-        self.set(IN_BULLRUSH, value);
-    }
 }
 
 #[repr(C)]

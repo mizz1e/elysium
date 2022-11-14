@@ -3,6 +3,13 @@ edition = "2021"
 name = "elysium-sdk"
 version = "0.0.0"
 
+[dependencies.bevy]
+default-features = false
+version = "0.8"
+
+[dependencies.bitflags]
+version = "1.3"
+
 [dependencies.cake]
 default-features = false
 features = ["std"]
@@ -15,3 +22,8 @@ libc = { default-features = false, version = "0.2" }
 elysium-math = { default-features = false, path = "../math" }
 elysium-mem = { default-features = false, path = "../mem" }
 phf = { default-features = false, features = ["macros"], version = "0.11" }
+
+[dependencies.tracing]
+default-features = false
+features = ["std"]
+version = "0.1"

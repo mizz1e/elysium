@@ -132,7 +132,9 @@ impl fmt::Display for Info {
             write!(fmt, "{level_name}")?;
 
             if let Some(location) = location {
-                write!(fmt, " at {location}")?;
+                if !location.is_empty() {
+                    write!(fmt, " at {location}")?;
+                }
             }
 
             if let Some(address) = address {

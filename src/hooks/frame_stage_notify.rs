@@ -3,17 +3,16 @@ use crate::state::Local;
 use crate::{state, State};
 use elysium_sdk::entity::EntityId;
 use elysium_sdk::{material, Engine, EntityList, Frame, Globals, Input, Interfaces, Vars};
+use std::ffi;
 
 fn update_vars(vars: &mut Vars, _engine: &Engine) {
     let state = State::get();
 
     state.ffa = vars.ffa.read();
 
-    // misc
-    vars.allow_developer.write(true);
-    //vars.fast_render.write(!engine.is_in_game());
     vars.cheats.write(true);
-    vars.developer.write(true);
+    vars.hud.write(false);
+    vars.vgui.write(false);
 
     // useful
     vars.show_grenade_path.write(true);
@@ -27,44 +26,6 @@ fn update_vars(vars: &mut Vars, _engine: &Engine) {
     vars.html_motd.write(true);
     vars.freeze_cam.write(true);
     vars.panorama_blur.write(true);
-
-    //vars.other_models.write(2);
-
-    // shadows
-    //vars.csm.write(false);
-    /*vars.csm_shadows.write(false);
-    vars.feet_shadows.write(false);
-    vars.prop_shadows.write(false);
-    vars.rope_shadows.write(false);
-    vars.shadows.write(false);
-    vars.skybox3d.write(false);
-    vars.viewmodel_shadows.write(false);
-    vars.world_shadows.write(false);
-
-    // useless objects
-    vars.ropes.write(false);
-    vars.sprites.write(false);
-
-    // translucent things
-    //
-    vars.water_fog.write(false);
-
-    // overlay
-    vars.underwater_overlay.write(false);
-
-    // effects
-    vars.alien_blood.write(false);
-    vars.human_blood.write(false);
-    vars.decals.write(false);
-    vars.jiggle_bones.write(false);
-    //vars.rain.write(false);*/
-
-    // phsyics
-    vars.physics_timescale.write(0.5);
-
-    // meme
-    //vars.interpolate.write(false);
-    //vars.lag_comp.write(0.0);
 }
 
 /// Override fog controller properties.
@@ -214,8 +175,23 @@ unsafe fn update_entities(entity_list: &EntityList) {
     }
 }
 
+const FRAME_NET_UPDATE_END: ffi::c_int = 4;
+const FRAME_RENDER_START: ffi::c_int = 5;
+
+#[derive(Clone, Copy)]
+pub struct FrameStageNotify(pub(crate) unsafe extern "C" fn(*const u8, ffi::c_int));
+
 /// `FrameStageNotify` hook.
-pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
+pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: ffi::c_int) {
+    let frame_stage_notify = elysium_sdk::with_app_mut(|app| {
+        match frame {
+            FRAME_RENDER_START => app.update(),
+            _ => {}
+        }
+
+        *app.world.resource::<FrameStageNotify>()
+    });
+
     let state = State::get();
     let Interfaces {
         engine,
@@ -274,7 +250,6 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         material.set_rgba([1.0, 1.0, 0.0, 1.0]);
     }
 
-    let frame_stage_notify_original = state.hooks.frame_stage_notify.unwrap();
     let globals = state.globals.as_mut().unwrap();
     let input = state.input.as_mut().unwrap();
     let vars = state.vars.as_mut().unwrap();
@@ -323,5 +298,5 @@ pub unsafe extern "C" fn frame_stage_notify(this: *const u8, frame: i32) {
         }
     }
 
-    (frame_stage_notify_original)(this, frame.to_i32());
+    (frame_stage_notify.0)(this, frame.to_i32());
 }

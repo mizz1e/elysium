@@ -3,8 +3,9 @@ use crate::state::Local;
 use crate::State;
 use elysium_math::Vec3;
 use elysium_sdk::entity::{MoveKind, ObserverMode};
+use elysium_sdk::input::{Button, Command};
 use elysium_sdk::ClientMode;
-use elysium_sdk::{Command, Interfaces, Vars, WeaponKind};
+use elysium_sdk::{Interfaces, Vars, WeaponKind};
 use std::arch::asm;
 
 unsafe fn rage_strafe(
@@ -84,11 +85,13 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     command.random_seed = 0;
 
-    let do_attack = command.in_attack();
-    let do_jump = command.in_jump();
+    let do_attack = command.buttons.contains(Button::ATTACK);
+    let do_jump = command.buttons.contains(Button::JUMP);
+
     let on_ground = local.flags().on_ground();
     let was_attacking = local_vars.was_attacking;
     let side = if command.command % 2 != 0 { 1.0 } else { -1.0 };
+    let movement = command.movement;
 
     local_vars.was_attacking = do_attack;
     local_vars.was_jumping = do_jump;
@@ -100,7 +103,7 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
                 if do_attack {
                     if was_attacking {
                         if !info.full_auto {
-                            command.attack(false);
+                            command.buttons.remove(Button::ATTACK);
                         }
 
                         local_vars.was_attacking = false;
@@ -114,9 +117,9 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
 
     if do_jump {
         if on_ground {
-            command.duck(false);
+            command.buttons.remove(Button::DUCK);
         } else {
-            command.jump(false);
+            command.buttons.remove(Button::JUMP);
         }
     }
 
@@ -135,10 +138,9 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         *send_packet = command.command % fake_lag as i32 == 0;
     }
 
-    // don't do anything fancy whilest on a ladder or noclipping
-    if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) || on_ground {
-        command.view_angle = state.anti_aim.apply(*send_packet, command.view_angle);
-    }
+    let y = movement.x.atan2(movement.y).to_degrees();
+
+    command.view_angle.y += y + 90.0;
 
     if do_attack {
         let player_iter = entity_list
@@ -190,11 +192,18 @@ unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packe
         }
     }
 
-    command.fast_duck(true);
-
     command.movement = command
         .movement
         .movement(command.view_angle, state.view_angle);
+
+    command.buttons.insert(Button::FAST_DUCK | Button::RUN);
+
+    // Removing them all results in normal movement, even when yaw is backwards.
+    command.buttons.remove(
+        Button::MOVE_FORWARD | Button::MOVE_BACKWARD | Button::MOVE_LEFT | Button::MOVE_RIGHT,
+    );
+
+    command.buttons.insert(Button::MOVE_RIGHT);
 
     if state.anti_untrusted {
         command.view_angle = command.view_angle.sanitize_angle();

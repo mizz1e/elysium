@@ -21,7 +21,6 @@ pub type DrawModel = unsafe extern "C" fn(
     bone_to_world: *const Matrix3x4,
 );
 
-pub type FrameStageNotify = unsafe extern "C" fn(this: *const u8, frame: i32);
 pub type OverrideView = unsafe extern "C" fn(this: *const u8, view: &mut View);
 pub type PollEvent = unsafe extern "C" fn(event: *mut SDL_Event) -> i32;
 pub type SwapWindow = unsafe extern "C" fn(window: *mut SDL_Window);
@@ -37,7 +36,6 @@ pub struct Hooks {
     pub cl_send_move: Option<ClSendMove>,
     pub create_move: Option<CreateMove>,
     pub draw_model: Option<DrawModel>,
-    pub frame_stage_notify: Option<FrameStageNotify>,
     pub override_view: Option<OverrideView>,
     pub poll_event: Option<PollEvent>,
     pub swap_window: Option<SwapWindow>,
@@ -51,7 +49,6 @@ impl Hooks {
         cl_send_move: None,
         create_move: None,
         draw_model: None,
-        frame_stage_notify: None,
         override_view: None,
         poll_event: None,
         swap_window: None,
