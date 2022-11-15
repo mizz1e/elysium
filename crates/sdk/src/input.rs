@@ -5,14 +5,6 @@ use bevy::math::Vec3;
 use cake::ffi::{BytePad, VTablePad};
 use core::{fmt, ptr};
 
-pub use joystick::Joystick;
-pub use mouse::Mouse;
-pub use state::State;
-
-mod joystick;
-mod mouse;
-mod state;
-
 bitflags::bitflags! {
     /// Movement state flags.
     ///
@@ -148,10 +140,10 @@ pub struct Command {
 struct VTable {
     _pad0: VTablePad<8>,
     get_user_command:
-        unsafe extern "thiscall" fn(this: *const Input, slot: i32, sequence: i32) -> *const Command,
+        unsafe extern "C" fn(this: *const Input, slot: i32, sequence: i32) -> *const Command,
     _pad1: VTablePad<13>,
-    activate_mouse: unsafe extern "thiscall" fn(this: *const Input),
-    deactivate_mouse: unsafe extern "thiscall" fn(this: *const Input),
+    activate_mouse: unsafe extern "C" fn(this: *const Input),
+    deactivate_mouse: unsafe extern "C" fn(this: *const Input),
 }
 
 vtable_validate! {

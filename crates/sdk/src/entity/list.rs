@@ -3,19 +3,19 @@ use core::ops::RangeInclusive;
 
 #[repr(C)]
 pub struct VTable {
-    networkable: unsafe extern "thiscall" fn(this: *const EntityList, index: i32) -> *const u8,
+    networkable: unsafe extern "C" fn(this: *const EntityList, index: i32) -> *const u8,
     networkable_from_handle:
-        unsafe extern "thiscall" fn(this: *const EntityList, handle: *const u8) -> *const u8,
+        unsafe extern "C" fn(this: *const EntityList, handle: *const u8) -> *const u8,
     unknown_from_handle:
-        unsafe extern "thiscall" fn(this: *const EntityList, handle: *const u8) -> *const u8,
-    entity: unsafe extern "thiscall" fn(this: *const EntityList, index: i32) -> *const u8,
+        unsafe extern "C" fn(this: *const EntityList, handle: *const u8) -> *const u8,
+    entity: unsafe extern "C" fn(this: *const EntityList, index: i32) -> *const u8,
     entity_from_handle:
-        unsafe extern "thiscall" fn(this: *const EntityList, handle: *const u8) -> *const u8,
+        unsafe extern "C" fn(this: *const EntityList, handle: *const u8) -> *const u8,
     number_of_entities:
-        unsafe extern "thiscall" fn(this: *const EntityList, include_non_networked: bool) -> i32,
-    highest_entity_index: unsafe extern "thiscall" fn(this: *const EntityList) -> i32,
-    set_max_entities: unsafe extern "thiscall" fn(this: *const EntityList, max: i32),
-    max_entities: unsafe extern "thiscall" fn(this: *const EntityList) -> i32,
+        unsafe extern "C" fn(this: *const EntityList, include_non_networked: bool) -> i32,
+    highest_entity_index: unsafe extern "C" fn(this: *const EntityList) -> i32,
+    set_max_entities: unsafe extern "C" fn(this: *const EntityList, max: i32),
+    max_entities: unsafe extern "C" fn(this: *const EntityList) -> i32,
 }
 
 vtable_validate! {

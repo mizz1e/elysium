@@ -11,7 +11,6 @@ mod var;
 #[derive(Debug)]
 #[repr(C)]
 pub struct VTable {
-    app_system: AppSystemVTable<Console>,
     _pad0: VTablePad<6>,
     var: unsafe extern "C" fn(this: *const Console, name: *const libc::c_char) -> *const (),
     _pad1: VTablePad<11>,

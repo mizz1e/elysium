@@ -5,9 +5,9 @@ use core::ptr;
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<19>,
-    override_view: unsafe extern "thiscall" fn(this: *const ClientMode, view: *const View),
+    override_view: unsafe extern "C" fn(this: *const ClientMode, view: *const View),
     _pad1: VTablePad<5>,
-    create_move: unsafe extern "thiscall" fn(
+    create_move: unsafe extern "C" fn(
         this: *const ClientMode,
         input_sample_time: f32,
         command: *mut Command,

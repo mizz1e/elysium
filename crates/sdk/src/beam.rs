@@ -48,7 +48,7 @@ pub struct Beam {
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<9>,
-    create_beam_points: unsafe extern "thiscall" fn(
+    create_beam_points: unsafe extern "C" fn(
         this: *const ViewRenderBeams,
         beam_info: *const BeamInfo,
     ) -> *const Beam,

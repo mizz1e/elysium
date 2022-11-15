@@ -7,27 +7,23 @@ use std::ffi::OsStr;
 
 #[repr(C)]
 struct VTable {
-    name: unsafe extern "thiscall" fn(this: *const Material) -> *const libc::c_char,
-    group: unsafe extern "thiscall" fn(this: *const Material) -> *const libc::c_char,
+    name: unsafe extern "C" fn(this: *const Material) -> *const libc::c_char,
+    group: unsafe extern "C" fn(this: *const Material) -> *const libc::c_char,
     _pad0: VTablePad<9>,
-    var: unsafe extern "thiscall" fn(
+    var: unsafe extern "C" fn(
         this: *const Material,
         name: *const libc::c_char,
         found: *mut bool,
         complain: bool,
     ) -> *mut Var,
     _pad1: VTablePad<15>,
-    set_alpha: unsafe extern "thiscall" fn(this: *const Material, alpha: f32),
-    set_rgb: unsafe extern "thiscall" fn(this: *const Material, red: f32, green: f32, blue: f32),
-    set_flag: unsafe extern "thiscall" fn(this: *const Material, flag: Flag, enabled: bool),
+    set_alpha: unsafe extern "C" fn(this: *const Material, alpha: f32),
+    set_rgb: unsafe extern "C" fn(this: *const Material, red: f32, green: f32, blue: f32),
+    set_flag: unsafe extern "C" fn(this: *const Material, flag: Flag, enabled: bool),
     _pad2: VTablePad<14>,
-    alpha: unsafe extern "thiscall" fn(this: *const Material) -> f32,
-    rgb: unsafe extern "thiscall" fn(
-        this: *const Material,
-        red: *mut f32,
-        green: *mut f32,
-        blue: *mut f32,
-    ),
+    alpha: unsafe extern "C" fn(this: *const Material) -> f32,
+    rgb:
+        unsafe extern "C" fn(this: *const Material, red: *mut f32, green: *mut f32, blue: *mut f32),
 }
 
 vtable_validate! {

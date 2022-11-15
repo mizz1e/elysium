@@ -193,7 +193,7 @@ const MOVEMENT: Button = Button::MOVE_FORWARD
 
 impl WalkingAnimation {
     #[inline]
-    pub(crate) const fn exec(&mut self, command: &mut Command) {
+    pub(crate) fn apply(&mut self, command: &mut Command) {
         let buttons = match self {
             WalkingAnimation::Normal => Buttons::normal(),
             WalkingAnimation::Slide => Buttons::slide(),
@@ -234,7 +234,6 @@ pub unsafe extern "C" fn create_move(
     let state = crate::State::get();
     let engine = &state.interfaces.as_ref().unwrap().engine;
     let engine_view_angle = engine.view_angle();
-
 
     command.buttons.insert(Button::FAST_DUCK | Button::RUN);
 

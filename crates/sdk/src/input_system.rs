@@ -4,13 +4,13 @@ use cake::ffi::VTablePad;
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<11>,
-    enable_input: unsafe extern "thiscall" fn(this: *const InputSystem, enable: bool),
+    enable_input: unsafe extern "C" fn(this: *const InputSystem, enable: bool),
     _pad1: VTablePad<27>,
-    reset_input_state: unsafe extern "thiscall" fn(this: *const InputSystem),
+    reset_input_state: unsafe extern "C" fn(this: *const InputSystem),
     _pad2: VTablePad<17>,
-    cursor_visible: unsafe extern "thiscall" fn(this: *const InputSystem, visible: bool),
+    cursor_visible: unsafe extern "C" fn(this: *const InputSystem, visible: bool),
     _pad3: VTablePad<2>,
-    reset_cursor_icon: unsafe extern "thiscall" fn(this: *const InputSystem),
+    reset_cursor_icon: unsafe extern "C" fn(this: *const InputSystem),
 }
 
 vtable_validate! {

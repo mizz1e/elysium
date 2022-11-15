@@ -4,11 +4,11 @@ use cake::ffi::VTablePad;
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<5>,
-    should_draw: unsafe extern "thiscall" fn(this: *const Renderable) -> bool,
+    should_draw: unsafe extern "C" fn(this: *const Renderable) -> bool,
     _pad1: VTablePad<2>,
-    get_model: unsafe extern "thiscall" fn(this: *const Renderable) -> *const u8,
+    get_model: unsafe extern "C" fn(this: *const Renderable) -> *const u8,
     _pad2: VTablePad<4>,
-    setup_bones: unsafe extern "thiscall" fn(
+    setup_bones: unsafe extern "C" fn(
         this: *const Renderable,
         bones: *mut Mat4x3,
         len: i32,

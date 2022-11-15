@@ -6,12 +6,12 @@ use std::ffi::OsStr;
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<3>,
-    set_f32: unsafe extern "thiscall" fn(this: *mut Var, value: f32),
-    set_i32: unsafe extern "thiscall" fn(this: *mut Var, value: i32),
-    set_string: unsafe extern "thiscall" fn(this: *mut Var, value: *const libc::c_char),
+    set_f32: unsafe extern "C" fn(this: *mut Var, value: f32),
+    set_i32: unsafe extern "C" fn(this: *mut Var, value: i32),
+    set_string: unsafe extern "C" fn(this: *mut Var, value: *const libc::c_char),
     _pad1: VTablePad<6>,
-    set_vec3: unsafe extern "thiscall" fn(this: *mut Var, x: f32, y: f32, z: f32),
-    set_vec4: unsafe extern "thiscall" fn(this: *mut Var, x: f32, y: f32, z: f32, w: f32),
+    set_vec3: unsafe extern "C" fn(this: *mut Var, x: f32, y: f32, z: f32),
+    set_vec4: unsafe extern "C" fn(this: *mut Var, x: f32, y: f32, z: f32, w: f32),
 }
 
 vtable_validate! {

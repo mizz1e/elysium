@@ -13,65 +13,56 @@ use std::time::Duration;
 
 #[repr(C)]
 struct VTable {
-    name2: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const libc::c_char,
-    address: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const libc::c_char,
-    time: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    time_connected: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    buffer_len: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
-    data_rate: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> i32,
-    is_loopback: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
-    is_timing_out: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
-    is_playback: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> bool,
-    latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    average_latency: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    avg_loss: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    avg_choke: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    avg_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    avg_packets: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> f32,
-    total_data: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
-    sequence_number: unsafe extern "thiscall" fn(this: *const NetworkChannel, flow: Flow) -> i32,
-    is_valid_packet: unsafe extern "thiscall" fn(
-        this: *const NetworkChannel,
-        flow: Flow,
-        frame_number: i32,
-    ) -> bool,
-    packet_time: unsafe extern "thiscall" fn(
-        this: *const NetworkChannel,
-        flow: Flow,
-        frame_number: i32,
-    ) -> f32,
-    packet_bytes: unsafe extern "thiscall" fn(
+    name2: unsafe extern "C" fn(this: *const NetworkChannel) -> *const libc::c_char,
+    address: unsafe extern "C" fn(this: *const NetworkChannel) -> *const libc::c_char,
+    time: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
+    time_connected: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
+    buffer_len: unsafe extern "C" fn(this: *const NetworkChannel) -> i32,
+    data_rate: unsafe extern "C" fn(this: *const NetworkChannel) -> i32,
+    is_loopback: unsafe extern "C" fn(this: *const NetworkChannel) -> bool,
+    is_timing_out: unsafe extern "C" fn(this: *const NetworkChannel) -> bool,
+    is_playback: unsafe extern "C" fn(this: *const NetworkChannel) -> bool,
+    latency: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    average_latency: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_loss: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_choke: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_data: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    avg_packets: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> f32,
+    total_data: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> i32,
+    sequence_number: unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow) -> i32,
+    is_valid_packet:
+        unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow, frame_number: i32) -> bool,
+    packet_time:
+        unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow, frame_number: i32) -> f32,
+    packet_bytes: unsafe extern "C" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
         group: i32,
     ) -> i32,
-    stream_progress: unsafe extern "thiscall" fn(
+    stream_progress: unsafe extern "C" fn(
         this: *const NetworkChannel,
         flow: Flow,
         recieved: *mut i32,
         total: *mut i32,
     ) -> bool,
-    time_since_last_received: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    command_interpolation_amount: unsafe extern "thiscall" fn(
-        this: *const NetworkChannel,
-        flow: Flow,
-        frame_number: i32,
-    ) -> f32,
-    packet_response_latency: unsafe extern "thiscall" fn(
+    time_since_last_received: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
+    command_interpolation_amount:
+        unsafe extern "C" fn(this: *const NetworkChannel, flow: Flow, frame_number: i32) -> f32,
+    packet_response_latency: unsafe extern "C" fn(
         this: *const NetworkChannel,
         flow: Flow,
         frame_number: i32,
         latency: *mut i32,
         choke: *mut i32,
     ),
-    remote_frame_rate: unsafe extern "thiscall" fn(
+    remote_frame_rate: unsafe extern "C" fn(
         this: *const NetworkChannel,
         frame_time: *mut f32,
         frame_time_standard_deviation: *mut f32,
     ),
-    timeout_seconds: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> f32,
-    name: unsafe extern "thiscall" fn(this: *const NetworkChannel) -> *const libc::c_char,
+    timeout_seconds: unsafe extern "C" fn(this: *const NetworkChannel) -> f32,
+    name: unsafe extern "C" fn(this: *const NetworkChannel) -> *const libc::c_char,
 }
 
 vtable_validate! {

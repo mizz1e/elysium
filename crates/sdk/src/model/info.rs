@@ -6,25 +6,20 @@ use std::ffi::OsStr;
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<2>,
-    get: unsafe extern "thiscall" fn(this: *const ModelInfo, index: i32) -> *const Model,
-    index_of:
-        unsafe extern "thiscall" fn(this: *const ModelInfo, file_name: *const libc::c_char) -> i32,
-    name_of: unsafe extern "thiscall" fn(
-        this: *const ModelInfo,
-        model: *const Model,
-    ) -> *const libc::c_char,
+    get: unsafe extern "C" fn(this: *const ModelInfo, index: i32) -> *const Model,
+    index_of: unsafe extern "C" fn(this: *const ModelInfo, file_name: *const libc::c_char) -> i32,
+    name_of:
+        unsafe extern "C" fn(this: *const ModelInfo, model: *const Model) -> *const libc::c_char,
     _pad1: VTablePad<13>,
-    materials: unsafe extern "thiscall" fn(
+    materials: unsafe extern "C" fn(
         this: *const ModelInfo,
         model: *const Model,
         len: i32,
         materials: *mut *mut u8,
     ),
     _pad2: VTablePad<12>,
-    studio: unsafe extern "thiscall" fn(
-        this: *const ModelInfo,
-        model: *const Model,
-    ) -> *const StudioHeader,
+    studio:
+        unsafe extern "C" fn(this: *const ModelInfo, model: *const Model) -> *const StudioHeader,
 }
 
 vtable_validate! {

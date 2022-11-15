@@ -10,17 +10,16 @@ pub enum DataUpdateKind {
 
 #[repr(C)]
 struct VTable {
-    drop: unsafe extern "thiscall" fn(this: *const Networkable),
-    release: unsafe extern "thiscall" fn(this: *const Networkable),
-    client_class: unsafe extern "thiscall" fn(this: *const Networkable) -> *const u8,
+    drop: unsafe extern "C" fn(this: *const Networkable),
+    release: unsafe extern "C" fn(this: *const Networkable),
+    client_class: unsafe extern "C" fn(this: *const Networkable) -> *const u8,
     _pad1: VTablePad<3>,
-    pre_data_update:
-        unsafe extern "thiscall" fn(this: *const Networkable, update_kind: DataUpdateKind),
+    pre_data_update: unsafe extern "C" fn(this: *const Networkable, update_kind: DataUpdateKind),
     _pad2: VTablePad<2>,
-    is_dormant: unsafe extern "thiscall" fn(this: *const Networkable) -> bool,
-    index: unsafe extern "thiscall" fn(this: *const Networkable) -> i32,
+    is_dormant: unsafe extern "C" fn(this: *const Networkable) -> bool,
+    index: unsafe extern "C" fn(this: *const Networkable) -> i32,
     _pad3: VTablePad<2>,
-    set_destroyed_on_recreate_entities: unsafe extern "thiscall" fn(this: *const Networkable),
+    set_destroyed_on_recreate_entities: unsafe extern "C" fn(this: *const Networkable),
 }
 
 vtable_validate! {

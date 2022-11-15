@@ -116,6 +116,18 @@ impl Ptr {
         vtable.add(index) as *mut T
     }
 
+    /// Obtain a pointer to an entry within a object's virtual table.
+    ///
+    /// # Safety
+    ///
+    /// - `index` must be a valid virtual table index.
+    /// - See [`vtable_ptr`](Ptr::vtable_ptr).
+    #[inline]
+    #[must_use]
+    pub unsafe fn vtable_entry<T>(&self, index: usize) -> T {
+        self.vtable_index::<T>(index).read()
+    }
+
     /// Replace a entry within a object's virtual table.
     ///
     /// # Safety

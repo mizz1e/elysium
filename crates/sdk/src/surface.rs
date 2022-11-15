@@ -4,7 +4,7 @@ use cake::ffi::VTablePad;
 #[repr(C)]
 pub struct VTable {
     _pad0: VTablePad<66>,
-    unlock_cursor: unsafe extern "thiscall" fn(surface: *const Surface),
+    unlock_cursor: unsafe extern "C" fn(surface: *const Surface),
 }
 
 vtable_validate! {

@@ -58,11 +58,11 @@ impl Kind for bool {}
 #[repr(C)]
 struct VTable {
     _pad0: VTablePad<15>,
-    read_f32: unsafe extern "thiscall" fn(this: *const ()) -> f32,
-    read_i32: unsafe extern "thiscall" fn(this: *const ()) -> i32,
+    read_f32: unsafe extern "C" fn(this: *const ()) -> f32,
+    read_i32: unsafe extern "C" fn(this: *const ()) -> i32,
     _pad1: VTablePad<1>,
-    write_f32: unsafe extern "thiscall" fn(this: *mut (), value: f32),
-    write_i32: unsafe extern "thiscall" fn(this: *mut (), value: i32),
+    write_f32: unsafe extern "C" fn(this: *mut (), value: f32),
+    write_i32: unsafe extern "C" fn(this: *mut (), value: i32),
 }
 
 vtable_validate! {
@@ -98,7 +98,7 @@ pub struct Var<T> {
     max_value: f32,
     _pad4: BytePad<4>,
     class: *const (),
-    change_callback: Option<unsafe extern "thiscall" fn()>,
+    change_callback: Option<unsafe extern "C" fn()>,
     // we do be owning T, tho
     _phantom: PhantomData<T>,
 }
