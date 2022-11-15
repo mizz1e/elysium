@@ -147,14 +147,14 @@ pub struct EngineViewAngle(pub Vec3);
 pub struct LocalViewAngle(pub Vec3);
 
 #[derive(Clone, Copy)]
-pub struct WalkingAnimation {
+pub struct Buttons {
     forward: Button,
     backward: Button,
     left: Button,
     right: Button,
 }
 
-impl WalkingAnimation {
+impl Buttons {
     #[inline]
     pub const fn normal() -> Self {
         Self {
@@ -178,12 +178,41 @@ impl WalkingAnimation {
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum WalkingAnimation {
-    /// Normal walking animation.
+    /// Normal walking.
     #[default]
     Normal,
 
-    /// Sliding..?
+    /// Slides.
     Slide,
+}
+
+const MOVEMENT: Button = Button::MOVE_FORWARD
+    .union(Button::MOVE_BACKWARD)
+    .union(Button::MOVE_LEFT)
+    .union(Button::MOVE_RIGHT);
+
+impl WalkingAnimation {
+    #[inline]
+    pub(crate) const fn exec(&mut self, command: &mut Command) {
+        let buttons = match self {
+            WalkingAnimation::Normal => Buttons::normal(),
+            WalkingAnimation::Slide => Buttons::slide(),
+        };
+
+        command.buttons.remove(MOVEMENT);
+
+        match command.movement.x.partial_cmp(&0.0_f32) {
+            Some(Ordering::Greater) => command.buttons.insert(buttons.forward),
+            Some(Ordering::Less) => command.buttons.insert(buttons.backward),
+            _ => {}
+        }
+
+        match command.movement.y.partial_cmp(&0.0_f32) {
+            Some(Ordering::Greater) => command.buttons.insert(buttons.right),
+            Some(Ordering::Less) => command.buttons.insert(buttons.left),
+            _ => {}
+        }
+    }
 }
 
 pub unsafe extern "C" fn create_move(
@@ -206,9 +235,6 @@ pub unsafe extern "C" fn create_move(
     let engine = &state.interfaces.as_ref().unwrap().engine;
     let engine_view_angle = engine.view_angle();
 
-    command.buttons.remove(
-        Button::MOVE_FORWARD | Button::MOVE_BACKWARD | Button::MOVE_LEFT | Button::MOVE_RIGHT,
-    );
 
     command.buttons.insert(Button::FAST_DUCK | Button::RUN);
 
@@ -225,19 +251,7 @@ pub unsafe extern "C" fn create_move(
     command.view_angle = sanitize_angle(command.view_angle);
     command.movement = fix_movement(command.movement, command.view_angle, engine_view_angle);
 
-    let buttons = WalkingAnimation::slide();
-
-    match command.movement.x.partial_cmp(&0.0_f32) {
-        Some(Ordering::Greater) => command.buttons.insert(buttons.forward),
-        Some(Ordering::Less) => command.buttons.insert(buttons.backward),
-        _ => {}
-    }
-
-    match command.movement.y.partial_cmp(&0.0_f32) {
-        Some(Ordering::Greater) => command.buttons.insert(buttons.right),
-        Some(Ordering::Less) => command.buttons.insert(buttons.left),
-        _ => {}
-    }
+    WalkingAnimation::Slide.apply(command);
 
     elysium_sdk::with_app_mut(|app| {
         app.insert_resource(LocalViewAngle(command.view_angle));
