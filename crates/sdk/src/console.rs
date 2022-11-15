@@ -1,4 +1,3 @@
-use crate::app_system::AppSystemVTable;
 use crate::{ffi, vtable_validate};
 use cake::ffi::VTablePad;
 use std::ffi::OsStr;

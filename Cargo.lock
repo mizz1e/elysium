@@ -672,11 +672,6 @@ version = "0.0.0"
 source = "git+https://github.com/elysian6969/cake?branch=old#da031e4c1e43e7cbc9cac691f313830916916378"
 
 [[package]]
-name = "cake"
-version = "0.0.0"
-source = "git+https://github.com/elysian6969/cake?rev=da031e4c1e43e7cbc9cac691f313830916916378#da031e4c1e43e7cbc9cac691f313830916916378"
-
-[[package]]
 name = "cc"
 version = "1.0.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -696,9 +691,9 @@ checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
 name = "clap"
-version = "4.0.24"
+version = "4.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60494cedb60cb47462c0ff7be53de32c0e42a6fc2c772184554fa12bd9489c03"
+checksum = "389ca505fd2c00136e0d0cd34bcd8b6bd0b59d5779aab396054b716334230c1c"
 dependencies = [
  "atty",
  "bitflags",
@@ -909,7 +904,7 @@ name = "dismal"
 version = "0.0.0"
 source = "git+https://github.com/elysian6969/dismal#0da494047408f07218a165ce8ac0c508fa0b4d99"
 dependencies = [
- "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
+ "cake",
 ]
 
 [[package]]
@@ -975,7 +970,7 @@ dependencies = [
 name = "elysium-mem"
 version = "0.0.0"
 dependencies = [
- "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
+ "cake",
  "dismal",
  "libc",
  "link 0.0.0 (git+https://github.com/elysian6969/link)",
@@ -992,8 +987,6 @@ version = "0.0.0"
 dependencies = [
  "bevy",
  "bitflags",
- "cake 0.0.0 (git+https://github.com/elysian6969/cake?rev=da031e4c1e43e7cbc9cac691f313830916916378)",
- "crossbeam-utils",
  "elysium-mem",
  "libc",
  "phf",
@@ -1583,7 +1576,7 @@ name = "link"
 version = "0.0.0"
 source = "git+https://github.com/elysian6969/link?rev=02127c0516ec4f2a69a220f3a405787369d44b5e#02127c0516ec4f2a69a220f3a405787369d44b5e"
 dependencies = [
- "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
+ "cake",
  "libc",
  "memchr",
 ]
@@ -1593,7 +1586,7 @@ name = "link"
 version = "0.0.0"
 source = "git+https://github.com/elysian6969/link#02127c0516ec4f2a69a220f3a405787369d44b5e"
 dependencies = [
- "cake 0.0.0 (git+https://github.com/elysian6969/cake?branch=old)",
+ "cake",
  "libc",
  "memchr",
 ]

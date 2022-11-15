@@ -10,17 +10,15 @@ version = "0.9"
 [dependencies.bitflags]
 version = "1.3"
 
-[dependencies.cake]
-default-features = false
-features = ["std"]
-git = "https://github.com/elysian6969/cake"
-rev = "da031e4c1e43e7cbc9cac691f313830916916378"
+[dependencies.elysium-mem]
+path = "../mem"
 
-[dependencies]
-crossbeam-utils = { default-features = false, version = "0.8" }
-libc = { default-features = false, version = "0.2" }
-elysium-mem = { default-features = false, path = "../mem" }
-phf = { default-features = false, features = ["macros"], version = "0.11" }
+[dependencies.libc]
+version = "0.2"
+
+[dependencies.phf]
+features = ["macros"]
+version = "0.11"
 
 [dependencies.tracing]
 default-features = false

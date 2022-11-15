@@ -1,3 +1,4 @@
+#![feature(addr_parse_ascii)]
 #![feature(cstr_from_bytes_until_nul)]
 #![feature(decl_macro)]
 #![feature(pointer_byte_offsets)]
@@ -37,7 +38,6 @@ mod globals;
 mod hit_group;
 mod input_system;
 mod item_kind;
-mod macros;
 mod mat4x3;
 mod physics;
 mod render;
