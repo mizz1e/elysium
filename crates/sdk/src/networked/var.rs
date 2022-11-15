@@ -1,8 +1,8 @@
 use crate::entity::PlayerFlags;
+use bevy::math::Vec3;
 use core::marker::PhantomData;
 use core::time::Duration;
 use core::{ffi, fmt, mem, ptr};
-use elysium_math::Vec3;
 use std::ffi::{CStr, OsStr};
 use std::os::unix::ffi::OsStrExt;
 

@@ -1,5 +1,5 @@
 use super::{Entity, PlayerRef, WeaponRef};
-use elysium_math::Vec3;
+use bevy::math::Vec3;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::HitGroup;
 use std::ffi::OsStr;
@@ -74,9 +74,6 @@ pub trait Player<'a>: Entity<'a> {
 
     /// The player's velocity.
     fn velocity(&self) -> Vec3;
-
-    /// The magnitude of the player's velocity.
-    fn velocity_magnitude(&self) -> f32;
 
     /// The player's view angle.
     fn view_angle(&self) -> Vec3;

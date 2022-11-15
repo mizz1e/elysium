@@ -1,10 +1,10 @@
 use super::{PlayerRef, WeaponRef};
+use bevy::math::Vec3;
 use core::time::Duration;
-use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, Networkable, ObserverMode, PlayerFlags, Renderable, Team};
 use elysium_sdk::model::Model;
-use elysium_sdk::{networked, HitGroup, WeaponInfo};
+use elysium_sdk::{networked, HitGroup, Mat4x3, WeaponInfo};
 use palette::{Srgb, Srgba, WithAlpha};
 use std::ffi::OsStr;
 use std::mem::MaybeUninit;
@@ -150,7 +150,7 @@ impl EntityRepr {
 
     /// Setup bones for this entity.
     #[inline]
-    pub fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool {
+    pub fn setup_bones(&self, bones: &mut [Mat4x3], mask: i32, time: f32) -> bool {
         self.renderable.setup_bones(bones, mask, time)
     }
 
@@ -290,7 +290,7 @@ impl EntityRepr {
         let offset = networked::read!(self, base_player.eye_offset);
 
         // zero view offset fix
-        if offset == Vec3::splat(0.0) {
+        if offset == Vec3::ZERO {
             let z = if self.flags().ducking() { 46.0 } else { 64.0 };
 
             Vec3::from_array([0.0, 0.0, z])

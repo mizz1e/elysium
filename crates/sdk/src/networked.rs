@@ -1,9 +1,9 @@
 use crate::client::{Client, Table};
 use crate::entity::PlayerFlags;
 use crate::AtomicMut;
+use bevy::math::Vec3;
 use core::mem::MaybeUninit;
 use core::time::Duration;
-use elysium_math::Vec3;
 use std::ffi::OsStr;
 
 pub use var::Var;

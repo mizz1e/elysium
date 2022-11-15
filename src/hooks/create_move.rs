@@ -1,262 +1,247 @@
-use crate::entity::{Entity, Player, PlayerRef, Weapon};
-use crate::state::Local;
-use crate::State;
-use elysium_math::Vec3;
-use elysium_sdk::entity::{MoveKind, ObserverMode};
+use bevy::prelude::*;
 use elysium_sdk::input::{Button, Command};
 use elysium_sdk::ClientMode;
-use elysium_sdk::{Interfaces, Vars, WeaponKind};
 use std::arch::asm;
+use std::cmp::Ordering;
 
-unsafe fn rage_strafe(
-    side: f32,
-    vars: &Vars,
-    local: &PlayerRef<'_>,
-    local_vars: &mut Local,
-    command: &mut Command,
-) {
-    let velocity = local.velocity();
-    let magnitude = velocity.xy().magnitude();
-    let ideal_strafe = (15.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0);
-    let mut wish_angle = command.view_angle;
-    let strafe_dir = command.movement.xy();
-    let strafe_dir_yaw_offset = strafe_dir.y.atan2(strafe_dir.x).to_degrees();
+/// [game/shared/gamemovement.h#L104](https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/gamemovement.h#L104)
+pub const AIR_SPEED_CAP: f32 = 30.0;
 
-    wish_angle.y -= strafe_dir_yaw_offset;
-
-    let mut wish_angle = wish_angle.sanitize_angle();
-    let yaw_delta = libm::remainderf(wish_angle.y - local_vars.old_yaw, 360.0);
-    let abs_yaw_delta = yaw_delta.abs();
-
-    local_vars.old_yaw = wish_angle.y;
-
-    let horizontal_speed = vars.horizontal_speed.read();
-
-    if abs_yaw_delta <= ideal_strafe || abs_yaw_delta >= 30.0 {
-        let velocity_dir = velocity.to_angle();
-        let velocity_yaw_delta = libm::remainderf(wish_angle.y - velocity_dir.y, 360.0);
-        let retrack = (30.0 / magnitude).atan().to_degrees().clamp(0.0, 90.0) * 2.0;
-
-        if velocity_yaw_delta <= retrack || magnitude <= 15.0 {
-            if -retrack <= velocity_yaw_delta || magnitude <= 15.0 {
-                wish_angle.y += side * ideal_strafe;
-                command.movement.y = horizontal_speed * side;
-            } else {
-                wish_angle.y = velocity_dir.y - retrack;
-                command.movement.y = horizontal_speed;
-            }
-        } else {
-            wish_angle.y = velocity_dir.y + retrack;
-            command.movement.y = -horizontal_speed;
-        }
-    } else if yaw_delta > 0.0 {
-        command.movement.y = -horizontal_speed;
-    } else if yaw_delta < 0.0 {
-        command.movement.y = horizontal_speed
+#[inline]
+pub fn normalize_component(mut value: f32) -> f32 {
+    if !value.is_finite() {
+        return 0.0;
     }
 
-    command.movement.x = 0.0;
-    command.movement = command.movement.movement(command.view_angle, wish_angle);
+    while value > 180.0 {
+        value -= 360.0;
+    }
+
+    while value < -180.0 {
+        value += 360.0;
+    }
+
+    value
 }
 
 #[inline]
-fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
-    let delta = src - dst;
-    let hypot = (delta.x * delta.x + delta.y * delta.y).sqrt();
-
-    let x = (delta.z / hypot).atan().to_degrees();
-    let mut y = (delta.y / delta.x).atan().to_degrees();
-    let z = 0.0;
-
-    if delta.x >= 0.0 {
-        y += 180.0;
-    }
-
-    Vec3::from_array([x, y, z])
+pub fn normalize_angle(mut angle: Vec3) -> Vec3 {
+    angle.x = normalize_component(angle.x);
+    angle.y = normalize_component(angle.y);
+    angle.z = normalize_component(angle.z);
+    angle
 }
 
 #[inline]
-unsafe fn do_create_move(command: &mut Command, local: PlayerRef<'_>, send_packet: &mut bool) {
-    let state = State::get();
-    let vars = state.vars.as_ref().unwrap();
-    let mut local_vars = &mut state.local;
-    let Interfaces { entity_list, .. } = state.interfaces.as_ref().unwrap();
-    let globals = state.globals.as_ref().unwrap();
+pub fn clamp_angle(angle: Vec3) -> Vec3 {
+    const MAX: Vec3 = Vec3::new(89.0, 180.0, 50.0);
 
-    command.random_seed = 0;
+    angle.clamp(-MAX, MAX)
+}
 
-    let do_attack = command.buttons.contains(Button::ATTACK);
-    let do_jump = command.buttons.contains(Button::JUMP);
+#[inline]
+pub fn sanitize_angle(angle: Vec3) -> Vec3 {
+    normalize_angle(angle)
+}
 
-    let on_ground = local.flags().on_ground();
-    let was_attacking = local_vars.was_attacking;
-    let side = if command.command % 2 != 0 { 1.0 } else { -1.0 };
-    let movement = command.movement;
-
-    local_vars.was_attacking = do_attack;
-    local_vars.was_jumping = do_jump;
-
-    if let Some(weapon) = local.active_weapon() {
-        if let Some(info) = weapon.info() {
-            if info.kind == WeaponKind::Grenade {
-            } else {
-                if do_attack {
-                    if was_attacking {
-                        if !info.full_auto {
-                            command.buttons.remove(Button::ATTACK);
-                        }
-
-                        local_vars.was_attacking = false;
-                    } else {
-                        local_vars.shift = 8;
-                    }
-                }
-            }
-        }
-    }
-
-    if do_jump {
-        if on_ground {
-            command.buttons.remove(Button::DUCK);
-        } else {
-            command.buttons.remove(Button::JUMP);
-        }
-    }
-
-    if !on_ground {
-        // don't do anything fancy whilest on a ladder or noclipping
-        if !matches!(local.move_kind(), MoveKind::NoClip | MoveKind::Ladder) {
-            rage_strafe(side, vars, &local, local_vars, command);
-        }
-    }
-
-    let fake_lag = state.fake_lag;
-
-    if fake_lag != 0 {
-        let fake_lag = fake_lag + 2;
-
-        *send_packet = command.command % fake_lag as i32 == 0;
-    }
-
-    let y = movement.x.atan2(movement.y).to_degrees();
-
-    command.view_angle.y += y + 90.0;
-
-    if do_attack {
-        let player_iter = entity_list
-            .player_range()
-            .flat_map(|index| Some((index, PlayerRef::from_raw(entity_list.entity(index))?)));
-
-        for (index, player) in player_iter {
-            let local = PlayerRef::from_raw(local_vars.player).unwrap();
-
-            if local.index() == index {
-                continue;
-            }
-
-            if player.is_dormant() {
-                continue;
-            }
-
-            if player.is_immune() {
-                continue;
-            }
-
-            if !player.is_alive() {
-                continue;
-            }
-
-            if !player.is_enemy() {
-                continue;
-            }
-
-            const BONE_USED_BY_HITBOX: i32 = 0x00000100;
-            const BONE_USED_BY_ANYTHING: i32 = 0x0007FF00;
-
-            let index = (index as usize) - 1;
-
-            player.setup_bones(
-                &mut state.bones[index],
-                BONE_USED_BY_HITBOX | BONE_USED_BY_ANYTHING,
-                globals.current_time,
-            );
-
-            let eye_origin = local.eye_origin();
-            let head_bone = state.bones[index][8];
-            let head_origin = head_bone.w_axis();
-
-            command.view_angle = calculate_angle(eye_origin, head_origin);
-            let state = State::get();
-            state.local.visualize_shot = globals.current_time + 0.2;
-            state.local.shot_view_angle = command.view_angle;
-        }
-    }
-
-    command.movement = command
-        .movement
-        .movement(command.view_angle, state.view_angle);
-
-    command.buttons.insert(Button::FAST_DUCK | Button::RUN);
-
-    // Removing them all results in normal movement, even when yaw is backwards.
-    command.buttons.remove(
-        Button::MOVE_FORWARD | Button::MOVE_BACKWARD | Button::MOVE_LEFT | Button::MOVE_RIGHT,
-    );
-
-    command.buttons.insert(Button::MOVE_RIGHT);
-
-    if state.anti_untrusted {
-        command.view_angle = command.view_angle.sanitize_angle();
+#[inline]
+pub fn sin(v: Vec3) -> Vec3 {
+    Vec3 {
+        x: v.x.sin(),
+        y: v.y.sin(),
+        z: v.z.sin(),
     }
 }
 
 #[inline]
-unsafe fn create_move_inner(
-    this: &mut ClientMode,
-    sample: f32,
-    command: &mut Command,
-    send_packet: &mut bool,
-) -> Option<()> {
-    let state = State::get();
-    let create_move_original = state.hooks.create_move?;
-
-    (create_move_original)(this, sample, command);
-
-    if command.tick_count == 0 {
-        return None;
+pub fn cos(v: Vec3) -> Vec3 {
+    Vec3 {
+        x: v.x.cos(),
+        y: v.y.cos(),
+        z: v.z.cos(),
     }
-
-    let local_player = PlayerRef::from_raw(state.local.player)?;
-
-    // don't mess with input if you are spectating
-    if local_player.observer_mode() != ObserverMode::None {
-        return None;
-    }
-
-    do_create_move(command, local_player, send_packet);
-
-    if state.fake_lag == 0 {
-        state.local.view_angle = command.view_angle;
-    } else if *send_packet {
-        state.local.view_angle = command.view_angle;
-    }
-
-    None
 }
 
-/// `CreateMove` hook.
+#[inline]
+pub fn sin_cos(v: Vec3) -> (Vec3, Vec3) {
+    (sin(v), cos(v))
+}
+
+#[inline]
+pub fn to_radians(angle: Vec3) -> Vec3 {
+    angle * 1.0_f32.to_radians()
+}
+
+#[inline]
+pub fn to_degrees(angle: Vec3) -> Vec3 {
+    angle * 1.0_f32.to_degrees()
+}
+
+#[inline]
+pub fn to_vectors(angle: Vec3) -> (Vec3, Vec3, Vec3) {
+    let (sin, cos) = sin_cos(to_radians(angle));
+
+    let x = cos.x * cos.y;
+    let y = cos.x * sin.y;
+    let z = -sin.x;
+    let forward = Vec3::new(x, y, z);
+
+    let x = (-sin.z * sin.x * cos.y) + (-cos.z * -sin.y);
+    let y = (-sin.z * sin.x * sin.y) + (-cos.z * cos.y);
+    let z = -sin.z * cos.x;
+    let right = Vec3::new(x, y, z);
+
+    let x = (cos.z * sin.x * cos.y) + (-sin.z * -sin.y);
+    let y = (cos.z * sin.x * sin.y) + (-sin.z * cos.y);
+    let z = cos.z * cos.x;
+    let up = Vec3::new(x, y, z);
+
+    (forward, right, up)
+}
+
+#[inline]
+pub fn direction(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
+    let movement = movement.truncate();
+    let forward = forward.truncate();
+    let right = right.truncate();
+
+    (forward * movement.x + right * movement.y).extend(0.0)
+}
+
+/// Calculate movement vectors from the current view angle and a wish view angle.
+#[inline]
+pub fn fix_movement(mut movement: Vec3, angle: Vec3, wish_angle: Vec3) -> Vec3 {
+    let (mut forward, mut right, _up) = to_vectors(angle);
+    let (mut wish_forward, mut wish_right, _wish_up) = to_vectors(wish_angle);
+
+    forward.z = 0.0;
+    right.z = 0.0;
+    wish_forward.z = 0.0;
+    wish_right.z = 0.0;
+
+    forward = forward.normalize_or_zero();
+    right = right.normalize_or_zero();
+    wish_forward = wish_forward.normalize_or_zero();
+    wish_right = wish_right.normalize_or_zero();
+
+    let dir = direction(movement, forward, right);
+    let wish_dir = direction(movement, wish_forward, wish_right);
+
+    if wish_dir != dir {
+        let denominator = right.y * forward.x - right.x * forward.y;
+
+        movement.x = (wish_dir.x * right.y - wish_dir.y * right.x) / denominator;
+        movement.y = (wish_dir.y * forward.x - wish_dir.x * forward.y) / denominator;
+    }
+
+    movement
+}
+
+// [strafe theory](https://web.archive.org/web/20150217142101/http://www.funender.com/quake/articles/strafing_theory.html).
+// [quake physics](https://www.quakeworld.nu/wiki/QW_physics_air).
+
+#[derive(Resource)]
+pub struct EngineViewAngle(pub Vec3);
+
+#[derive(Resource)]
+pub struct LocalViewAngle(pub Vec3);
+
+#[derive(Clone, Copy)]
+pub struct WalkingAnimation {
+    forward: Button,
+    backward: Button,
+    left: Button,
+    right: Button,
+}
+
+impl WalkingAnimation {
+    #[inline]
+    pub const fn normal() -> Self {
+        Self {
+            forward: Button::MOVE_FORWARD,
+            backward: Button::MOVE_BACKWARD,
+            left: Button::MOVE_LEFT,
+            right: Button::MOVE_RIGHT,
+        }
+    }
+
+    #[inline]
+    pub const fn slide() -> Self {
+        Self {
+            forward: Button::MOVE_BACKWARD,
+            backward: Button::MOVE_FORWARD,
+            left: Button::MOVE_RIGHT,
+            right: Button::MOVE_LEFT,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum WalkingAnimation {
+    /// Normal walking animation.
+    #[default]
+    Normal,
+
+    /// Sliding..?
+    Slide,
+}
+
 pub unsafe extern "C" fn create_move(
-    this: &mut ClientMode,
+    his: &mut ClientMode,
     sample: f32,
     command: &mut Command,
 ) -> bool {
+    // ignore samples
+    if command.command == 0 || command.tick_count == 0 {
+        return false;
+    }
+
     let rbp: *mut *mut bool;
 
     asm!("mov {}, rbp", out(reg) rbp, options(nostack));
 
     let send_packet = &mut *(*rbp).sub(24);
 
-    create_move_inner(this, sample, command, send_packet);
+    let state = crate::State::get();
+    let engine = &state.interfaces.as_ref().unwrap().engine;
+    let engine_view_angle = engine.view_angle();
+
+    command.buttons.remove(
+        Button::MOVE_FORWARD | Button::MOVE_BACKWARD | Button::MOVE_LEFT | Button::MOVE_RIGHT,
+    );
+
+    command.buttons.insert(Button::FAST_DUCK | Button::RUN);
+
+    command.view_angle.x = 89.0;
+    command.view_angle.y += 180.0;
+    //command.view_angle.z = 90.0;
+
+    if command.buttons.contains(Button::ATTACK)
+        || command.buttons.contains(Button::ATTACK_SECONDARY)
+    {
+        command.view_angle = engine_view_angle;
+    }
+
+    command.view_angle = sanitize_angle(command.view_angle);
+    command.movement = fix_movement(command.movement, command.view_angle, engine_view_angle);
+
+    let buttons = WalkingAnimation::slide();
+
+    match command.movement.x.partial_cmp(&0.0_f32) {
+        Some(Ordering::Greater) => command.buttons.insert(buttons.forward),
+        Some(Ordering::Less) => command.buttons.insert(buttons.backward),
+        _ => {}
+    }
+
+    match command.movement.y.partial_cmp(&0.0_f32) {
+        Some(Ordering::Greater) => command.buttons.insert(buttons.right),
+        Some(Ordering::Less) => command.buttons.insert(buttons.left),
+        _ => {}
+    }
+
+    elysium_sdk::with_app_mut(|app| {
+        app.insert_resource(LocalViewAngle(command.view_angle));
+    });
 
     false
 }

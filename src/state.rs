@@ -3,8 +3,7 @@
 use crate::anti_aim::AntiAim;
 use crate::entity::{Player as _, PlayerRef};
 use crate::ui;
-use elysium_math::Matrix3x4;
-use elysium_math::Vec3;
+use bevy::math::Vec3;
 use elysium_sdk::material::BorrowedMaterial;
 use elysium_sdk::network::Flow;
 use elysium_sdk::{Globals, Input, Interfaces, Vars};
@@ -124,8 +123,6 @@ const NEW: State = State {
     create: ptr::null(),
     find: ptr::null(),
 
-    bones: [[Matrix3x4::splat(0.0); 256]; 64],
-
     original_view_angle: Vec3::splat(0.0),
 
     location: None,
@@ -186,8 +183,6 @@ pub struct State {
 
     pub create: *const (),
     pub find: *const (),
-
-    pub bones: [[Matrix3x4; 256]; 64],
 
     pub original_view_angle: Vec3,
 

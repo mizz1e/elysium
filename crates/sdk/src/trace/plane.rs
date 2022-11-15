@@ -1,5 +1,5 @@
+use bevy::math::Vec3;
 use cake::ffi::BytePad;
-use elysium_math::Vec3;
 
 /// Extra information about the trace.
 #[derive(Debug)]

@@ -1,6 +1,5 @@
-use crate::vtable_validate;
+use crate::{vtable_validate, Mat4x3};
 use cake::ffi::VTablePad;
-use elysium_math::Matrix3x4;
 
 #[repr(C)]
 struct VTable {
@@ -11,7 +10,7 @@ struct VTable {
     _pad2: VTablePad<4>,
     setup_bones: unsafe extern "thiscall" fn(
         this: *const Renderable,
-        bones: *mut Matrix3x4,
+        bones: *mut Mat4x3,
         len: i32,
         mask: i32,
         time: f32,
@@ -41,7 +40,7 @@ impl Renderable {
     }
 
     #[inline]
-    pub fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool {
+    pub fn setup_bones(&self, bones: &mut [Mat4x3], mask: i32, time: f32) -> bool {
         unsafe {
             (self.vtable.setup_bones)(self, bones.as_mut_ptr(), bones.len() as i32, mask, time)
         }

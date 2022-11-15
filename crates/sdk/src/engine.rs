@@ -1,6 +1,8 @@
-use super::{ffi, vtable_export, vtable_validate, NetworkChannel, SteamAPIContext, SteamId};
+use crate::{
+    ffi, vtable_export, vtable_validate, Mat4x3, NetworkChannel, SteamAPIContext, SteamId,
+};
+use bevy::math::Vec3;
 use cake::ffi::VTablePad;
-use elysium_math::{Matrix3x4, Vec3};
 use std::ffi::{CStr, OsStr};
 use std::mem::MaybeUninit;
 use std::os::unix::ffi::OsStrExt;
@@ -48,7 +50,7 @@ struct VTable {
         max: *const Vec3,
     ) -> bool,
     _unknown6: VTablePad<2>,
-    world_to_screen_matrix: unsafe extern "thiscall" fn(this: *const Engine) -> *const Matrix3x4,
+    world_to_screen_matrix: unsafe extern "thiscall" fn(this: *const Engine) -> *const Mat4x3,
     _unknown7: VTablePad<5>,
     bsp_tree_query: unsafe extern "thiscall" fn(this: *const Engine) -> *const (),
     _unknown8: VTablePad<9>,
@@ -185,7 +187,7 @@ impl Engine {
 
     /// returns the world to screen matrix
     #[inline]
-    pub fn world_to_screen_matrix(&self) -> Matrix3x4 {
+    pub fn world_to_screen_matrix(&self) -> Mat4x3 {
         unsafe { *(self.vtable.world_to_screen_matrix)(self) }
     }
 

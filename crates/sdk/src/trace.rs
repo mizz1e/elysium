@@ -1,8 +1,8 @@
 //! Trace interface
 
+use bevy::math::Vec3;
 use cake::ffi::VTablePad;
 use core::mem::MaybeUninit;
-use elysium_math::Vec3;
 
 pub use contents::Contents;
 pub use displacement::Displacement;

@@ -1,8 +1,8 @@
 //! Anti-aim implementation.
 
+use bevy::math::Vec3;
 use core::fmt;
 use core::ops::RangeInclusive;
-use elysium_math::Vec3;
 use rand::Rng;
 
 #[inline]

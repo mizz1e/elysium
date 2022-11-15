@@ -1,7 +1,8 @@
 use super::{EntityRef, FogRef, PlayerRef, TonemapRef, WeaponRef};
-use elysium_math::{Matrix3x4, Vec3};
+use bevy::math::Vec3;
 use elysium_sdk::client::Class;
 use elysium_sdk::model::Model;
+use elysium_sdk::Mat4x3;
 
 pub(super) use sealed::Sealed;
 
@@ -56,5 +57,5 @@ pub trait Entity<'a>: Sealed + 'a {
     fn origin(&self) -> Vec3;
 
     /// Setup bones for this entity.
-    fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool;
+    fn setup_bones(&self, bones: &mut [Mat4x3; 256], mask: i32, time: f32) -> bool;
 }

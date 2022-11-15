@@ -1,8 +1,8 @@
 use super::Table;
+use bevy::math::Vec3;
 use cake::ffi::BytePad;
 use core::ptr::NonNull;
 use core::{ffi, fmt};
-use elysium_math::Vec3;
 
 #[repr(C)]
 pub union VariantData {

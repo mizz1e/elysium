@@ -17,16 +17,16 @@ version = "4.0"
 
 [dependencies.bevy]
 default-features = false
-version = "0.8"
+version = "0.9"
+
+[dependencies.bevy_transform]
+version = "0.9"
 
 [dependencies.elysium-framework]
 path = "crates/framework"
 
 [dependencies.elysium-input]
 path = "crates/input"
-
-[dependencies.elysium-math]
-path = "crates/math"
 
 [dependencies.elysium-mem]
 path = "crates/mem"
@@ -81,7 +81,6 @@ opt-level = 3
 members = [
     "crates/framework",
     "crates/input",
-    "crates/math",
     "crates/mem",
     "crates/ptr",
     "crates/sdk",

@@ -1,13 +1,12 @@
 //! Entity traits and references.
 // TODO: move to elysium_sdk
 
+use bevy::math::Vec3;
 use core::time::Duration;
-use elysium_math::{Matrix3x4, Vec3};
 use elysium_sdk::client::Class;
 use elysium_sdk::entity::{MoveKind, ObserverMode, PlayerFlags, Team};
 use elysium_sdk::model::Model;
-use elysium_sdk::HitGroup;
-use elysium_sdk::WeaponInfo;
+use elysium_sdk::{HitGroup, Mat4x3, WeaponInfo};
 use palette::Srgba;
 use std::ffi::OsStr;
 use std::fmt;
@@ -153,7 +152,7 @@ macro_rules! def_ent {
                 }
 
                 #[inline]
-                fn setup_bones(&self, bones: &mut [Matrix3x4], mask: i32, time: f32) -> bool {
+                fn setup_bones(&self, bones: &mut [Mat4x3; 256], mask: i32, time: f32) -> bool {
                     self.as_repr().setup_bones(bones, mask, time)
                 }
             }
@@ -326,11 +325,6 @@ impl<'a> Player<'a> for PlayerRef<'a> {
     #[inline]
     fn velocity(&self) -> Vec3 {
         self.as_repr().velocity()
-    }
-
-    #[inline]
-    fn velocity_magnitude(&self) -> f32 {
-        self.velocity().magnitude()
     }
 
     #[inline]

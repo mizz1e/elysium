@@ -1,9 +1,9 @@
 //! Input interace.
 
 use crate::vtable_validate;
+use bevy::math::Vec3;
 use cake::ffi::{BytePad, VTablePad};
 use core::{fmt, ptr};
-use elysium_math::Vec3;
 
 pub use joystick::Joystick;
 pub use mouse::Mouse;

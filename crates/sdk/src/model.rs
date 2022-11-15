@@ -1,5 +1,6 @@
+use crate::Mat4x3;
+use bevy::math::Vec3;
 use cake::ffi::BytePad;
-use elysium_math::{Matrix3x4, Vec3};
 
 pub use info::ModelInfo;
 pub use render::ModelRender;
@@ -16,7 +17,7 @@ pub struct DrawModelState {
     pub studio: *const (),
     pub hardware_data: *const (),
     pub renderable: *const (),
-    pub model_to_world: *const Matrix3x4,
+    pub model_to_world: *const [Mat4x3; 256],
     pub decals: *const (),
     pub draw_flags: i32,
     pub lod: i32,
@@ -38,8 +39,8 @@ pub struct ModelRenderInfo {
     _pad0: BytePad<4>,
     pub renderable: *const *const (),
     pub model: *const Model,
-    pub model_to_world: *const Matrix3x4,
-    pub lighting_offset: *const Matrix3x4,
+    pub model_to_world: *const [Mat4x3; 256],
+    pub lighting_offset: *const Mat4x3,
     pub lighting_origin: *const Vec3,
     pub flags: i32,
     pub entity_index: i32,

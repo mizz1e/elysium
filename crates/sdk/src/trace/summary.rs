@@ -1,5 +1,5 @@
 use super::{Contents, Displacement, HitGroup, Plane, Surface, SurfaceFlags};
-use elysium_math::Vec3;
+use bevy::math::Vec3;
 
 /// The summary of a trace.
 #[repr(C)]

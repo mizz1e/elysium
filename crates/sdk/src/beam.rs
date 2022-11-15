@@ -1,5 +1,5 @@
+use bevy::math::Vec3;
 use cake::ffi::{BytePad, VTablePad};
-use elysium_math::Vec3;
 
 /// Information for creating a beam.
 #[repr(C)]

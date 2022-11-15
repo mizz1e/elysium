@@ -1,5 +1,5 @@
+use bevy::math::{Vec3, Vec4};
 use cake::ffi::BytePad;
-use elysium_math::{Vec3, Vec4};
 
 /// Ray to be traced.
 #[derive(Debug)]
@@ -18,9 +18,9 @@ impl Ray {
     pub fn new(start: Vec3, end: Vec3) -> Self {
         let delta = end - start;
         let is_ray = true;
-        let is_swept = delta.magnitude() != 0.0;
-        let delta = Vec4::from(delta);
-        let start = Vec4::from(start);
+        let is_swept = delta.length() != 0.0;
+        let delta = delta.extend(0.0);
+        let start = start.extend(0.0);
 
         Self {
             start,

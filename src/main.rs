@@ -21,7 +21,7 @@ use elysium_sdk::material::Materials;
 use elysium_sdk::networked;
 use elysium_sdk::{Vars, Vdf};
 use error::Error;
-use state::{CreateMove, DrawModel, OverrideView, PollEvent, SwapWindow};
+use state::{CreateMove, DrawModel, PollEvent, SwapWindow};
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::time::Instant;
@@ -283,13 +283,13 @@ fn setup() -> Result<(), Error> {
             ));
         });
 
-        let address = client.override_view_address().cast::<OverrideView>();
+        /*let address = client.override_view_address().cast::<OverrideView>();
 
         elysium_mem::unprotect(address, |address, prot| {
             state.hooks.override_view = Some(address.replace(hooks::override_view));
             tracing::info!("hooked clientmode overrideview");
             prot
-        });
+        });*/
     }
 
     Ok(())

@@ -1,9 +1,8 @@
 use super::{DrawModelState, ModelRenderInfo};
 use crate::material::Material;
-use crate::vtable_validate;
+use crate::{vtable_validate, Mat4x3};
 use cake::ffi::VTablePad;
 use core::ptr;
-use elysium_math::Matrix3x4;
 
 #[repr(C)]
 struct VTable {
@@ -20,7 +19,7 @@ struct VTable {
         context: *mut u8,
         state: *mut DrawModelState,
         info: *const ModelRenderInfo,
-        bone_to_world: *const Matrix3x4,
+        bone_to_world: *const [Mat4x3; 256],
     ),
 }
 
@@ -60,7 +59,7 @@ impl ModelRender {
         context: *mut u8,
         state: &mut DrawModelState,
         info: &ModelRenderInfo,
-        bone_to_world: &Matrix3x4,
+        bone_to_world: &[Mat4x3; 256],
     ) {
         unsafe { (self.vtable.draw_model)(self, context, state, info, bone_to_world) }
     }

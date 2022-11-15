@@ -61,9 +61,9 @@ impl Context {
 
         if let Some(interfaces) = state.interfaces.as_ref() {
             if interfaces.engine.is_in_game() {
-                hud_renderer.with_primitives(|backend, primitives| {
+                /*hud_renderer.with_primitives(|backend, primitives| {
                     backend.present(&context, primitives, &viewport, EMPTY);
-                });
+                });*/
             }
         }
 

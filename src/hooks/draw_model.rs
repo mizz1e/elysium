@@ -1,8 +1,7 @@
 use crate::entity::{Entity, Player, PlayerRef};
 use crate::{state, State};
-use elysium_math::Matrix3x4;
-use elysium_sdk::material;
 use elysium_sdk::model::{DrawModelState, ModelRender, ModelRenderInfo};
+use elysium_sdk::{material, Mat4x3};
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 const ORANGE: [f32; 4] = [1.0, 0.5, 0.0, 0.5];
@@ -75,7 +74,7 @@ impl Layers {
         context: *mut u8,
         draw_state: *mut DrawModelState,
         info: *const ModelRenderInfo,
-        bone_to_world: *const Matrix3x4,
+        bone_to_world: *const [Mat4x3; 256],
     ) {
         let state = State::get();
         let draw_model_original = state.hooks.draw_model.unwrap();
@@ -109,7 +108,7 @@ unsafe fn draw_model_inner(
     context: *mut u8,
     draw_state: *mut DrawModelState,
     info: *const ModelRenderInfo,
-    bone_to_world: *const Matrix3x4,
+    bone_to_world: *const [Mat4x3; 256],
 ) -> Option<()> {
     let state = State::get();
     let interfaces = state.interfaces.as_ref()?;
@@ -176,7 +175,7 @@ pub unsafe extern "C" fn draw_model(
     context: *mut u8,
     draw_state: *mut DrawModelState,
     info: *const ModelRenderInfo,
-    bone_to_world: *const Matrix3x4,
+    bone_to_world: *const [Mat4x3; 256],
 ) {
     draw_model_inner(model_render, context, draw_state, info, bone_to_world);
 }
