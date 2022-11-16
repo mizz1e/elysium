@@ -34,7 +34,7 @@ pub mod id;
 pub mod input;
 pub mod material;
 pub mod model_render;
-pub mod network;
+pub mod network_channel;
 pub mod networked;
 pub mod player_model;
 pub mod ptr;

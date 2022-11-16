@@ -1,4 +1,5 @@
 use crate::Ptr;
+use bevy::prelude::*;
 use std::ffi;
 use std::ffi::CStr;
 use std::net::{IpAddrV4, SocketAddrV4};
@@ -11,6 +12,7 @@ const FLOW_OUTGOING: ffi::c_int = 0;
 const FLOW_INCOMING: ffi::c_int = 1;
 
 // https://github.com/HackerPolice/MissedIT/blob/master/src/SDK/INetChannel.h
+#[derive(Resource)]
 pub struct INetChannel {
     pub(crate) ptr: Ptr,
 }
@@ -24,6 +26,7 @@ pub struct Info {
 }
 
 impl INetChannel {
+    #[inline]
     fn address(&self) -> SocketAddrV4 {
         if self.is_loopback() {
             return SocketAddrV4::new(IpAddrV4::LOCALHOST, DEFAULT_PORT);
@@ -45,6 +48,7 @@ impl INetChannel {
             .unwrap_or_else(|_| panic!("invalid address from INetChannel"))
     }
 
+    #[inline]
     fn is_loopback(&self) -> bool {
         let method: unsafe extern "C" fn(this: *mut u8) -> bool =
             unsafe { self.ptr.vtable_entry(6) };
@@ -52,6 +56,7 @@ impl INetChannel {
         unsafe { (method)(self.ptr.as_ptr()) }
     }
 
+    #[inline]
     fn latency(&self) -> (Duration, Duration) {
         let method: unsafe extern "C" fn(this: *mut u8, flow: ffi::c_int) -> f32 =
             unsafe { self.ptr.vtable_entry(10) };
@@ -65,6 +70,7 @@ impl INetChannel {
         (outgoing, incoming)
     }
 
+    #[inline]
     fn packets(&self) -> (u32, u32) {
         let method: unsafe extern "C" fn(this: *mut u8, flow: ffi::c_int) -> f32 =
             unsafe { self.ptr.vtable_entry(14) };
@@ -78,6 +84,7 @@ impl INetChannel {
         (outgoing, incoming)
     }
 
+    #[inline]
     fn data(&self) -> (ByteUnit, ByteUnit) {
         let method: unsafe extern "C" fn(this: *mut u8, flow: ffi::c_int) -> f32 =
             unsafe { self.ptr.vtable_entry(14) };
@@ -91,6 +98,7 @@ impl INetChannel {
         (outgoing, incoming)
     }
 
+    #[inline]
     pub fn info(&self) -> Info {
         let address = self.address();
         let latency = self.latency();
