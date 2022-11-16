@@ -1,140 +1,125 @@
-use crate::{vtable_validate, ClientMode};
-use cake::ffi::VTablePad;
-use core::{mem, ptr};
+use crate::{global, CGlobalVarsBase, CInput, IClientMode, Ptr};
+use bevy::prelude::*;
+use std::{ffi, mem};
 
-pub use class::Class;
-pub use classes::ClassIter;
-pub use property::Property;
-pub use table::Table;
+#[derive(Resource)]
+pub struct LevelInitPreEntity(
+    pub(crate) unsafe extern "C" fn(this: *mut u8, path: *const ffi::c_char),
+);
 
-mod class;
-mod classes;
-mod property;
-mod table;
+#[derive(Resource)]
+pub struct LevelInitPostEntity(pub(crate) unsafe extern "C" fn(this: *mut u8));
 
-#[repr(C)]
-struct VTable {
-    _pad0: VTablePad<8>,
-    class_iter: unsafe extern "C" fn(this: *const Client) -> *const Class,
-    _pad1: VTablePad<1>,
-    hud_process_input: unsafe extern "C" fn(),
-    hud_update: unsafe extern "C" fn(),
-    _pad2: VTablePad<4>,
-    activate_mouse: unsafe extern "C" fn(),
-    _pad3: VTablePad<20>,
-    frame_stage_notify: unsafe extern "C" fn(this: *const (), frame: i32) -> bool,
-    dispatch_user_message: unsafe extern "C" fn(
-        this: *const Client,
-        message_kind: i32,
-        passthrough_flags: i32,
-        len: i32,
-        data: *const u8,
-    ) -> bool,
+#[derive(Resource)]
+pub struct LevelShutdown(pub(crate) unsafe extern "C" fn(this: *mut u8));
+
+#[derive(Resource)]
+pub struct FrameStageNotify(pub(crate) unsafe extern "C" fn(this: *mut u8, frame: ffi::c_int));
+
+#[derive(Resource)]
+pub struct IBaseClientDLL {
+    pub(crate) ptr: Ptr,
 }
 
-vtable_validate! {
-    class_iter => 8,
-    hud_process_input => 10,
-    hud_update => 11,
-    activate_mouse => 16,
-    frame_stage_notify => 37,
-    dispatch_user_message => 38,
-}
-
-/// Client interface.
-#[repr(C)]
-pub struct Client {
-    vtable: &'static VTable,
-}
-
-impl Client {
+impl IBaseClientDLL {
     #[inline]
-    pub fn class_iter(&self) -> ClassIter<'_> {
-        unsafe {
-            let iter = (self.vtable.class_iter)(self).as_ref();
+    pub(crate) unsafe fn setup(&self) {
+        global::with_app_mut(|app| {
+            app.insert_resource(LevelInitPreEntity(
+                self.ptr.vtable_replace(5, level_init_pre_entity),
+            ));
 
-            ClassIter { iter }
-        }
-    }
+            app.insert_resource(LevelInitPostEntity(
+                self.ptr.vtable_replace(6, level_init_post_entity),
+            ));
 
-    #[inline]
-    pub fn dispatch_user_message<'a, D>(
-        &self,
-        kind: i32,
-        flags: i32,
-        data: Option<&'a [u8]>,
-    ) -> bool {
-        const EMPTY: (*const u8, i32) = (ptr::null(), 0);
+            app.insert_resource(LevelShutdown(self.ptr.vtable_replace(7, level_shutdown)));
 
-        let (bytes, len) = data
-            .map(|bytes| (bytes.as_ptr(), bytes.len() as i32))
-            .unwrap_or(EMPTY);
+            app.insert_resource(FrameStageNotify(
+                self.ptr.vtable_replace(37, frame_stage_notify),
+            ));
 
-        unsafe { (self.vtable.dispatch_user_message)(self, kind, flags, len, bytes) }
-    }
+            let activate_mouse = self.ptr.vtable_entry(16) as *const u8;
+            let hud_process_input = self.ptr.vtable_entry(10) as *const u8;
+            let hud_update = self.ptr.vtable_entry(11) as *const u8;
 
-    #[inline]
-    pub fn client_mode(&self) -> *const ClientMode {
-        unsafe {
-            type ClientModeFn = unsafe extern "C" fn() -> *const ClientMode;
-
-            let hud_process_input = self.vtable.hud_process_input as *const u8;
             let call_client_mode = hud_process_input.byte_add(11);
             let client_mode = elysium_mem::next_abs_addr_ptr::<u8>(call_client_mode)
-                .expect("client mode function");
+                .unwrap_or_else(|| panic!("unable to find IClientMode"));
 
-            let client_mode: ClientModeFn = mem::transmute(client_mode);
+            let client_mode: unsafe extern "C" fn() -> *mut u8 = mem::transmute(client_mode);
+            let ptr = client_mode();
+            let ptr = Ptr::new("IClientMode", ptr)
+                .unwrap_or_else(|| panic!("unable to find IClientMode"));
 
-            client_mode()
-        }
-    }
+            let client_mode = IClientMode { ptr };
 
-    #[inline]
-    pub fn create_move_address(&self) -> *const u8 {
-        unsafe {
-            let client_mode = &*self.client_mode();
+            client_mode.setup();
 
-            client_mode.create_move_address()
-        }
-    }
+            app.insert_resource(client_mode);
 
-    #[inline]
-    pub fn override_view_address(&self) -> *const u8 {
-        unsafe {
-            let client_mode = &*self.client_mode();
-
-            client_mode.override_view_address()
-        }
-    }
-
-    #[inline]
-    pub fn frame_stage_notify_address(&self) -> *const u8 {
-        ptr::addr_of!(self.vtable.frame_stage_notify).cast()
-    }
-
-    #[inline]
-    pub fn globals(&self) -> *const u8 {
-        unsafe {
-            let hud_update = self.vtable.hud_update as *const u8;
             let address = hud_update.byte_add(13);
-            let globals = elysium_mem::next_abs_addr_ptr::<*const u8>(address)
-                .expect("globals structure")
-                .read();
+            let ptr = *elysium_mem::next_abs_addr_ptr::<*mut u8>(address)
+                .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
 
-            globals
-        }
+            let ptr = Ptr::new("CGlobalVarsBase", ptr)
+                .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
+
+            app.insert_resource(CGlobalVarsBase { ptr });
+
+            let ptr = **elysium_mem::next_abs_addr_ptr::<*const *mut u8>(activate_mouse)
+                .unwrap_or_else(|| panic!("unable to find CInput"));
+
+            let ptr = Ptr::new("CInput", ptr).unwrap_or_else(|| panic!("unable to find CInput"));
+
+            app.insert_resource(CInput { ptr });
+        });
     }
 
-    #[inline]
-    pub fn input(&self) -> *const u8 {
+    fn all_classes(&self) {
+        let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
+            unsafe { self.ptr.vtable_entry(8) };
+
+        let classes = unsafe { (method)(self.ptr.as_ptr()) };
+    }
+
+    fn deactivate_mouse(&self) {
+        let method: unsafe extern "C" fn(this: *mut u8) = unsafe { self.ptr.vtable_entry(15) };
+
         unsafe {
-            let activate_mouse = self.vtable.activate_mouse as *const u8;
-            let input = elysium_mem::next_abs_addr_ptr::<*const *const u8>(activate_mouse)
-                .expect("input structure")
-                .read()
-                .read();
-
-            input
+            (method)(self.ptr.as_ptr());
         }
     }
+
+    fn activate_mouse(&self) {
+        let method: unsafe extern "C" fn(this: *mut u8) = unsafe { self.ptr.vtable_entry(16) };
+
+        unsafe {
+            (method)(self.ptr.as_ptr());
+        }
+    }
+}
+
+unsafe extern "C" fn level_init_pre_entity(this: *mut u8, path: *const ffi::c_char) {
+    let method = global::with_app(|app| app.world.resource::<LevelInitPreEntity>().0);
+
+    (method)(this, path)
+}
+
+unsafe extern "C" fn level_init_post_entity(this: *mut u8) {
+    let method = global::with_app(|app| app.world.resource::<LevelInitPostEntity>().0);
+
+    (method)(this)
+}
+
+unsafe extern "C" fn level_shutdown(this: *mut u8) {
+    let method = global::with_app(|app| app.world.resource::<LevelShutdown>().0);
+
+    (method)(this)
+}
+
+unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
+    let method = global::with_app(|app| app.world.resource::<FrameStageNotify>().0);
+
+    (method)(this, frame)
 }

@@ -1,4 +1,4 @@
-use crate::{INetworkChannel, Ptr};
+use crate::{INetChannel, Ptr};
 use bevy::prelude::*;
 use std::ffi;
 use std::ffi::{CStr, OsStr};
@@ -6,11 +6,11 @@ use std::os::unix::ffi::OsStrExt;
 
 /// `engine/cdll_engine_int.cpp`.
 #[derive(Resource)]
-pub struct CEngineClient {
+pub struct IVEngineClient {
     pub(crate) ptr: Ptr,
 }
 
-impl CEngineClient {
+impl IVEngineClient {
     #[inline]
     pub fn view_angle(&self) -> Vec3 {
         let method: unsafe extern "C" fn(this: *mut u8, view_angle: *mut Vec3) =
@@ -50,7 +50,7 @@ impl CEngineClient {
     }
 
     #[inline]
-    pub fn network_channel(&self) -> Option<INetworkChannel> {
+    pub fn network_channel(&self) -> Option<INetChannel> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(78) };
 
@@ -59,9 +59,9 @@ impl CEngineClient {
         if network_channel.is_null() {
             None
         } else {
-            let ptr = unsafe { Ptr::new("INetworkChannel", network_channel)? };
+            let ptr = unsafe { Ptr::new("INetChannel", network_channel)? };
 
-            Some(INetworkChannel { ptr })
+            Some(INetChannel { ptr })
         }
     }
 }

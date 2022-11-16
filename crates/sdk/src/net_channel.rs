@@ -2,7 +2,7 @@ use crate::Ptr;
 use bevy::prelude::*;
 use std::ffi;
 use std::ffi::CStr;
-use std::net::{IpAddrV4, SocketAddrV4};
+use std::net::{Ipv4Addr, SocketAddrV4};
 use std::time::Duration;
 use ubyte::ByteUnit;
 
@@ -29,7 +29,7 @@ impl INetChannel {
     #[inline]
     fn address(&self) -> SocketAddrV4 {
         if self.is_loopback() {
-            return SocketAddrV4::new(IpAddrV4::LOCALHOST, DEFAULT_PORT);
+            return SocketAddrV4::new(Ipv4Addr::LOCALHOST, DEFAULT_PORT);
         }
 
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ffi::c_char =
@@ -43,7 +43,7 @@ impl INetChannel {
 
         SocketAddrV4::parse_ascii(address)
             .or_else(|_| {
-                IpAddrV4::parse_ascii(address).map(|ip| SocketAddrV4::new(ip, DEFAULT_PORT))
+                Ipv4Addr::parse_ascii(address).map(|ip| SocketAddrV4::new(ip, DEFAULT_PORT))
             })
             .unwrap_or_else(|_| panic!("invalid address from INetChannel"))
     }
