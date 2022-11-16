@@ -1,62 +1,68 @@
-use crate::{ffi, vtable_validate};
-use cake::ffi::VTablePad;
-use std::ffi::OsStr;
-use std::fmt;
+use crate::Ptr;
+use bevy::prelude::*;
+use std::ffi;
+use std::ffi::{CString, OsStr};
+use std::marker::PhantomData;
+use std::os::unix::ffi::OsStrExt;
 
-pub use var::{Kind, Var, VarKind, Vars};
-
-mod var;
-
-#[derive(Debug)]
-#[repr(C)]
-pub struct VTable {
-    _pad0: VTablePad<6>,
-    var: unsafe extern "C" fn(this: *const Console, name: *const libc::c_char) -> *const (),
-    _pad1: VTablePad<11>,
-    write: unsafe extern "C" fn(
-        this: *mut Console,
-        fmt: *const libc::c_char,
-        text: *const libc::c_char,
-    ),
+/// `public/tier1/convar.h`.
+#[derive(Resource)]
+pub struct ICvar {
+    pub(crate) ptr: Ptr,
 }
 
-vtable_validate! {
-    var => 15,
-    write => 27,
-}
-
-#[derive(Debug)]
-#[repr(C)]
-pub struct Console {
-    vtable: &'static VTable,
-}
-
-impl Console {
-    /// Get a config variable.
+impl ICvar {
     #[inline]
-    pub fn var<S, T>(&self, name: S) -> Option<&'static Var<T>>
-    where
-        S: AsRef<OsStr>,
-        T: Kind,
-    {
-        ffi::with_cstr_os_str(name, |name| unsafe {
-            (self.vtable.var)(self, name.as_ptr())
-                .cast::<Var<T>>()
-                .as_ref()
-        })
+    pub fn find_var<T>(&self, var_name: impl AsRef<OsStr>) -> Option<ConVar<T>> {
+        let var_name = var_name.as_ref().as_bytes();
+        let var_name = CString::new(var_name).ok()?;
+
+        let method: unsafe extern "C" fn(this: *mut u8, var_name: *const ffi::c_char) -> *mut u8 =
+            unsafe { self.ptr.vtable_entry(15) };
+
+        let convar = unsafe { (method)(self.ptr.as_ptr(), var_name.as_ptr()) };
+        let ptr = unsafe { Ptr::new("ConVar", convar)? };
+
+        let _phantom = PhantomData;
+
+        Some(ConVar { ptr, _phantom })
+    }
+}
+
+#[derive(Resource)]
+pub struct ConVar<T> {
+    pub(crate) ptr: Ptr,
+    _phantom: PhantomData<T>,
+}
+
+impl ConVar<i32> {
+    pub fn read(&self) -> i32 {
+        let method: unsafe extern "C" fn(this: *mut u8) -> i32 =
+            unsafe { self.ptr.vtable_entry(16) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
     }
 
-    /// Write to the console.
-    #[inline]
-    pub fn write(&mut self, args: fmt::Arguments<'_>) -> fmt::Result {
-        let mut buffer = String::new();
+    pub fn write(&self, value: i32) {
+        let method: unsafe extern "C" fn(this: *mut u8, value: i32) =
+            unsafe { self.ptr.vtable_entry(19) };
 
-        fmt::write(&mut buffer, args)?;
+        unsafe { (method)(self.ptr.as_ptr(), value) }
+    }
+}
 
-        ffi::with_cstr_os_str(buffer, |buffer| unsafe {
-            (self.vtable.write)(self, ffi::const_cstr("%s\0").as_ptr(), buffer.as_ptr());
-        });
+impl ConVar<f32> {
+    pub fn read(&self) -> f32 {
+        let method: unsafe extern "C" fn(this: *mut u8) -> f32 =
+            unsafe { self.ptr.vtable_entry(15) };
 
-        Ok(())
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+
+    pub fn write(&self, value: f32) {
+        let method: unsafe extern "C" fn(this: *mut u8, value: f32) =
+            unsafe { self.ptr.vtable_entry(18) };
+
+        unsafe { (method)(self.ptr.as_ptr(), value) }
     }
 }

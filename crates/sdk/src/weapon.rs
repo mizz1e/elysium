@@ -1,4 +1,4 @@
-use cake::ffi::BytePad;
+use std::mem::MaybeUninit;
 
 /// kind of weapon
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,35 +34,35 @@ impl WeaponKind {
 #[derive(Debug)]
 #[repr(C)]
 pub struct WeaponInfo {
-    _pad0: BytePad<32>,
+    _pad0: MaybeUninit<[u8; 32]>,
     pub max_clip: i32,
-    _pad1: BytePad<204>,
+    _pad1: MaybeUninit<[u8; 204]>,
     pub name: *const u8,
-    _pad2: BytePad<72>,
+    _pad2: MaybeUninit<[u8; 72]>,
     pub kind: WeaponKind,
-    _pad3: BytePad<4>,
+    _pad3: MaybeUninit<[u8; 4]>,
     pub price: i32,
-    _pad4: BytePad<12>,
+    _pad4: MaybeUninit<[u8; 12]>,
     pub cycle_time: f32,
-    _pad5: BytePad<12>,
+    _pad5: MaybeUninit<[u8; 12]>,
     pub full_auto: bool,
-    _pad6: BytePad<3>,
+    _pad6: MaybeUninit<[u8; 3]>,
     pub damage: i32,
     pub headshot_multiplier: f32,
     pub armor_ratio: f32,
     pub bullets: i32,
     pub penetration: f32,
-    _pad7: BytePad<8>,
+    _pad7: MaybeUninit<[u8; 8]>,
     pub range: f32,
     pub range_modifier: f32,
-    _pad8: BytePad<16>,
+    _pad8: MaybeUninit<[u8; 16]>,
     pub silencer: bool,
-    _pad9: BytePad<23>,
+    _pad9: MaybeUninit<[u8; 23]>,
     pub max_speed: f32,
     pub max_speed_alt: f32,
-    _pad10: BytePad<100>,
+    _pad10: MaybeUninit<[u8; 100]>,
     pub recoil_magnitude: f32,
     pub recoil_magnitude_alt: f32,
-    _pad11: BytePad<16>,
+    _pad11: MaybeUninit<[u8; 16]>,
     pub recovery_time_stand: f32,
 }
