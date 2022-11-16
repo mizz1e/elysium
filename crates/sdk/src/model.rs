@@ -3,11 +3,9 @@ use bevy::math::Vec3;
 use cake::ffi::BytePad;
 
 pub use info::ModelInfo;
-pub use render::ModelRender;
 pub use studio::StudioHeader;
 
 mod info;
-mod render;
 mod studio;
 
 #[derive(Debug)]

@@ -33,7 +33,7 @@ pub mod global_vars;
 pub mod id;
 pub mod input;
 pub mod material;
-pub mod model;
+pub mod model_render;
 pub mod network;
 pub mod networked;
 pub mod player_model;
