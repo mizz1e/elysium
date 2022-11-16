@@ -1,4 +1,4 @@
-use crate::{global, CGlobalVarsBase, CInput, IClientMode, Ptr};
+use crate::{global, ptr, CGlobalVarsBase, CInput, IClientMode, Ptr};
 use bevy::prelude::*;
 use std::{ffi, mem};
 
@@ -39,9 +39,9 @@ impl IBaseClientDLL {
                 self.ptr.vtable_replace(37, frame_stage_notify),
             ));
 
-            let activate_mouse = self.ptr.vtable_entry(16) as *const u8;
-            let hud_process_input = self.ptr.vtable_entry(10) as *const u8;
-            let hud_update = self.ptr.vtable_entry(11) as *const u8;
+            let activate_mouse = self.ptr.vtable_entry::<ptr::FnPtr>(16) as *const u8;
+            let hud_process_input = self.ptr.vtable_entry::<ptr::FnPtr>(10) as *const u8;
+            let hud_update = self.ptr.vtable_entry::<ptr::FnPtr>(11) as *const u8;
 
             let call_client_mode = hud_process_input.byte_add(11);
             let client_mode = elysium_mem::next_abs_addr_ptr::<u8>(call_client_mode)

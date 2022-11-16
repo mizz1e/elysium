@@ -1,37 +1,35 @@
-use crate::{vtable_validate, Command, View};
-use cake::ffi::VTablePad;
-use core::ptr;
+use crate::{global, CUserCmd, CViewSetup, Ptr};
+use bevy::prelude::*;
 
-#[repr(C)]
-struct VTable {
-    _pad0: VTablePad<19>,
-    override_view: unsafe extern "C" fn(this: *const ClientMode, view: *const View),
-    _pad1: VTablePad<5>,
-    create_move: unsafe extern "C" fn(
-        this: *const ClientMode,
-        input_sample_time: f32,
-        command: *mut Command,
-    ) -> bool,
+#[derive(Resource)]
+pub struct OverrideView(pub(crate) unsafe extern "C" fn(this: *mut u8, setup: *const CViewSetup));
+
+/// `game/client/iclientmode.h`.
+#[derive(Resource)]
+pub struct IClientMode {
+    pub(crate) ptr: Ptr,
 }
 
-vtable_validate! {
-    override_view => 19,
-    create_move => 25,
-}
+impl IClientMode {
+    pub(crate) unsafe fn setup(&self) {
+        global::with_app_mut(|app| {
+            app.insert_resource(OverrideView(self.ptr.vtable_replace(19, override_view)));
 
-#[repr(C)]
-pub struct ClientMode {
-    vtable: &'static VTable,
-}
-
-impl ClientMode {
-    #[inline]
-    pub fn create_move_address(&self) -> *const u8 {
-        ptr::addr_of!(self.vtable.create_move).cast()
+            self.ptr.vtable_replace(25, create_move);
+        });
     }
+}
 
-    #[inline]
-    pub fn override_view_address(&self) -> *const u8 {
-        ptr::addr_of!(self.vtable.override_view).cast()
-    }
+unsafe extern "C" fn override_view(this: *mut u8, setup: *const CViewSetup) {
+    let method = global::with_app(|app| app.world.resource::<OverrideView>().0);
+
+    (method)(this, setup)
+}
+
+unsafe extern "C" fn create_move(
+    this: *mut u8,
+    input_sample_time: f32,
+    command: *mut CUserCmd,
+) -> bool {
+    false
 }

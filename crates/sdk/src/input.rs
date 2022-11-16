@@ -1,5 +1,6 @@
 use crate::Ptr;
 use bevy::prelude::*;
+use std::ffi;
 
 bitflags::bitflags! {
     /// Movement state flags.
@@ -111,20 +112,19 @@ bitflags::bitflags! {
     }
 }
 
-#[derive(Debug)]
 #[repr(C)]
-pub struct Command {
-    pub vtable: *const (),
-    pub command: i32,
-    pub tick_count: i32,
+pub struct CUserCmd {
+    vtable: *const (),
+    pub number: ffi::c_int,
+    pub tick_count: ffi::c_int,
     pub view_angle: Vec3,
     pub aim_direction: Vec3,
     pub movement: Vec3,
     pub buttons: Button,
     pub impulse: u8,
-    pub weapon_select: i32,
-    pub weapon_subtype: i32,
-    pub random_seed: i32,
+    pub weapon_select: ffi::c_int,
+    pub weapon_subtype: ffi::c_int,
+    pub random_seed: ffi::c_int,
     pub mouse_dx: i16,
     pub mouse_dy: i16,
     pub has_been_predicted: bool,

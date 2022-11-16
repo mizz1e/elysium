@@ -3,7 +3,7 @@ use std::mem::MaybeUninit;
 
 #[derive(Debug)]
 #[repr(C)]
-pub struct View {
+pub struct CViewSetup {
     pub x: i32,
     pub old_x: i32,
     pub y: i32,
