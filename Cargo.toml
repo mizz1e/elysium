@@ -71,9 +71,6 @@ default-features = false
 features = ["std"]
 version = "0.1"
 
-[dependencies.ubyte]
-version = "0.10"
-
 [profile.dev]
 opt-level = 3
 

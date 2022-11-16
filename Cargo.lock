@@ -1082,7 +1082,6 @@ dependencies = [
  "regex",
  "sdl2-sys",
  "tracing",
- "ubyte",
  "vdf",
 ]
 
@@ -1128,6 +1127,7 @@ dependencies = [
  "libc",
  "phf",
  "tracing",
+ "ubyte",
 ]
 
 [[package]]

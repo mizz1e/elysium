@@ -93,7 +93,7 @@ impl INetChannel {
         let incoming = unsafe { (method)(self.ptr.as_ptr(), FLOW_INCOMING) };
 
         let outgoing = ByteUnit::Byte(outgoing.trunc() as u64);
-        let incomimg = ByteUnit::Byte(incoming.trunc() as u64);
+        let incoming = ByteUnit::Byte(incoming.trunc() as u64);
 
         (outgoing, incoming)
     }
