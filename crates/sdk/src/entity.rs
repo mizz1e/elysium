@@ -1,12 +1,10 @@
 use core::{fmt, mem};
 
 pub use id::EntityId;
-pub use list::EntityList;
 pub use networkable::{DataUpdateKind, Networkable};
 pub use renderable::Renderable;
 
 mod id;
-mod list;
 mod networkable;
 mod renderable;
 

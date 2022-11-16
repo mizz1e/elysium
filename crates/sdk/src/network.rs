@@ -15,6 +15,7 @@ pub struct INetChannel {
     pub(crate) ptr: Ptr,
 }
 
+#[derive(Debug)]
 pub struct Info {
     pub address: SocketAddrV4,
     pub latency: (Duration, Duration),

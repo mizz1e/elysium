@@ -69,3 +69,7 @@ impl ModelRender {
         &self.vtable.draw_model as *const _ as *const u8
     }
 }
+
+use crate::{global, Ptr};
+
+pub struct IVModelRender(pub(crate) Ptr);

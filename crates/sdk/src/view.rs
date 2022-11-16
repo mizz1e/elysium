@@ -1,5 +1,5 @@
 use bevy::math::Vec3;
-use cake::ffi::BytePad;
+use std::mem::MaybeUninit;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -12,7 +12,7 @@ pub struct View {
     pub old_width: i32,
     pub height: i32,
     pub old_height: i32,
-    _pad0: BytePad<152>,
+    _pad0: MaybeUninit<[u8; 152]>,
     pub fov: f32,
     pub view_model_fov: f32,
     pub origin: Vec3,
