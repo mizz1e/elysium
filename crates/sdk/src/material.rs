@@ -14,6 +14,48 @@ pub struct IMaterialVar {
     pub(crate) ptr: Ptr,
 }
 
+bitflags::bitflags! {
+    /// Material flag.
+    ///
+    /// Used with `pIMaterial->SetFlag`.
+    ///
+    /// See [`public/materialsystem/imaterial.h`](https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/materialsystem/imaterial.h).
+    #[repr(transparent)]
+    pub struct MaterialFlag: u32 {
+        const DEBUG = 1 << 0;
+        const NO_DEBUG_OVERRIDE = 1 << 1;
+        const NO_DRAW = 1 << 2;
+        const USE_IN_FILL_RATE_MODE = 1 << 3;
+        const VERTEX_COLOR = 1 << 4;
+        const VERTEX_ALPHA = 1 << 5;
+        const SELF_ILLLUM = 1 << 6;
+        const ADDITIVE = 1 << 7;
+        const ALPHA_TEST = 1 << 8;
+        const PSEUDO_TRANSLUCENT = 1 << 9;
+        const Z_NEARER = 1 << 10;
+        const MODEL = 1 << 11;
+        const FLAT = 1 << 12;
+        const NO_CULL = 1 << 13;
+        const NO_FOG = 1 << 14;
+        const IGNORE_Z = 1 << 15;
+        const DECAL = 1 << 16;
+        const ENV_MAP_SPHERE = 1 << 17;
+        const AO_PRE_PASS = 1 << 18;
+        const ENV_MAP_CAMERA_SPACE = 1 << 19;
+        const BASE_ALPHA_ENV_MAP_MASK = 1 << 20;
+        const TRANSLUCENT = 1 << 21;
+        const NORMAL_MAP_ALPHA_ENV_MAP_MASK = 1 << 22;
+        const NEEDS_SOFTWARE_SKINNING = 1 << 23;
+        const OPAQUE_TEXTURE = 1 << 24;
+        const MULTIPLY = 1 << 25;
+        const SUPPRESS_DECALS = 1 << 26;
+        const HALF_LAMBERT = 1 << 27;
+        const WIREFRAME = 1 << 28;
+        const ALLOW_ALPHA_TO_COVERAGE = 1 << 29;
+        const ALPHA_MODIFIED_BY_PROXY = 1 << 30;
+        const VERTEX_FOG = 1 << 31;
+    }
+}
 impl IMaterial {
     #[inline]
     pub fn name(&self) -> Box<OsStr> {
@@ -98,8 +140,8 @@ impl IMaterial {
     }
 
     #[inline]
-    pub fn set_flag(&self, flag: MaterialVarFlags_t, enabled: bool) {
-        let method: unsafe extern "C" fn(this: *mut u8, flag: MaterialVarFlags_t, enabled: bool) =
+    pub fn set_flag(&self, flag: MaterialFlag, enabled: bool) {
+        let method: unsafe extern "C" fn(this: *mut u8, flag: MaterialFlag, enabled: bool) =
             unsafe { self.ptr.vtable_entry(29) };
 
         unsafe {

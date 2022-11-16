@@ -1,9 +1,5 @@
-//! Input interace.
-
-use crate::vtable_validate;
-use bevy::math::Vec3;
-use cake::ffi::{BytePad, VTablePad};
-use core::{fmt, ptr};
+use crate::Ptr;
+use bevy::prelude::*;
 
 bitflags::bitflags! {
     /// Movement state flags.
@@ -136,77 +132,36 @@ pub struct Command {
     pub head_offset: Vec3,
 }
 
-#[repr(C)]
-struct VTable {
-    _pad0: VTablePad<8>,
-    get_user_command:
-        unsafe extern "C" fn(this: *const Input, slot: i32, sequence: i32) -> *const Command,
-    _pad1: VTablePad<13>,
-    activate_mouse: unsafe extern "C" fn(this: *const Input),
-    deactivate_mouse: unsafe extern "C" fn(this: *const Input),
+#[derive(Resource)]
+pub struct CInput {
+    pub(crate) ptr: Ptr,
 }
 
-vtable_validate! {
-    get_user_command => 8,
-    activate_mouse => 22,
-    deactivate_mouse => 23,
-}
-
-#[repr(C)]
-pub struct Input {
-    vtable: &'static VTable,
-    _pad0: BytePad<8>,
-    pub is_track_ir_available: bool,
-    pub is_mouse_initialized: bool,
-    pub is_mouse_active: bool,
-    _pad1: BytePad<162>,
-    pub thirdperson: bool,
-    pub camera_moving_with_mouse: bool,
-    pub offset: Vec3,
-}
-
-impl Input {
+impl CInput {
     #[inline]
-    pub fn get_user_command(&self, slot: i32, sequence: i32) -> *const Command {
-        unsafe { (self.vtable.get_user_command)(self, slot, sequence) }
+    fn internal(&self) -> &mut internal::CInput {
+        &mut *self.ptr.as_ptr().cast::<internal::CInput>()
     }
 
-    /// hides the cursor and starts re-centering
     #[inline]
-    pub fn activate_mouse(&self) {
-        unsafe { (self.vtable.activate_mouse)(self) }
+    pub fn in_thirdperson(&self) -> bool {
+        self.internal().in_thirdperson
     }
 
-    /// gives back the cursor and stops centering the mouse
     #[inline]
-    pub fn deactivate_mouse(&self) {
-        unsafe { (self.vtable.deactivate_mouse)(self) }
+    pub fn set_in_thirdperson(&self, enabled: bool) {
+        self.internal().in_thirdperson = enabled;
     }
 }
 
-impl fmt::Debug for Input {
-    #[inline]
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("Input")
-            .field("vtable", &self.vtable)
-            .field("_pad0", &self._pad0)
-            .field("is_track_ir_available", &self.is_track_ir_available)
-            .field("is_mouse_initialized", &self.is_mouse_initialized)
-            .field("is_mouse_active", &self.is_mouse_active)
-            .field("_pad1", &self._pad1)
-            .field("thirdperson", &self.thirdperson)
-            .field("camera_moving_with_mouse", &self.camera_moving_with_mouse)
-            .field("offset", &self.offset)
-            .finish()
-    }
-}
+mod internal {
+    use std::mem::MaybeUninit;
 
-impl fmt::Debug for VTable {
-    #[inline]
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("VTable")
-            .field("_pad0", &self._pad0)
-            .field("get_user_command", &ptr::addr_of!(self.get_user_command))
-            .finish()
+    #[repr(C)]
+    pub struct CInput {
+        _pad0: MaybeUninit<[u8; 18]>,
+        pub mouse_active: bool,
+        _pad1: MaybeUninit<[u8; 162]>,
+        pub in_thirdperson: bool,
     }
 }
