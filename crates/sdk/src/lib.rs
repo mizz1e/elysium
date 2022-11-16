@@ -9,6 +9,7 @@ pub use hit_group::HitGroup;
 pub use id::SteamId;
 pub use mat4x3::Mat4x3;
 pub use ptr::Ptr;
+pub use texture_group::TextureGroup;
 pub use vdf::Vdf;
 pub use view::View;
 
@@ -21,6 +22,7 @@ mod mat4x3;
 mod physics;
 mod render;
 mod steam;
+mod texture_group;
 mod vdf;
 mod view;
 mod weapon;
