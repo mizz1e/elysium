@@ -1,28 +1,11 @@
 //! Trace interface
 
 use crate::{HitGroup, Ptr};
-use bevy::math::Vec3;
+use bevy::prelude::*;
 use std::mem::MaybeUninit;
 
-/// Kind of trace to perform.
-#[repr(i32)]
-pub enum TraceKind {
-    Everything = 0,
-    /// this does not test static props
-    WorldOnly = 1,
-    /// this version will not test static props
-    EntitiesOnly = 2,
-    /// everything filter props
-    EverythingFilterProps = 3,
-}
-
-/// A trait used to customize what a trace will yield.
-pub trait ITraceFilter {
-    fn should_hit(&self, entity: *const u8, mask: i32) -> bool;
-    fn trace_kind(&self) -> TraceKind;
-}
-
 /// https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/engine/IEngineTrace.h
+#[derive(Resource)]
 pub struct IEngineTrace {
     pub(crate) ptr: Ptr,
 }
@@ -46,15 +29,16 @@ impl IEngineTrace {
             this: *mut u8,
             ray: *const internal::Ray,
             mask: u32,
-            filter: internal::ITraceFilter,
+            filter: *const internal::ITraceFilter,
             trace: *mut internal::trace_t,
         ) = unsafe { self.ptr.vtable_entry(5) };
 
         let trace = unsafe {
-            let ray = internal::Ray::new(start, end);
-            let mut trace = MaybeUninit::uninit();
+            let ray = internal::ray(start, end);
+            let filter = internal::filter(None);
+            let mut trace = MaybeUninit::zeroed();
 
-            (method)(self.ptr.as_ptr(), &ray, mask, filter, trace.as_mut_ptr());
+            (method)(self.ptr.as_ptr(), &ray, mask, &filter, trace.as_mut_ptr());
 
             MaybeUninit::assume_init(trace)
         };
@@ -143,8 +127,33 @@ mod internal {
     use super::{Plane, Surface};
     use crate::{HitGroup, Mat4x3};
     use bevy::math::{Vec3, Vec4};
+    use std::collections::HashSet;
     use std::mem::MaybeUninit;
-    use std::ptr;
+    use std::{ffi, ptr};
+
+    const TRACE_EVERYTHING: ffi::c_int = 0;
+
+    const ITRACEFILTER_VTABLE: ITraceFilterVTable = ITraceFilterVTable {
+        should_hit_entity,
+        trace_kind,
+    };
+
+    /// public/engine/IEngineTrace.h
+    #[repr(C)]
+    pub struct ITraceFilter {
+        vtable: &'static ITraceFilterVTable,
+        skip: HashSet<*mut u8>,
+    }
+
+    #[repr(C)]
+    pub struct ITraceFilterVTable {
+        should_hit_entity: unsafe extern "C" fn(
+            this: *const ITraceFilter,
+            entity: *mut u8,
+            contents_mask: ffi::c_int,
+        ) -> bool,
+        trace_kind: unsafe extern "C" fn(this: *const ITraceFilter) -> ffi::c_int,
+    }
 
     #[repr(C)]
     pub struct Ray {
@@ -156,30 +165,6 @@ mod internal {
         pub world_axis_transform: *const Mat4x3,
         pub is_ray: bool,
         pub is_swept: bool,
-    }
-
-    impl Ray {
-        #[inline]
-        pub fn new(start: Vec3, end: Vec3) -> Self {
-            let delta = end - start;
-            let is_swept = delta.length() != 0.0;
-            let delta = delta.extend(0.0);
-            let extents = Vec4::ZERO;
-            let world_axis_transform = ptr::null();
-            let is_ray = true;
-            let start_offset = Vec4::ZERO;
-            let start = start.extend(0.0);
-
-            Self {
-                start,
-                delta,
-                start_offset,
-                extents,
-                world_axis_transform,
-                is_ray,
-                is_swept,
-            }
-        }
     }
 
     #[repr(C)]
@@ -199,5 +184,51 @@ mod internal {
         pub world_surface_index: u16,
         pub entity_hit: *mut u8,
         pub hitbox: i32,
+    }
+
+    unsafe extern "C" fn should_hit_entity(
+        this: *const ITraceFilter,
+        entity: *mut u8,
+        contents_mask: ffi::c_int,
+    ) -> bool {
+        debug_assert!(!this.is_null());
+
+        (&*this).skip.contains(&entity)
+    }
+
+    unsafe extern "C" fn trace_kind(this: *const ITraceFilter) -> ffi::c_int {
+        debug_assert!(!this.is_null());
+
+        TRACE_EVERYTHING
+    }
+
+    #[inline]
+    pub fn filter(skip: impl IntoIterator<Item = *mut u8>) -> ITraceFilter {
+        ITraceFilter {
+            vtable: &ITRACEFILTER_VTABLE,
+            skip: skip.into_iter().collect(),
+        }
+    }
+
+    #[inline]
+    pub fn ray(start: Vec3, end: Vec3) -> Ray {
+        let delta = end - start;
+        let is_swept = delta.length() != 0.0;
+        let delta = delta.extend(0.0);
+        let extents = Vec4::ZERO;
+        let world_axis_transform = ptr::null();
+        let is_ray = true;
+        let start_offset = Vec4::ZERO;
+        let start = start.extend(0.0);
+
+        Ray {
+            start,
+            delta,
+            start_offset,
+            extents,
+            world_axis_transform,
+            is_ray,
+            is_swept,
+        }
     }
 }
