@@ -1,4 +1,4 @@
-use crate::entity::PlayerFlags;
+use crate::entity::PlayerFlag;
 use bevy::math::Vec3;
 use core::marker::PhantomData;
 use core::time::Duration;
@@ -21,20 +21,22 @@ impl<T> Var<T> {
         }
     }
 
-    #[doc(hidden)]
     #[inline]
-    pub unsafe fn addr<U>(self, class: *const U) -> *const () {
-        self.add(class).cast()
+    unsafe fn _read<U, V>(self, class: *const V) -> U {
+        class
+            .cast::<u8>()
+            .add(self.offset)
+            .cast::<U>()
+            .read_unaligned()
     }
 
     #[inline]
-    unsafe fn add<U>(self, class: *const U) -> *const T {
-        class.byte_add(self.offset).cast()
-    }
-
-    #[inline]
-    unsafe fn add_mut<U>(self, class: *mut U) -> *mut T {
-        class.byte_add(self.offset).cast()
+    unsafe fn _write<U, V>(self, class: *mut V, value: U) {
+        class
+            .cast::<u8>()
+            .add(self.offset)
+            .cast::<U>()
+            .write_unaligned(value);
     }
 
     #[inline]
@@ -43,53 +45,23 @@ impl<T> Var<T> {
     }
 }
 
-impl Var<bool> {
-    #[inline]
-    pub unsafe fn read<T>(self, class: *const T) -> bool {
-        self.add(class).read_unaligned()
-    }
+macro_rules! vars {
+    ($($ty:ty,)*) => {$(
+        impl Var<$ty> {
+            #[inline]
+            pub unsafe fn read<T>(self, class: *const T) -> $ty {
+                self._read(class)
+            }
 
-    #[inline]
-    pub unsafe fn write<T>(self, class: *mut T, value: bool) {
-        self.add_mut(class).write_unaligned(value)
-    }
+            #[inline]
+            pub unsafe fn write<T>(self, class: *mut T, value: $ty) {
+                self._write(class, value);
+            }
+        }
+    )*}
 }
 
-impl Var<f32> {
-    #[inline]
-    pub unsafe fn read<T>(self, class: *const T) -> f32 {
-        self.add(class).read_unaligned()
-    }
-
-    #[inline]
-    pub unsafe fn write<T>(self, class: *mut T, value: f32) {
-        self.add_mut(class).write_unaligned(value)
-    }
-}
-
-impl Var<i32> {
-    #[inline]
-    pub unsafe fn read<T>(self, class: *const T) -> i32 {
-        self.add(class).read_unaligned()
-    }
-
-    #[inline]
-    pub unsafe fn write<T>(self, class: *mut T, value: i32) {
-        self.add_mut(class).write_unaligned(value)
-    }
-}
-
-impl Var<u32> {
-    #[inline]
-    pub unsafe fn read<T>(self, class: *const T) -> u32 {
-        self.add(class).read_unaligned()
-    }
-
-    #[inline]
-    pub unsafe fn write<T>(self, class: *mut T, value: u32) {
-        self.add_mut(class).write_unaligned(value)
-    }
-}
+vars! { bool, f32, i32, u32, PlayerFlag, Vec3, }
 
 impl Var<Duration> {
     #[inline]
@@ -99,46 +71,21 @@ impl Var<Duration> {
 
     #[inline]
     pub unsafe fn write<T>(self, class: *mut T, value: Duration) {
-        let value = value.as_secs_f32();
-
-        self.cast::<f32>().write(class, value);
+        self.cast::<f32>().write(class, value.as_secs_f32());
     }
 }
 
-impl Var<PlayerFlags> {
+impl Var<Option<Box<OsStr>>> {
     #[inline]
-    pub unsafe fn read<T>(self, class: *const T) -> PlayerFlags {
-        PlayerFlags::from_i32(self.cast::<i32>().read(class))
-    }
+    pub unsafe fn read<T>(self, class: *const T) -> Option<Box<OsStr>> {
+        let string = class.cast::<u8>().add(self.offset).cast::<ffi::c_char>();
+        let string = CStr::from_ptr(string).to_bytes();
 
-    #[inline]
-    pub unsafe fn write<T>(self, class: *mut T, value: PlayerFlags) {
-        let value = value.to_i32();
+        if string.is_empty() {
+            return None;
+        }
 
-        self.cast::<i32>().write(class, value);
-    }
-}
-
-impl Var<Vec3> {
-    #[inline]
-    pub unsafe fn read<T>(self, class: *const T) -> Vec3 {
-        self.add(class).read_unaligned()
-    }
-
-    #[inline]
-    pub unsafe fn write<T>(self, class: *mut T, value: Vec3) {
-        self.add_mut(class).write_unaligned(value)
-    }
-}
-
-impl Var<Box<OsStr>> {
-    #[inline]
-    pub unsafe fn read<T>(self, class: *const T) -> Box<OsStr> {
-        let pointer = self.add(class).cast::<ffi::c_char>();
-        let bytes = CStr::from_ptr(pointer).to_bytes();
-        let os_str = OsStr::from_bytes(bytes);
-
-        Box::from(os_str)
+        Some(Box::from(OsStr::from_bytes(string)))
     }
 }
 

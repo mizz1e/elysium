@@ -38,7 +38,7 @@ macro_rules! networked {
             $(pub $field: Var<$field_ty>,)*
         })*
 
-        #[derive(Debug)]
+        #[derive(Resource)]
         pub struct Networked {
             $(pub $struct_field: $struct,)*
         }
@@ -70,7 +70,7 @@ macro_rules! networked {
         }
 
         #[inline]
-        pub unsafe fn init(client: &Client) {
+        pub unsafe fn setup(client: &Client) {
             let mut networked = unsafe { MaybeUninit::zeroed().assume_init() };
             let top_level = client.class_iter();
 
@@ -88,9 +88,7 @@ macro_rules! networked {
                 panic(stringify!($struct_field), stringify!($field));
             })*)*
 
-            println!("{networked:?}");
-
-            NETWORKED.store(Some(&mut *Box::into_raw(Box::new(networked))));
+            global::with_app_mut(|app| app.insert_resource(networked));
         }
     };
 }

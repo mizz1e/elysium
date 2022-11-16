@@ -1,7 +1,7 @@
 use crate::client::{Client, Table};
-use crate::entity::PlayerFlags;
-use crate::AtomicMut;
-use bevy::math::Vec3;
+use crate::entity::PlayerFlag;
+use crate::global;
+use bevy::prelude::*;
 use core::mem::MaybeUninit;
 use core::time::Duration;
 use std::ffi::OsStr;
@@ -12,41 +12,27 @@ pub use var::Var;
 mod macros;
 mod var;
 
-static NETWORKED: AtomicMut<Networked> = AtomicMut::new();
-
-#[doc(hidden)]
-pub fn networked() -> &'static Networked {
-    let networked = NETWORKED.load();
-
-    match networked {
-        Some(networked) => &*networked,
-        None => panic!("networked variables have not been initialised"),
-    }
-}
-
 fn panic(class: &'static str, var: &'static str) {
     panic!("networked variable {class}.{var} was not found");
 }
 
-pub macro addr($class:ident, $struct:ident.$field:ident) {
-    unsafe { networked().$struct.$field.addr($class) }
-}
-
 pub macro read($class:ident, $struct:ident.$field:ident) {
-    unsafe { networked().$struct.$field.read($class) }
+    unsafe {
+        global::with_app(|networked| {
+            networked.$struct.$field.read($class);
+        });
+    }
 }
 
 pub macro write($class:ident, $struct:ident.$field:ident, $value:expr) {
-    unsafe { networked().$struct.$field.write($class, $value) }
+    unsafe {
+        global::with_app(|networked| {
+            networked.$struct.$field.write($class, $value);
+        });
+    }
 }
 
 networked! {
-    (AttributableItem, attributable_item): b"DT_BaseAttributableItem" {
-
-    },
-    (BaseAnimating, base_animating): b"DT_BaseAnimating" {
-
-    },
     (BaseCombatCharacter, base_combat_character): b"DT_BaseCombatCharacter" {
         current_weapon: i32 = b"m_hActiveWeapon",
         weapons: i32 = b"m_hMyWeapons",
@@ -82,9 +68,9 @@ networked! {
         eye_offset: Vec3 = b"m_vecViewOffset[0]",
         health: i32 = b"m_iHealth",
         is_dead: bool = b"deadflag",
-        flags: PlayerFlags = b"m_fFlags",
+        flags: PlayerFlag = b"m_fFlags",
         life_state: i32 = b"m_lifeState",
-        location_name: Box<OsStr> = b"m_szLastPlaceName",
+        location_name: Option<Box<OsStr>> = b"m_szLastPlaceName",
         model_scale: f32 = b"m_flModelScale",
         pose_parameters: f32 = b"m_flPoseParameter",
         sequence: i32 = b"m_nSequence",
@@ -118,9 +104,6 @@ networked! {
         next_map_votes: i32 = b"m_nEndMatchNextMapVotes",
         score: i32 = b"m_iScore",
         vip: i32 = b"m_iPlayerVIP",
-    },
-    (CBasePlayer, cbase_player): b"CBasePlayer" {
-        //view_model: i32 = b"m_hViewModel[0]",
     },
     (Fog, fog): b"DT_FogController" {
         alpha: f32 = b"m_fog.maxdensity",
@@ -158,7 +141,6 @@ networked! {
         defuse_time: Duration = b"m_flDefuseCountDown",
         defuser: i32 = b"m_hBombDefuser",
         detonation_time: Duration = b"m_flC4Blow",
-        //is_defused: bool = b"m_mBombDefused",
     },
     (Tonemap, tonemap): b"DT_EnvTonemapController" {
         bloom_scale: f32 = b"m_flCustomBloomScale",
