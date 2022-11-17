@@ -212,50 +212,66 @@ impl IClientEntity {
     }
 
     #[inline]
-    pub fn anim_state(&self) -> *const AnimState {
+    pub fn anim_state(&self) -> Option<AnimState> {
         unsafe {
-            networked::addr!(self.ptr.as_ptr(), cs_player.is_scoped)
-                .byte_sub(20)
-                .cast()
+            let ptr = networked::addr!(self.ptr.as_ptr(), cs_player.is_scoped).byte_sub(20);
+            let ptr = Ptr::new("AnimState", ptr)?;
+
+            Some(AnimState { ptr })
         }
     }
 
     #[inline]
     pub fn max_desync_angle(&self) -> f32 {
-        let anim_state = self.anim_state();
-
-        if anim_state.is_null() {
+        let Some(anim_state) = self.anim_state() else {
             return 0.0;
-        }
-
-        let anim_state = unsafe { &*anim_state };
-        
-        tracing::trace!("{anim_state:?}");
-
-        let mut yaw_modifier = (anim_state.stop_to_full_running_fraction * -3.0 - 0.2)
-            - anim_state.foot_speed.clamp(0.0, 1.0)
+        };
+ 
+        let mut yaw_modifier = (anim_state.running_accel_progress() * -3.0 - 0.2)
+            - anim_state.foot_speed().clamp(0.0, 1.0)
             + 1.0;
 
-        if anim_state.duck_amount > 0.0 {
-            yaw_modifier += anim_state.duck_amount
-                * anim_state.foot_speed_2.clamp(0.0, 1.0)
+        if anim_state.duck_progress() > 0.0 {
+            yaw_modifier += anim_state.duck_progress()
+                * anim_state.foot_speed_2().clamp(0.0, 1.0)
                 * (0.5 - yaw_modifier);
         }
 
-        anim_state.velocity_subtract_y * yaw_modifier
+        anim_state.velocity_subtract_y() * yaw_modifier
     }
 }
 
-#[derive(Debug)]
 #[repr(C)]
 pub struct AnimState {
-    _pad0: [MaybeUninit<u8>; 164],
-    pub duck_amount: f32,
-    _pad1: [MaybeUninit<u8>; 80],
-    pub foot_speed: f32,
-    pub foot_speed_2: f32,
-    _pad2: [MaybeUninit<u8>; 22],
-    pub stop_to_full_running_fraction: f32,
-    _pad3: [MaybeUninit<u8>; 532],
-    pub velocity_subtract_y: f32,
+    ptr: Ptr,
+}
+
+impl AnimState {
+    unsafe fn read<T>(&self, offset: usize) -> T {
+        self.ptr.byte_add(offset).cast::<T>().read_unaligned()
+    }
+    
+    unsafe fn write<T>(&self, offset: usize, value: T) {
+        self.ptr.byte_add(offset).cast::<T>().write_unaligned(value);
+    }
+
+    unsafe fn duck_progress(&self) -> f32 {
+        self.read(184)
+    }
+
+    unsafe fn foot_speed(&self) -> f32 {
+        self.read(268)
+    }
+
+    unsafe fn foot_speed_2(&self) -> f32 {
+        self.read(272)
+    }
+
+    unsafe fn running_accel_progress(&self) -> f32 {
+        self.read(304)
+    }
+
+    unsafe fn velocity_subtract_y(&self) -> f32 {
+        self.read(932)
+    }
 }
