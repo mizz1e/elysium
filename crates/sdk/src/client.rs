@@ -1,4 +1,4 @@
-use crate::{global, ptr, CGlobalVarsBase, CInput, IClientMode, Ptr};
+use crate::{global, ptr, CGlobalVarsBase, CInput, ClientClass, IClientMode, Ptr};
 use bevy::prelude::*;
 use std::{ffi, mem};
 
@@ -76,11 +76,11 @@ impl IBaseClientDLL {
         });
     }
 
-    fn all_classes(&self) {
-        let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
+    pub(crate) fn all_classes(&self) -> *const ClientClass {
+        let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
             unsafe { self.ptr.vtable_entry(8) };
 
-        let classes = unsafe { (method)(self.ptr.as_ptr()) };
+        unsafe { (method)(self.ptr.as_ptr()) }
     }
 
     fn deactivate_mouse(&self) {

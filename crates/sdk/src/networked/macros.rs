@@ -44,23 +44,15 @@ macro_rules! networked {
         }
 
         #[inline]
-        fn iterate_table(networked: &mut Networked, table: &'static Table, class: Class, base_offset: usize) {
-            for property in table.properties().iter() {
-                let offset = base_offset + property.offset as usize;
+        unsafe fn iterate_table(networked: &mut Networked, recv_table: &RecvTable, class: Class, base_offset: usize) {
+            let props = slice::from_raw_parts_mut(recv_table.props, recv_table.props_len as usize);
 
-                if let Some(sub_table) = property.data_table() {
-                    iterate_table(
-                        networked,
-                        sub_table,
-                        class,
-                        offset,
-                    );
-                }
-
-                let name = property.name();
+            for prop in props {
+                let offset = base_offset + prop.offset as usize;
+                let prop = CStr::from_ptr(prop.name).to_bytes();
 
                 match class {
-                    $(Class::$struct => if let Some(var) = imp::$struct::from_bytes(name) {
+                    $(Class::$struct => if let Some(var) = imp::$struct::from_bytes(prop) {
                         match var {
                             $(imp::$struct::$field => networked.$struct_field.$field = Var::new(offset),)*
                         }
@@ -70,17 +62,17 @@ macro_rules! networked {
         }
 
         #[inline]
-        pub unsafe fn setup(client: &Client) {
+        pub unsafe fn setup(mut class_list: *const ClientClass) {
             let mut networked = unsafe { MaybeUninit::zeroed().assume_init() };
-            let top_level = client.class_iter();
 
-            for class in top_level {
-                if let Some(table) = class.table {
-                    let name = table.name();
+            while let Some(class) = class_list.as_ref() {
+                let class_name = CStr::from_ptr(class.network_name).to_bytes();
+                let recv_table = &*class.recv_table;
 
-                    if let Some(class) = Class::from_bytes(name) {
-                        iterate_table(&mut networked, table, class, 0);
-                    }
+                class_list = class.next;
+
+                if let Some(class) = Class::from_bytes(class_name) {
+                    iterate_table(&mut networked, recv_table, class, 0);
                 }
             }
 

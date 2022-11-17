@@ -1,10 +1,9 @@
-use crate::client::{Client, Table};
-use crate::entity::PlayerFlag;
-use crate::global;
+use crate::{global, ClientClass, PlayerFlag, RecvTable};
 use bevy::prelude::*;
-use core::mem::MaybeUninit;
-use core::time::Duration;
-use std::ffi::OsStr;
+use std::ffi::{CStr, OsStr};
+use std::mem::MaybeUninit;
+use std::slice;
+use std::time::Duration;
 
 pub use var::Var;
 

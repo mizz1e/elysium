@@ -5,12 +5,14 @@
 #![feature(strict_provenance)]
 
 pub use client::IBaseClientDLL;
+pub use client_class::ClientClass;
 pub use client_mode::IClientMode;
+pub use dt_recv::RecvTable;
 pub use engine::IVEngineClient;
+pub use entity::PlayerFlag;
 pub use global::{set_app, with_app, with_app_mut};
 pub use global_vars::{CGlobalVarsBase, Tick, Time};
 pub use hit_group::HitGroup;
-pub use id::SteamId;
 pub use input::{Button, CInput, CUserCmd};
 pub use mat4x3::Mat4x3;
 pub use net_channel::INetChannel;
@@ -19,33 +21,29 @@ pub use texture_group::TextureGroup;
 pub use vdf::Vdf;
 pub use view_setup::CViewSetup;
 
-mod client;
-mod client_mode;
-mod console;
-mod engine;
-mod global_vars;
-mod hit_group;
-mod input;
-mod item_kind;
-mod mat4x3;
-mod net_channel;
-mod physics;
-mod render;
-mod steam;
-mod texture_group;
-mod vdf;
-mod view_setup;
-mod weapon;
-
+pub mod client;
+pub mod client_class;
+pub mod client_mode;
+pub mod console;
+pub mod dt_recv;
+pub mod engine;
 pub mod entity;
 pub mod entity_list;
 pub mod ffi;
-pub mod id;
+pub mod global_vars;
+pub mod hit_group;
+pub mod input;
+pub mod item_kind;
+pub mod mat4x3;
 pub mod material;
 pub mod model_render;
+pub mod net_channel;
 pub mod networked;
-pub mod player_model;
 pub mod ptr;
+pub mod texture_group;
 pub mod trace;
+pub mod vdf;
+pub mod view_setup;
+pub mod weapon;
 
 pub(crate) mod global;
