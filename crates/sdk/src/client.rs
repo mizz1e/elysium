@@ -122,24 +122,32 @@ impl IBaseClientDLL {
 }
 
 unsafe extern "C" fn level_init_pre_entity(this: *mut u8, path: *const ffi::c_char) {
+    debug_assert!(!this.is_null());
+
     let method = global::with_app(|app| app.world.resource::<LevelInitPreEntity>().0);
 
     (method)(this, path)
 }
 
 unsafe extern "C" fn level_init_post_entity(this: *mut u8) {
+    debug_assert!(!this.is_null());
+
     let method = global::with_app(|app| app.world.resource::<LevelInitPostEntity>().0);
 
     (method)(this)
 }
 
 unsafe extern "C" fn level_shutdown(this: *mut u8) {
+    debug_assert!(!this.is_null());
+
     let method = global::with_app(|app| app.world.resource::<LevelShutdown>().0);
 
     (method)(this)
 }
 
 unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
+    debug_assert!(!this.is_null());
+
     let method = global::with_app_mut(|app| {
         if !app.world.contains_resource::<IClientMode>() {
             let client = app.world.resource::<IBaseClientDLL>();
@@ -150,15 +158,22 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
         let engine = app.world.resource::<IVEngineClient>();
         let entity_list = app.world.resource::<IClientEntityList>();
         let input = app.world.resource::<CInput>();
-        let view_angle = engine.view_angle();
+        let in_thirdperson = input.in_thirdperson();
         let local_player_index = engine.local_player_index();
+        let view_angle = engine.view_angle();
 
         match frame {
             FRAME_RENDER_START => {
+                if let Some(channel) = engine.net_channel() {
+                    let info = channel.info();
+
+                    tracing::trace!("{info:?}");
+                }
+
                 if let Some(player) = entity_list.get(local_player_index) {
                     app.insert_resource(OriginalViewAngle(player.view_angle()));
 
-                    if input.in_thirdperson() {
+                    if in_thirdperson {
                         if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
                             player.set_view_angle(last_command.view_angle);
                         }

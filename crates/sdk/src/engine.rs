@@ -58,7 +58,7 @@ impl IVEngineClient {
     }
 
     #[inline]
-    pub fn network_channel(&self) -> Option<INetChannel> {
+    pub fn net_channel(&self) -> Option<INetChannel> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(78) };
 

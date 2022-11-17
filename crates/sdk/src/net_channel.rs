@@ -87,7 +87,7 @@ impl INetChannel {
     #[inline]
     fn data(&self) -> (ByteUnit, ByteUnit) {
         let method: unsafe extern "C" fn(this: *mut u8, flow: ffi::c_int) -> f32 =
-            unsafe { self.ptr.vtable_entry(14) };
+            unsafe { self.ptr.vtable_entry(13) };
 
         let outgoing = unsafe { (method)(self.ptr.as_ptr(), FLOW_OUTGOING) };
         let incoming = unsafe { (method)(self.ptr.as_ptr(), FLOW_INCOMING) };
