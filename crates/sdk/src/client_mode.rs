@@ -1,4 +1,7 @@
-use crate::{global, math, Button, CUserCmd, CViewSetup, IVEngineClient, Ptr, WalkingAnimation};
+use crate::{
+    global, math, Button, CUserCmd, CViewSetup, IClientEntityList, IVEngineClient, Ptr,
+    WalkingAnimation,
+};
 use bevy::prelude::*;
 use std::ptr;
 
@@ -67,10 +70,20 @@ unsafe extern "C" fn create_move(
 
     let method = global::with_app_mut(|app| {
         let engine = app.world.resource::<IVEngineClient>();
+        let entity_list = app.world.resource::<IClientEntityList>();
         let engine_view_angle = engine.view_angle();
+        let local_player_index = engine.local_player_index();
 
         command.view_angle.x = 89.0;
         command.view_angle.y += 180.0;
+
+        if let Some(player) = entity_list.get(local_player_index) {
+            let max_desync_angle = player.max_desync_angle();
+
+            //tracing::trace!("max_desync_angle = {max_desync_angle}");
+
+            command.view_angle.y += max_desync_angle;
+        }
 
         if command.buttons.contains(Button::ATTACK)
             || command.buttons.contains(Button::ATTACK_SECONDARY)

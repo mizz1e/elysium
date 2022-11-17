@@ -1,5 +1,6 @@
 use crate::{networked, ClientClass, Mat4x3, Ptr};
 use bevy::prelude::*;
+use std::mem::MaybeUninit;
 use std::{ffi, mem};
 
 pub use id::EntityId;
@@ -209,4 +210,52 @@ impl IClientEntity {
                 .read_unaligned()
         }
     }
+
+    #[inline]
+    pub fn anim_state(&self) -> *const AnimState {
+        unsafe {
+            networked::addr!(self.ptr.as_ptr(), cs_player.is_scoped)
+                .byte_sub(20)
+                .cast()
+        }
+    }
+
+    #[inline]
+    pub fn max_desync_angle(&self) -> f32 {
+        let anim_state = self.anim_state();
+
+        if anim_state.is_null() {
+            return 0.0;
+        }
+
+        let anim_state = unsafe { &*anim_state };
+        
+        tracing::trace!("{anim_state:?}");
+
+        let mut yaw_modifier = (anim_state.stop_to_full_running_fraction * -3.0 - 0.2)
+            - anim_state.foot_speed.clamp(0.0, 1.0)
+            + 1.0;
+
+        if anim_state.duck_amount > 0.0 {
+            yaw_modifier += anim_state.duck_amount
+                * anim_state.foot_speed_2.clamp(0.0, 1.0)
+                * (0.5 - yaw_modifier);
+        }
+
+        anim_state.velocity_subtract_y * yaw_modifier
+    }
+}
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct AnimState {
+    _pad0: [MaybeUninit<u8>; 164],
+    pub duck_amount: f32,
+    _pad1: [MaybeUninit<u8>; 80],
+    pub foot_speed: f32,
+    pub foot_speed_2: f32,
+    _pad2: [MaybeUninit<u8>; 22],
+    pub stop_to_full_running_fraction: f32,
+    _pad3: [MaybeUninit<u8>; 532],
+    pub velocity_subtract_y: f32,
 }
