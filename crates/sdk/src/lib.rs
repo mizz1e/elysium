@@ -14,11 +14,11 @@ pub use global::{set_app, with_app, with_app_mut};
 pub use global_vars::{CGlobalVarsBase, Tick, Time};
 pub use hit_group::HitGroup;
 pub use input::{Button, CInput, CUserCmd};
+pub use key_values::KeyValues;
 pub use mat4x3::Mat4x3;
 pub use net_channel::INetChannel;
 pub use ptr::Ptr;
 pub use texture_group::TextureGroup;
-pub use vdf::Vdf;
 pub use view_setup::CViewSetup;
 
 pub mod client;
@@ -34,6 +34,7 @@ pub mod global_vars;
 pub mod hit_group;
 pub mod input;
 pub mod item_kind;
+pub mod key_values;
 pub mod mat4x3;
 pub mod material;
 pub mod model_render;
@@ -42,7 +43,6 @@ pub mod networked;
 pub mod ptr;
 pub mod texture_group;
 pub mod trace;
-pub mod vdf;
 pub mod view_setup;
 pub mod weapon;
 
