@@ -1,4 +1,4 @@
-use crate::{global, ClientClass, PlayerFlag, RecvTable};
+use crate::{global, ClientClass, PlayerFlag, PropKind, RecvTable};
 use bevy::prelude::*;
 use std::ffi::{CStr, OsStr};
 use std::mem::MaybeUninit;

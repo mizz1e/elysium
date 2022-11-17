@@ -17,9 +17,15 @@ path = "../mem"
 [dependencies.libc]
 version = "0.2"
 
+[dependencies.libloading]
+version = "0.7"
+
 [dependencies.phf]
 features = ["macros"]
 version = "0.11"
+
+[dependencies.thiserror]
+version = "1.0"
 
 [dependencies.tracing]
 default-features = false

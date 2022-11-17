@@ -3,8 +3,7 @@ use std::ffi::OsStr;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Duration;
-use std::{env, fs, thread};
+use std::{env, fs};
 
 const SANE_LINKER_PATH: &str = "SANE_LINKER_PATH";
 
@@ -91,6 +90,16 @@ pub fn check_linker_path(csgo_dir: impl AsRef<Path>) -> Result<(), Error> {
     Err(Error::Io(error))
 }
 
+pub fn pre_launch() -> Result<(), Error> {
+    check_display()?;
+
+    let csgo_dir = determine_csgo_dir().ok_or(Error::NoCsgo)?;
+
+    check_linker_path(csgo_dir)?;
+
+    Ok(())
+}
+
 /// Fetches the environment variable `key` from the current process, parsing it as a `PATH`,
 /// returning an empty `Vec` if the variable isn’t set or there’s another error.
 pub fn var_path<K: AsRef<OsStr>>(key: K) -> Vec<PathBuf> {
@@ -100,43 +109,4 @@ pub fn var_path<K: AsRef<OsStr>>(key: K) -> Vec<PathBuf> {
     };
 
     env::split_paths(&path).collect()
-}
-
-/// Determine whether SDL has been loaded.
-pub fn is_sdl_loaded() -> bool {
-    let sdl = link::is_module_loaded("libSDL2-2.0.so.0");
-
-    // SDL may not be initialized yet, wait for VGUI to initialize it.
-    let vgui = link::is_module_loaded("vgui2_client.so");
-
-    sdl && vgui
-}
-
-/// Determine whether the material system has been loaded.
-pub fn is_materials_loaded() -> bool {
-    let materials = link::is_module_loaded("materialsystem_client.so");
-
-    // Client contains `Vdf::from_bytes`, which is needed to create materials.
-    let client = link::is_module_loaded("client_client.so");
-
-    materials && client
-}
-
-/// Determine whether the server browser has been loaded.
-///
-/// This is the last module to be loaded.
-pub fn is_browser_loaded() -> bool {
-    let browser = link::is_module_loaded("serverbrowser_client.so");
-
-    browser
-}
-
-/// Block until a condition to becomes true.
-pub fn sleep_until<F>(f: F)
-where
-    F: Fn() -> bool,
-{
-    while !f() {
-        thread::sleep(Duration::from_millis(100));
-    }
 }

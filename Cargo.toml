@@ -1,14 +1,7 @@
 [package]
 edition = "2021"
 name = "elysium"
-version = "0.0.2"
-
-[dependencies]
-crossbeam-utils = { default-features = false, version = "0.8" }
-num-traits = { default-features = false, version = "0.2" }
-palette = { default-features = false, version = "0.6" }
-rand = { default-features = false, version = "0.8" }
-vdf = { default-features = false, git = "https://github.com/elysian6969/esteem", rev = "3783f7e560e1a601f7e24859ab49526aaf9da113" }
+version = "0.1.0"
 
 [dependencies.clap]
 default-features = false
@@ -19,66 +12,37 @@ version = "4.0"
 default-features = false
 version = "0.9"
 
-[dependencies.bevy_transform]
+[dependencies.bevy_log]
 version = "0.9"
 
-[dependencies.elysium-framework]
-path = "crates/framework"
-
-[dependencies.elysium-input]
-path = "crates/input"
-
-[dependencies.elysium-mem]
-path = "crates/mem"
-
-[dependencies.elysium-ptr]
-path = "crates/ptr"
+[dependencies.bevy_transform]
+version = "0.9"
 
 [dependencies.elysium-sdk]
 path = "crates/sdk"
 
-[dependencies.iced_glow]
-version = "0.4"
-
-[dependencies.iced_native]
-version = "0.6"
-
-[dependencies.libc]
-version = "0.2"
-
-[dependencies.libloading]
-version = "0.7"
-
 [dependencies.libm]
 version = "0.2"
 
-[dependencies.link]
-default-features = false
-git = "https://github.com/elysian6969/link"
-rev = "02127c0516ec4f2a69a220f3a405787369d44b5e"
-
-[dependencies.once_cell]
-version = "1.16"
-
-[dependencies.regex]
-version = "1.6"
-
-[dependencies.sdl2-sys]
-version = "0.35"
+[dependencies.thiserror]
+version = "1.0"
 
 [dependencies.tracing]
 default-features = false
 features = ["std"]
 version = "0.1"
 
+[dependencies.vdf]
+default-features = false
+git = "https://github.com/elysian6969/esteem"
+rev = "3783f7e560e1a601f7e24859ab49526aaf9da113"
+
 [profile.dev]
-opt-level = 3
+opt-level = 2
 
 [workspace]
 members = [
-    "crates/framework",
     "crates/input",
     "crates/mem",
-    "crates/ptr",
     "crates/sdk",
 ]

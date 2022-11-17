@@ -1,6 +1,9 @@
-use crate::{global, ptr, CGlobalVarsBase, CInput, ClientClass, IClientMode, Ptr};
+use crate::{global, networked, ptr, CGlobalVarsBase, CInput, ClientClass, IClientMode, Ptr};
 use bevy::prelude::*;
 use std::{ffi, mem};
+
+const FRAME_NET_UPDATE_END: ffi::c_int = 4;
+const FRAME_RENDER_START: ffi::c_int = 5;
 
 #[derive(Resource)]
 pub struct LevelInitPreEntity(
@@ -43,7 +46,7 @@ impl IBaseClientDLL {
             let hud_process_input = self.ptr.vtable_entry::<ptr::FnPtr>(10) as *const u8;
             let hud_update = self.ptr.vtable_entry::<ptr::FnPtr>(11) as *const u8;
 
-            let call_client_mode = hud_process_input.byte_add(11);
+            /*let call_client_mode = hud_process_input.byte_add(11);
             let client_mode = elysium_mem::next_abs_addr_ptr::<u8>(call_client_mode)
                 .unwrap_or_else(|| panic!("unable to find IClientMode"));
 
@@ -56,7 +59,7 @@ impl IBaseClientDLL {
 
             client_mode.setup();
 
-            app.insert_resource(client_mode);
+            app.insert_resource(client_mode);*/
 
             let address = hud_update.byte_add(13);
             let ptr = *elysium_mem::next_abs_addr_ptr::<*mut u8>(address)
@@ -73,6 +76,8 @@ impl IBaseClientDLL {
             let ptr = Ptr::new("CInput", ptr).unwrap_or_else(|| panic!("unable to find CInput"));
 
             app.insert_resource(CInput { ptr });
+
+            networked::setup(self.all_classes());
         });
     }
 
@@ -119,7 +124,14 @@ unsafe extern "C" fn level_shutdown(this: *mut u8) {
 }
 
 unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
-    let method = global::with_app(|app| app.world.resource::<FrameStageNotify>().0);
+    let method = global::with_app_mut(|app| {
+        match frame {
+            FRAME_RENDER_START => app.update(),
+            _ => {}
+        }
+
+        app.world.resource::<FrameStageNotify>().0
+    });
 
     (method)(this, frame)
 }
