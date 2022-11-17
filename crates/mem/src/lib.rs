@@ -6,36 +6,6 @@
 use core::ptr;
 use dismal::InstIter;
 
-/// The size of a page.
-pub const PAGE_SIZE: usize = 4096;
-
-/// Mask used to obtain a page address from an arbitary address.
-pub const PAGE_MASK: usize = !(PAGE_SIZE - 1);
-
-const RWX: i32 = libc::PROT_READ | libc::PROT_WRITE | libc::PROT_EXEC;
-const RX: i32 = libc::PROT_READ | libc::PROT_EXEC;
-
-/// Set protection for the page of the given pointer.
-#[inline]
-pub unsafe fn protect<T>(ptr: *const T, protection: i32) {
-    let page = ptr.map_addr(|addr| addr & PAGE_MASK);
-
-    libc::mprotect(page as *mut libc::c_void, PAGE_SIZE, protection);
-}
-
-/// Temporarily disable protection for the page of the given pointer.
-#[inline]
-pub unsafe fn unprotect<T, F>(ptr: *const T, f: F)
-where
-    F: FnOnce(*mut T, i32) -> i32,
-{
-    protect(ptr, RWX);
-
-    let prot = f(ptr as *mut T, RX);
-
-    protect(ptr, prot)
-}
-
 /// Searches `pointer` for the next instruction that makes use of a relative address, then resolves and
 /// returns the absolute address.
 #[inline]
@@ -52,20 +22,11 @@ pub fn next_abs_addr<T>(bytes: &[u8]) -> Option<*const T> {
         if let Some(addr) = abs_addr {
             let addr = ptr::from_exposed_addr(addr);
 
-            let ip_diff = ip - start_ip;
-
-            log::trace!("disam {ip:0x?} {inst:0x?} {bytes:02X?} -> {addr:0x?} (we want this)");
-            log::trace!("  start ip = {start_ip:?}");
-            log::trace!("  end ip = {ip:?}");
-            log::trace!("  ip diff = {ip_diff:?}");
-            log::trace!(
-                "  bytes = {:02X?}",
-                bytes.get(..(ip_diff + bytes.len())).unwrap()
-            );
+            log::trace!("{ip:0x?} {inst:0x?} {bytes:02X?} -> {addr:0x?}");
 
             return Some(addr);
         } else {
-            log::trace!("disam {ip:0x?} {inst:0x?} {bytes:02X?} (ignored)");
+            log::trace!("{ip:0x?} {inst:0x?} {bytes:02X?} (ignored)");
         }
     }
 

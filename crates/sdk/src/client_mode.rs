@@ -12,6 +12,8 @@ pub struct IClientMode {
 
 impl IClientMode {
     pub(crate) unsafe fn setup(&self) {
+        tracing::trace!("setup IClientMode");
+
         global::with_app_mut(|app| {
             app.insert_resource(OverrideView(self.ptr.vtable_replace(19, override_view)));
 

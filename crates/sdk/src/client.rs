@@ -27,6 +27,8 @@ pub struct IBaseClientDLL {
 impl IBaseClientDLL {
     #[inline]
     pub(crate) unsafe fn setup(&self) {
+        tracing::trace!("setup IBaseClientDLL");
+
         global::with_app_mut(|app| {
             app.insert_resource(LevelInitPreEntity(
                 self.ptr.vtable_replace(5, level_init_pre_entity),
@@ -43,23 +45,7 @@ impl IBaseClientDLL {
             ));
 
             let activate_mouse = self.ptr.vtable_entry::<ptr::FnPtr>(16) as *const u8;
-            let hud_process_input = self.ptr.vtable_entry::<ptr::FnPtr>(10) as *const u8;
             let hud_update = self.ptr.vtable_entry::<ptr::FnPtr>(11) as *const u8;
-
-            /*let call_client_mode = hud_process_input.byte_add(11);
-            let client_mode = elysium_mem::next_abs_addr_ptr::<u8>(call_client_mode)
-                .unwrap_or_else(|| panic!("unable to find IClientMode"));
-
-            let client_mode: unsafe extern "C" fn() -> *mut u8 = mem::transmute(client_mode);
-            let ptr = client_mode();
-            let ptr = Ptr::new("IClientMode", ptr)
-                .unwrap_or_else(|| panic!("unable to find IClientMode"));
-
-            let client_mode = IClientMode { ptr };
-
-            client_mode.setup();
-
-            app.insert_resource(client_mode);*/
 
             let address = hud_update.byte_add(13);
             let ptr = *elysium_mem::next_abs_addr_ptr::<*mut u8>(address)
@@ -81,6 +67,7 @@ impl IBaseClientDLL {
         });
     }
 
+    #[inline]
     pub(crate) fn all_classes(&self) -> *const ClientClass {
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
             unsafe { self.ptr.vtable_entry(8) };
@@ -88,6 +75,7 @@ impl IBaseClientDLL {
         unsafe { (method)(self.ptr.as_ptr()) }
     }
 
+    #[inline]
     fn deactivate_mouse(&self) {
         let method: unsafe extern "C" fn(this: *mut u8) = unsafe { self.ptr.vtable_entry(15) };
 
@@ -96,12 +84,33 @@ impl IBaseClientDLL {
         }
     }
 
+    #[inline]
     fn activate_mouse(&self) {
         let method: unsafe extern "C" fn(this: *mut u8) = unsafe { self.ptr.vtable_entry(16) };
 
         unsafe {
             (method)(self.ptr.as_ptr());
         }
+    }
+
+    #[inline]
+    unsafe fn setup_client_mode(&self) -> IClientMode {
+        tracing::trace!("obtain IClientMode");
+
+        let hud_process_input = self.ptr.vtable_entry::<ptr::FnPtr>(10) as *const u8;
+        let call_client_mode = hud_process_input.byte_add(11);
+        let client_mode = elysium_mem::next_abs_addr_ptr::<u8>(call_client_mode)
+            .unwrap_or_else(|| panic!("unable to find IClientMode"));
+
+        let client_mode: unsafe extern "C" fn() -> *mut u8 = mem::transmute(client_mode);
+        let ptr = client_mode();
+        let ptr =
+            Ptr::new("IClientMode", ptr).unwrap_or_else(|| panic!("unable to find IClientMode"));
+
+        let client_mode = IClientMode { ptr };
+
+        client_mode.setup();
+        client_mode
     }
 }
 
@@ -125,6 +134,12 @@ unsafe extern "C" fn level_shutdown(this: *mut u8) {
 
 unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
     let method = global::with_app_mut(|app| {
+        if !app.world.contains_resource::<IClientMode>() {
+            let client = app.world.resource::<IBaseClientDLL>();
+
+            app.insert_resource(client.setup_client_mode());
+        }
+
         match frame {
             FRAME_RENDER_START => app.update(),
             _ => {}
