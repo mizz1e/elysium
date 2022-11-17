@@ -50,6 +50,14 @@ impl IVEngineClient {
     }
 
     #[inline]
+    pub fn local_player_index(&self) -> i32 {
+        let method: unsafe extern "C" fn(this: *mut u8) -> i32 =
+            unsafe { self.ptr.vtable_entry(12) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+
+    #[inline]
     pub fn network_channel(&self) -> Option<INetChannel> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(78) };

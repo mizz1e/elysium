@@ -112,6 +112,7 @@ bitflags::bitflags! {
     }
 }
 
+#[derive(Resource)]
 #[repr(C)]
 pub struct CUserCmd {
     vtable: *const (),
@@ -131,6 +132,9 @@ pub struct CUserCmd {
     pub head_angles: Vec3,
     pub head_offset: Vec3,
 }
+
+unsafe impl Send for CUserCmd {}
+unsafe impl Sync for CUserCmd {}
 
 #[derive(Resource)]
 pub struct CInput {

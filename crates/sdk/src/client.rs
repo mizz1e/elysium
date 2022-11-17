@@ -1,9 +1,13 @@
-use crate::{global, networked, ptr, CGlobalVarsBase, CInput, ClientClass, IClientMode, Ptr};
+use crate::{
+    global, networked, ptr, CGlobalVarsBase, CInput, ClientClass, IClientEntityList, IClientMode,
+    IVEngineClient, Ptr,
+};
 use bevy::prelude::*;
 use std::{ffi, mem};
 
 const FRAME_NET_UPDATE_END: ffi::c_int = 4;
 const FRAME_RENDER_START: ffi::c_int = 5;
+const FRAME_RENDER_END: ffi::c_int = 6;
 
 #[derive(Resource)]
 pub struct LevelInitPreEntity(
@@ -18,6 +22,9 @@ pub struct LevelShutdown(pub(crate) unsafe extern "C" fn(this: *mut u8));
 
 #[derive(Resource)]
 pub struct FrameStageNotify(pub(crate) unsafe extern "C" fn(this: *mut u8, frame: ffi::c_int));
+
+#[derive(Resource)]
+pub struct OriginalViewAngle(pub(crate) Vec3);
 
 #[derive(Resource)]
 pub struct IBaseClientDLL {
@@ -140,11 +147,26 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(client.setup_client_mode());
         }
 
+        let engine = app.world.resource::<IVEngineClient>();
+        let entity_list = app.world.resource::<IClientEntityList>();
+        let view_angle = engine.view_angle();
+        let local_player_index = engine.local_player_index();
+
         match frame {
             FRAME_RENDER_START => {
-                tracing::trace!("frame render start");
+                if let Some(player) = entity_list.get(local_player_index) {
+                    app.insert_resource(OriginalViewAngle(player.view_angle()));
+                    player.set_view_angle(view_angle + Vec3::new(0.0, 0.0, 15.0));
+                }
 
                 app.update();
+            }
+            FRAME_RENDER_END => {
+                if let Some(original_view_angle) = app.world.get_resource::<OriginalViewAngle>() {
+                    if let Some(player) = entity_list.get(local_player_index) {
+                        player.set_view_angle(original_view_angle.0);
+                    }
+                }
             }
             _ => {}
         }

@@ -1,4 +1,4 @@
-use crate::{global, Ptr};
+use crate::{global, IClientEntity, Ptr};
 use bevy::prelude::*;
 use std::collections::HashMap;
 use std::ffi;
@@ -11,14 +11,19 @@ pub struct IClientEntityList {
 }
 
 impl IClientEntityList {
-    fn get(&self, index: SourceIndex) -> *mut u8 {
+    #[inline]
+    pub fn get(&self, index: SourceIndex) -> Option<IClientEntity> {
         let method: unsafe extern "C" fn(this: *mut u8, index: SourceIndex) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(3) };
 
-        unsafe { (method)(self.ptr.as_ptr(), index) }
+        let ptr = unsafe { (method)(self.ptr.as_ptr(), index) };
+        let ptr = Ptr::new("IClientEntity", ptr)?;
+
+        Some(IClientEntity { ptr })
     }
 
-    fn highest_index(&self) -> SourceIndex {
+    #[inline]
+    pub fn highest_index(&self) -> SourceIndex {
         let method: unsafe extern "C" fn(this: *mut u8) -> SourceIndex =
             unsafe { self.ptr.vtable_entry(6) };
 
@@ -40,12 +45,10 @@ pub unsafe fn sync_entity_list() {
         let highest_index = entity_list.highest_index();
 
         for index in 0..=highest_index {
-            let pointer = entity_list.get(index);
-
-            if pointer.is_null() {
-                entity_map.0.remove_entry(&index);
+            if let Some(entity) = entity_list.get(index) {
+                entity_map.0.insert(index, entity.ptr.as_ptr());
             } else {
-                entity_map.0.insert(index, pointer);
+                entity_map.0.remove_entry(&index);
             }
         }
     });

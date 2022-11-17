@@ -22,6 +22,11 @@ impl<T> Var<T> {
     }
 
     #[inline]
+    pub unsafe fn addr<U>(self, class: *mut U) -> *mut u8 {
+        class.cast::<u8>().add(self.offset)
+    }
+
+    #[inline]
     unsafe fn _read<U, V>(self, class: *const V) -> U {
         class
             .cast::<u8>()

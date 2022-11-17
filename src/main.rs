@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_log::LogPlugin;
-use elysium_sdk::{OnceLoaded, Renderer, SourcePlugin, SourceSettings};
+use elysium_sdk::{CUserCmd, OnceLoaded, Renderer, SourcePlugin, SourceSettings};
 
 pub use error::Error;
 
@@ -24,5 +24,12 @@ fn main() {
         renderer: Renderer::OpenGl,
     })
     .add_plugin(SourcePlugin)
+    .add_system(player_controller)
     .run();
+}
+
+fn player_controller(command: Option<ResMut<CUserCmd>>) {
+    if let Some(mut command) = command {
+        command.view_angle.x = 89.0;
+    }
 }

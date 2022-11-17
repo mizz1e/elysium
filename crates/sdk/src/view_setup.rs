@@ -16,7 +16,7 @@ pub struct CViewSetup {
     pub fov: f32,
     pub view_model_fov: f32,
     pub origin: Vec3,
-    pub angle: Vec3,
+    pub view_angle: Vec3,
     pub z_near: f32,
     pub z_far: f32,
     pub view_model_z_near: f32,

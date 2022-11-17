@@ -1,5 +1,6 @@
 use crate::{
-    global, Args, Error, IBaseClientDLL, IClientEntityList, ModuleMap, OnceLoaded, SourceSettings,
+    global, Args, Error, IBaseClientDLL, IClientEntityList, IVEngineClient, ModuleMap, OnceLoaded,
+    SourceSettings,
 };
 use bevy::prelude::*;
 
@@ -28,10 +29,13 @@ unsafe fn source_setup() -> Result<(), Error> {
                 let client = IBaseClientDLL { ptr };
 
                 client.setup();
-
                 world.insert_resource(client);
 
-                let _engine_module = module_map.open("engine_client.so")?;
+                let engine_module = module_map.open("engine_client.so")?;
+                let ptr = engine_module.create_interface("VEngineClient014")?;
+
+                world.insert_resource(IVEngineClient { ptr });
+
                 let _tier0_module = module_map.open("libtier0_client.so")?;
                 let _studio_render_module = module_map.open("studiorender_client.so")?;
 

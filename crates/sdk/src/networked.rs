@@ -15,18 +15,35 @@ fn panic(class: &'static str, var: &'static str) {
     panic!("networked variable {class}.{var} was not found");
 }
 
-pub macro read($class:ident, $struct:ident.$field:ident) {
+pub macro addr($base:expr, $struct:ident.$field:ident) {
+    #[allow(unused_unsafe)]
     unsafe {
-        global::with_app(|networked| {
-            networked.$struct.$field.read($class);
-        });
+        global::with_app(|app| {
+            let networked = app.world.resource::<Networked>();
+
+            networked.$struct.$field.addr($base)
+        })
     }
 }
 
-pub macro write($class:ident, $struct:ident.$field:ident, $value:expr) {
+pub macro read($base:expr, $struct:ident.$field:ident) {
+    #[allow(unused_unsafe)]
     unsafe {
-        global::with_app(|networked| {
-            networked.$struct.$field.write($class, $value);
+        global::with_app(|app| {
+            let networked = app.world.resource::<Networked>();
+
+            networked.$struct.$field.read($base)
+        })
+    }
+}
+
+pub macro write($base:expr, $struct:ident.$field:ident, $value:expr) {
+    #[allow(unused_unsafe)]
+    unsafe {
+        global::with_app(|app| {
+            let networked = app.world.resource::<Networked>();
+
+            networked.$struct.$field.write($base, $value);
         });
     }
 }

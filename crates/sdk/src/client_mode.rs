@@ -1,9 +1,9 @@
-use crate::{global, CUserCmd, CViewSetup, Ptr};
+use crate::{global, CUserCmd, CViewSetup, IVEngineClient, Ptr};
 use bevy::prelude::*;
 use std::ptr;
 
 #[derive(Resource)]
-pub struct OverrideView(pub(crate) unsafe extern "C" fn(this: *mut u8, setup: *const CViewSetup));
+pub struct OverrideView(pub(crate) unsafe extern "C" fn(this: *mut u8, setup: *mut CViewSetup));
 
 // rustfmt breaks with "trailing space left behind" after `pub(crate)`
 type CreateMoveFn =
@@ -33,13 +33,19 @@ impl IClientMode {
     }
 }
 
-unsafe extern "C" fn override_view(this: *mut u8, setup: *const CViewSetup) {
+unsafe extern "C" fn override_view(this: *mut u8, setup: *mut CViewSetup) {
     debug_assert!(!this.is_null());
     debug_assert!(!setup.is_null());
 
-    tracing::trace!("override view");
+    let setup = &mut *setup;
 
-    let method = global::with_app(|app| app.world.resource::<OverrideView>().0);
+    let method = global::with_app(|app| {
+        let engine = app.world.resource::<IVEngineClient>();
+
+        setup.view_angle = engine.view_angle();
+
+        app.world.resource::<OverrideView>().0
+    });
 
     (method)(this, setup)
 }
@@ -59,7 +65,13 @@ unsafe extern "C" fn create_move(
         return false;
     }
 
-    tracing::trace!("create move");
+    let method = global::with_app_mut(|app| {
+        if let Some(new_command) = app.world.get_resource::<CUserCmd>() {
+            *command = ptr::read(new_command);
+        }
+
+        app.insert_resource(ptr::read(command));
+    });
 
     false
 }

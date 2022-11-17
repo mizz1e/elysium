@@ -9,7 +9,7 @@ pub use client_class::ClientClass;
 pub use client_mode::IClientMode;
 pub use dt_recv::{PropKind, RecvTable};
 pub use engine::IVEngineClient;
-pub use entity::PlayerFlag;
+pub use entity::{IClientEntity, PlayerFlag};
 pub use entity_list::IClientEntityList;
 pub use error::Error;
 pub use global::{set_app, with_app, with_app_mut};

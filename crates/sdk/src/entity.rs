@@ -1,4 +1,5 @@
-use crate::{ClientClass, Mat4x3, Ptr};
+use crate::{networked, ClientClass, Mat4x3, Ptr};
+use bevy::prelude::*;
 use std::{ffi, mem};
 
 pub use id::EntityId;
@@ -181,6 +182,32 @@ impl IClientEntity {
                 mask,
                 time,
             )
+        }
+    }
+
+    /// Set the player's view angle.
+    ///
+    /// # Safety
+    ///
+    /// Modifying the view angle of a player via networked variables may have unintended side
+    /// effects! Be sure to reset it to the original value during
+    /// [`Frame::RenderEnd`](elysium_sdk::Frame::RenderEnd).
+    #[inline]
+    pub unsafe fn set_view_angle(&self, angle: Vec3) {
+        networked::addr!(self.ptr.as_ptr(), base_player.is_dead)
+            .byte_add(4)
+            .cast::<Vec3>()
+            .write_unaligned(angle)
+    }
+
+    /// The player's view angle.
+    #[inline]
+    pub fn view_angle(&self) -> Vec3 {
+        unsafe {
+            networked::addr!(self.ptr.as_ptr(), base_player.is_dead)
+                .byte_add(4)
+                .cast::<Vec3>()
+                .read_unaligned()
         }
     }
 }
