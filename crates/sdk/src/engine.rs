@@ -59,7 +59,7 @@ impl IVEngineClient {
         if network_channel.is_null() {
             None
         } else {
-            let ptr = unsafe { Ptr::new("INetChannel", network_channel)? };
+            let ptr = Ptr::new("INetChannel", network_channel)?;
 
             Some(INetChannel { ptr })
         }

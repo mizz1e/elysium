@@ -22,7 +22,8 @@ impl Time {
     /// `TIME_TO_TICKS` in `game/shared/shareddefs.h`.
     #[inline]
     pub fn to_tick(self) -> Tick {
-        let tick = ((self.time.as_secs_f32() + 0.5) / interval_per_tick()) as u32;
+        let interval_per_tick = unsafe { interval_per_tick() };
+        let tick = ((self.time.as_secs_f32() + 0.5) / interval_per_tick) as u32;
 
         Tick { tick }
     }
@@ -32,17 +33,18 @@ impl Tick {
     /// `TICKS_TO_TIME` in `game/shared/shareddefs.h`.
     #[inline]
     pub fn to_time(self) -> Time {
-        let time = Duration::from_secs_f32((self.tick as f32) * interval_per_tick());
+        let interval_per_tick = unsafe { interval_per_tick() };
+        let time = Duration::from_secs_f32((self.tick as f32) * interval_per_tick);
 
         Time { time }
     }
 }
 
 #[inline]
-fn interval_per_tick() -> f32 {
+unsafe fn interval_per_tick() -> f32 {
     global::with_app(|app| {
         let global_vars = app.world.resource::<CGlobalVarsBase>();
-        let global_vars = unsafe { &*global_vars.ptr.as_ptr().cast::<internal::CGlobalVarsBase>() };
+        let global_vars = &*global_vars.ptr.as_ptr().cast::<internal::CGlobalVarsBase>();
 
         global_vars.interval_per_tick
     })

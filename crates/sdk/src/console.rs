@@ -21,7 +21,7 @@ impl ICvar {
             unsafe { self.ptr.vtable_entry(15) };
 
         let convar = unsafe { (method)(self.ptr.as_ptr(), var_name.as_ptr()) };
-        let ptr = unsafe { Ptr::new("ConVar", convar)? };
+        let ptr = Ptr::new("ConVar", convar)?;
 
         let _phantom = PhantomData;
 

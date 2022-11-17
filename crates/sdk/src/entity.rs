@@ -1,10 +1,9 @@
+use crate::{ClientClass, Mat4x3, Ptr};
+use std::{ffi, mem};
+
 pub use id::EntityId;
-pub use networkable::{DataUpdateKind, Networkable};
-pub use renderable::Renderable;
 
 mod id;
-mod networkable;
-mod renderable;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(i32)]
@@ -79,7 +78,7 @@ impl ObserverMode {
 bitflags::bitflags! {
     /// `public/const.h`.
     #[repr(transparent)]
-    pub struct PlayerFlag: i32 {
+    pub struct PlayerFlag: u32 {
         const ON_GROUND = 1 << 0;
         const DUCKING = 1 << 1;
         const ANIM_DUCKING = 1 << 2;
@@ -112,6 +111,76 @@ bitflags::bitflags! {
         const DISSOLVING = 1 << 29;
         const TRANS_RAGDOLL = 1 << 30;
         const UNBLOCKABLE_BY_PLAYER = 1 << 31;
-        const FREEZING = 1 << 32;
+    }
+}
+
+pub struct IClientEntity {
+    pub(crate) ptr: Ptr,
+}
+
+impl IClientEntity {
+    #[inline]
+    unsafe fn client_renderable(&self) -> Ptr {
+        let ptr = self.ptr.byte_offset(mem::size_of::<*mut u8>());
+        let ptr = Ptr::new("IClientRenderable", ptr);
+
+        ptr.unwrap_unchecked()
+    }
+
+    #[inline]
+    unsafe fn client_networkable(&self) -> Ptr {
+        let ptr = self.ptr.byte_offset(mem::size_of::<*mut u8>() * 2);
+        let ptr = Ptr::new("IClientNetworkable", ptr);
+
+        ptr.unwrap_unchecked()
+    }
+
+    #[inline]
+    pub fn client_class(&self) -> *const ClientClass {
+        let networkable = unsafe { self.client_networkable() };
+        let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
+            unsafe { networkable.vtable_entry(2) };
+
+        unsafe { (method)(networkable.as_ptr()) }
+    }
+
+    #[inline]
+    pub fn index(&self) -> i32 {
+        let networkable = unsafe { self.client_networkable() };
+        let method: unsafe extern "C" fn(this: *mut u8) -> i32 =
+            unsafe { networkable.vtable_entry(10) };
+
+        unsafe { (method)(networkable.as_ptr()) }
+    }
+
+    #[inline]
+    pub fn is_dormant(&self) -> bool {
+        let networkable = unsafe { self.client_networkable() };
+        let method: unsafe extern "C" fn(this: *mut u8) -> bool =
+            unsafe { networkable.vtable_entry(9) };
+
+        unsafe { (method)(networkable.as_ptr()) }
+    }
+
+    #[inline]
+    pub fn setup_bones(&self, bones: &mut [Mat4x3; 256], mask: ffi::c_int, time: f32) {
+        let renderable = unsafe { self.client_renderable() };
+        let method: unsafe extern "C" fn(
+            this: *mut u8,
+            bones: *mut Mat4x3,
+            bones_len: ffi::c_int,
+            mask: ffi::c_int,
+            time: f32,
+        ) = unsafe { renderable.vtable_entry(13) };
+
+        unsafe {
+            (method)(
+                renderable.as_ptr(),
+                bones.as_mut_ptr(),
+                bones.len() as i32,
+                mask,
+                time,
+            )
+        }
     }
 }

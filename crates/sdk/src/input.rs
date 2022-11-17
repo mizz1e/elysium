@@ -139,18 +139,20 @@ pub struct CInput {
 
 impl CInput {
     #[inline]
-    fn internal(&self) -> &mut internal::CInput {
+    unsafe fn internal(&self) -> &mut internal::CInput {
         &mut *self.ptr.as_ptr().cast::<internal::CInput>()
     }
 
     #[inline]
     pub fn in_thirdperson(&self) -> bool {
-        self.internal().in_thirdperson
+        unsafe { self.internal().in_thirdperson }
     }
 
     #[inline]
     pub fn set_in_thirdperson(&self, enabled: bool) {
-        self.internal().in_thirdperson = enabled;
+        unsafe {
+            self.internal().in_thirdperson = enabled;
+        }
     }
 }
 

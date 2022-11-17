@@ -63,24 +63,26 @@ macro_rules! networked {
 
         #[inline]
         pub unsafe fn setup(mut class_list: *const ClientClass) {
-            let mut networked = unsafe { MaybeUninit::zeroed().assume_init() };
+            global::with_app_mut(|app| {
+                let mut networked = unsafe { MaybeUninit::zeroed().assume_init() };
 
-            while let Some(class) = class_list.as_ref() {
-                let class_name = CStr::from_ptr(class.network_name).to_bytes();
-                let recv_table = &*class.recv_table;
+                while let Some(class) = class_list.as_ref() {
+                    let class_name = CStr::from_ptr(class.network_name).to_bytes();
+                    let recv_table = &*class.recv_table;
 
-                class_list = class.next;
+                    class_list = class.next;
 
-                if let Some(class) = Class::from_bytes(class_name) {
-                    iterate_table(&mut networked, recv_table, class, 0);
+                    if let Some(class) = Class::from_bytes(class_name) {
+                        iterate_table(&mut networked, recv_table, class, 0);
+                    }
                 }
-            }
 
-            $($(if networked.$struct_field.$field.offset == 0 {
-                panic(stringify!($struct_field), stringify!($field));
-            })*)*
+                $($(if networked.$struct_field.$field.offset == 0 {
+                    panic(stringify!($struct_field), stringify!($field));
+                })*)*
 
-            global::with_app_mut(|app| app.insert_resource(networked));
+                app.insert_resource(networked);
+            });
         }
     };
 }

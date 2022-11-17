@@ -32,11 +32,11 @@ pub struct EntityMap(pub(crate) HashMap<ffi::c_int, *mut u8>);
 unsafe impl Send for EntityMap {}
 unsafe impl Sync for EntityMap {}
 
-pub fn sync_entity_list() {
+pub unsafe fn sync_entity_list() {
     global::with_app_mut(|app| {
         let world = app.world.cell();
         let entity_list = world.resource::<IClientEntityList>();
-        let entity_map = world.resource::<EntityMap>();
+        let mut entity_map = world.resource_mut::<EntityMap>();
         let highest_index = entity_list.highest_index();
 
         for index in 0..=highest_index {

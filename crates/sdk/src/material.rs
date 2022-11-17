@@ -102,7 +102,7 @@ impl IMaterial {
             (method)(self.ptr.as_ptr(), name.as_ptr(), &mut found, &complain)
         };
 
-        let ptr = unsafe { Ptr::new("IMaterialVar", material_var)? };
+        let ptr = Ptr::new("IMaterialVar", material_var)?;
 
         found.then(|| IMaterialVar { ptr })
     }

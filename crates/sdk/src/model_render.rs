@@ -48,7 +48,7 @@ impl IVModelRender {
         model_render_info: *const internal::ModelRenderInfo_t,
         custom_bone_to_world: *const [Mat4x3; 256],
     ) {
-        let method = global::with_app(|app| app.world.resource::<DrawModelExecute>().0);
+        let method = unsafe { global::with_app(|app| app.world.resource::<DrawModelExecute>().0) };
 
         unsafe {
             (method)(

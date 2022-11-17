@@ -28,10 +28,10 @@ impl KeyValues {
         let value = value.as_ref().as_bytes();
         let value = CString::new(value).ok()?;
 
-        let method = global::with_app(|app| app.world.resource::<FromString>().0);
+        let method = unsafe { global::with_app(|app| app.world.resource::<FromString>().0) };
 
         let ptr = unsafe { (method)(name.as_ptr(), value.as_ptr(), ptr::null()) };
-        let ptr = unsafe { Ptr::new("KeyValues", ptr)? };
+        let ptr = Ptr::new("KeyValues", ptr)?;
 
         Some(KeyValues { ptr })
     }
