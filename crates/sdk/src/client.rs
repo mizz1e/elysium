@@ -141,7 +141,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
         }
 
         match frame {
-            FRAME_RENDER_START => app.update(),
+            FRAME_RENDER_START => {
+                tracing::trace!("frame render start");
+
+                app.update();
+            }
             _ => {}
         }
 
