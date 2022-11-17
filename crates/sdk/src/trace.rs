@@ -4,7 +4,7 @@ use crate::{HitGroup, Ptr};
 use bevy::prelude::*;
 use std::mem::MaybeUninit;
 
-/// https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/engine/IEngineTrace.h
+/// `https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/engine/IEngineTrace.h`.
 #[derive(Resource)]
 pub struct IEngineTrace {
     pub(crate) ptr: Ptr,

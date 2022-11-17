@@ -1,4 +1,4 @@
-use crate::{global, CUserCmd, CViewSetup, IVEngineClient, Ptr};
+use crate::{global, math, Button, CUserCmd, CViewSetup, IVEngineClient, Ptr, WalkingAnimation};
 use bevy::prelude::*;
 use std::ptr;
 
@@ -66,9 +66,23 @@ unsafe extern "C" fn create_move(
     }
 
     let method = global::with_app_mut(|app| {
-        if let Some(new_command) = app.world.get_resource::<CUserCmd>() {
-            *command = ptr::read(new_command);
+        let engine = app.world.resource::<IVEngineClient>();
+        let engine_view_angle = engine.view_angle();
+
+        command.view_angle.x = 89.0;
+        command.view_angle.y += 180.0;
+
+        if command.buttons.contains(Button::ATTACK)
+            || command.buttons.contains(Button::ATTACK_SECONDARY)
+        {
+            command.view_angle = engine_view_angle;
         }
+
+        command.view_angle = math::sanitize_angle(command.view_angle);
+        command.movement =
+            math::fix_movement(command.movement, command.view_angle, engine_view_angle);
+
+        WalkingAnimation::Disabled.apply(command);
 
         app.insert_resource(ptr::read(command));
     });

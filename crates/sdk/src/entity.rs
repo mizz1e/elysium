@@ -191,7 +191,6 @@ impl IClientEntity {
     ///
     /// Modifying the view angle of a player via networked variables may have unintended side
     /// effects! Be sure to reset it to the original value during
-    /// [`Frame::RenderEnd`](elysium_sdk::Frame::RenderEnd).
     #[inline]
     pub unsafe fn set_view_angle(&self, angle: Vec3) {
         networked::addr!(self.ptr.as_ptr(), base_player.is_dead)

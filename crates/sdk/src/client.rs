@@ -1,6 +1,6 @@
 use crate::{
-    global, networked, ptr, CGlobalVarsBase, CInput, ClientClass, IClientEntityList, IClientMode,
-    IVEngineClient, Ptr,
+    global, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass, IClientEntityList,
+    IClientMode, IVEngineClient, Ptr,
 };
 use bevy::prelude::*;
 use std::{ffi, mem};
@@ -149,14 +149,21 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
         let engine = app.world.resource::<IVEngineClient>();
         let entity_list = app.world.resource::<IClientEntityList>();
+        let input = app.world.resource::<CInput>();
         let view_angle = engine.view_angle();
         let local_player_index = engine.local_player_index();
 
         match frame {
             FRAME_RENDER_START => {
                 if let Some(player) = entity_list.get(local_player_index) {
-                    app.insert_resource(OriginalViewAngle(player.view_angle()));
-                    player.set_view_angle(view_angle + Vec3::new(0.0, 0.0, 15.0));
+                    if input.in_thirdperson() {
+                        if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
+                            player.set_view_angle(last_command.view_angle);
+                        }
+                    } else {
+                        app.insert_resource(OriginalViewAngle(player.view_angle()));
+                        player.set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0));
+                    }
                 }
 
                 app.update();

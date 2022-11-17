@@ -26,6 +26,7 @@ pub use ptr::Ptr;
 pub use settings::{OnceLoaded, Renderer, SourceSettings};
 pub use texture_group::TextureGroup;
 pub use view_setup::CViewSetup;
+pub use walking_animation::WalkingAnimation;
 
 pub mod client;
 pub mod client_class;
@@ -45,6 +46,7 @@ pub mod key_values;
 pub mod launcher;
 pub mod mat4x3;
 pub mod material;
+pub mod math;
 pub mod model_render;
 pub mod module;
 pub mod net_channel;
@@ -55,6 +57,7 @@ pub mod settings;
 pub mod texture_group;
 pub mod trace;
 pub mod view_setup;
+pub mod walking_animation;
 pub mod weapon;
 
 pub(crate) mod global;
