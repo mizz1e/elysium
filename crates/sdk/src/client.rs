@@ -164,6 +164,8 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
         match frame {
             FRAME_RENDER_START => {
+                tracing::trace!("{:?}", engine.level_name());
+
                 if let Some(channel) = engine.net_channel() {
                     let info = channel.info();
 

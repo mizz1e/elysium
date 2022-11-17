@@ -36,17 +36,23 @@ impl IVEngineClient {
     }
 
     #[inline]
-    pub fn level_name(&self) -> Box<OsStr> {
+    pub fn level_name(&self) -> Option<Box<OsStr>> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ffi::c_char =
             unsafe { self.ptr.vtable_entry(53) };
 
         let level_name = unsafe { (method)(self.ptr.as_ptr()) };
 
-        debug_assert!(!level_name.is_null());
+        if level_name.is_null() {
+            return None;
+        }
 
         let level_name = unsafe { CStr::from_ptr(level_name).to_bytes() };
 
-        Box::from(OsStr::from_bytes(level_name))
+        if level_name.is_empty() {
+            None
+        } else {
+            Some(Box::from(OsStr::from_bytes(level_name)))
+        }
     }
 
     #[inline]
