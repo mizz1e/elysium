@@ -28,7 +28,7 @@ impl IVEngineClient {
     #[inline]
     pub fn set_view_angle(&self, view_angle: Vec3) {
         let method: unsafe extern "C" fn(this: *mut u8, view_angle: *const Vec3) =
-            unsafe { self.ptr.vtable_entry(18) };
+            unsafe { self.ptr.vtable_entry(19) };
 
         unsafe {
             (method)(self.ptr.as_ptr(), &view_angle);
