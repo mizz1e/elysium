@@ -91,9 +91,9 @@ unsafe extern "C" fn create_move(
 
         let max_desync_angle = local_player.max_desync_angle();
         let is_lby_updating = local_player.is_lby_updating();
-        let side = command.tick_count % 2 == 0;
+        let flip = command.tick_count % 2 == 0;
 
-        *send_packet = side;
+        *send_packet = flip;
 
         if is_lby_updating {
             *send_packet = false;
@@ -108,7 +108,7 @@ unsafe extern "C" fn create_move(
                 1.1
             };
 
-            command.movement.y = amount * if side { 1.0 } else { -1.0 };
+            command.movement.y = amount * if flip { 1.0 } else { -1.0 };
         }
 
         if command.buttons.contains(Button::ATTACK)

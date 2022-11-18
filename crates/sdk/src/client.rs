@@ -1,6 +1,6 @@
 use crate::{
-    global, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass, IClientEntityList,
-    IClientMode, IVEngineClient, Ptr,
+    convar, global, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
+    IClientEntityList, IClientMode, ICvar, IVEngineClient, ModuleMap, Ptr,
 };
 use bevy::prelude::*;
 use std::{ffi, mem};
@@ -162,6 +162,18 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
             app.insert_resource(client_mode);
             app.insert_resource(global_vars);
+
+            let module_map = app.world.resource::<ModuleMap>();
+            let material_system_module = module_map.get_module("materialsystem_client.so").unwrap();
+            let ptr = material_system_module
+                .create_interface("VEngineCvar007")
+                .unwrap();
+
+            let cvar = ICvar { ptr };
+            let sv_cheats = convar::SvCheats(cvar.find_var("sv_cheats").unwrap());
+
+            app.insert_resource(cvar);
+            app.insert_resource(sv_cheats);
         }
 
         let engine = app.world.resource::<IVEngineClient>();
@@ -172,6 +184,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
         let view_angle = engine.view_angle();
 
         match frame {
+            FRAME_NET_UPDATE_END => {
+                let sv_cheats = &app.world.resource::<convar::SvCheats>().0;
+
+                sv_cheats.write(1);
+            }
             FRAME_RENDER_START => {
                 /*tracing::trace!("{:?}", engine.level_name());
 

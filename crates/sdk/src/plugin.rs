@@ -1,7 +1,7 @@
 use crate::entity::AnimState;
 use crate::{
-    global, Args, Error, IBaseClientDLL, IClientEntityList, IVEngineClient, KeyValues, ModuleMap,
-    OnceLoaded, SourceSettings,
+    global, Args, Error, IBaseClientDLL, IClientEntityList, ICvar, IVEngineClient, KeyValues,
+    ModuleMap, OnceLoaded, SourceSettings,
 };
 use bevy::prelude::*;
 

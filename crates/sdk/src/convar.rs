@@ -30,6 +30,9 @@ impl ICvar {
 }
 
 #[derive(Resource)]
+pub struct SvCheats(pub(crate) ConVar<i32>);
+
+#[derive(Resource)]
 pub struct ConVar<T> {
     pub(crate) ptr: Ptr,
     _phantom: PhantomData<T>,

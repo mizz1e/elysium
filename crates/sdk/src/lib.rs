@@ -7,6 +7,7 @@
 pub use client::IBaseClientDLL;
 pub use client_class::ClientClass;
 pub use client_mode::IClientMode;
+pub use convar::{ConVar, ICvar};
 pub use dt_recv::{PropKind, RecvTable};
 pub use engine::IVEngineClient;
 pub use entity::{IClientEntity, PlayerFlag};
@@ -31,7 +32,7 @@ pub use walking_animation::WalkingAnimation;
 pub mod client;
 pub mod client_class;
 pub mod client_mode;
-pub mod console;
+pub mod convar;
 pub mod dt_recv;
 pub mod engine;
 pub mod entity;
