@@ -51,6 +51,7 @@ pub mod model_render;
 pub mod module;
 pub mod net_channel;
 pub mod networked;
+pub mod pattern;
 pub mod plugin;
 pub mod ptr;
 pub mod settings;

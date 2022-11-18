@@ -1,4 +1,4 @@
-use crate::{global, ClientClass, PlayerFlag, PropKind, RecvTable};
+use crate::{global, ClientClass, PlayerFlag, PropKind, RecvTable, Tick};
 use bevy::prelude::*;
 use std::ffi::{CStr, OsStr};
 use std::mem::MaybeUninit;
@@ -15,7 +15,7 @@ fn panic(class: &'static str, var: &'static str) {
     panic!("networked variable {class}.{var} was not found");
 }
 
-pub macro addr($base:expr, $struct:ident.$field:ident) {
+pub macro addr($base:expr, $struct:ident.$field:ident) {{
     #[allow(unused_unsafe)]
     unsafe {
         global::with_app(|app| {
@@ -24,9 +24,9 @@ pub macro addr($base:expr, $struct:ident.$field:ident) {
             networked.$struct.$field.addr($base)
         })
     }
-}
+}}
 
-pub macro read($base:expr, $struct:ident.$field:ident) {
+pub macro read($base:expr, $struct:ident.$field:ident) {{
     #[allow(unused_unsafe)]
     unsafe {
         global::with_app(|app| {
@@ -35,9 +35,9 @@ pub macro read($base:expr, $struct:ident.$field:ident) {
             networked.$struct.$field.read($base)
         })
     }
-}
+}}
 
-pub macro write($base:expr, $struct:ident.$field:ident, $value:expr) {
+pub macro write($base:expr, $struct:ident.$field:ident, $value:expr) {{
     #[allow(unused_unsafe)]
     unsafe {
         global::with_app(|app| {
@@ -46,7 +46,7 @@ pub macro write($base:expr, $struct:ident.$field:ident, $value:expr) {
             networked.$struct.$field.write($base, $value);
         });
     }
-}
+}}
 
 networked! {
     (BaseCombatCharacter, base_combat_character): b"DT_BaseCombatCharacter" {
@@ -93,7 +93,7 @@ networked! {
         skin: i32 = b"m_nSkin",
         spectator_mode: i32 = b"m_iObserverMode",
         spectator_target: i32 = b"m_hObserverTarget",
-        tick_base: u32 = b"m_nTickBase",
+        tick_base: Tick = b"m_nTickBase",
         velocity: Vec3 = b"m_vecVelocity[0]",
     },
     (CSPlayer, cs_player): b"DT_CSPlayer" {

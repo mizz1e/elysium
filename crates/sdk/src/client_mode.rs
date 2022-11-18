@@ -3,6 +3,7 @@ use crate::{
     WalkingAnimation,
 };
 use bevy::prelude::*;
+use std::arch::asm;
 use std::ptr;
 
 #[derive(Resource)]
@@ -58,10 +59,19 @@ unsafe extern "C" fn create_move(
     input_sample_time: f32,
     command: *mut CUserCmd,
 ) -> bool {
+    let rbp: *mut *mut bool;
+
+    asm!("mov {}, rbp", out(reg) rbp, options(nostack));
+
+    let send_packet = &mut *(*rbp).sub(24);
+
     debug_assert!(!this.is_null());
     debug_assert!(!command.is_null());
 
     let command = &mut *command;
+    let method = global::with_app(|app| app.world.resource::<CreateMove>().0);
+
+    (method)(this, input_sample_time, command);
 
     // ignore input sampling
     if command.number == 0 {
@@ -73,16 +83,32 @@ unsafe extern "C" fn create_move(
         let entity_list = app.world.resource::<IClientEntityList>();
         let engine_view_angle = engine.view_angle();
         let local_player_index = engine.local_player_index();
+        let local_player = entity_list.get(local_player_index).unwrap();
 
         command.view_angle.x = 89.0;
         command.view_angle.y += 180.0;
+        command.view_angle.z -= 50.0;
 
-        if let Some(player) = entity_list.get(local_player_index) {
-            let max_desync_angle = player.max_desync_angle();
+        let max_desync_angle = local_player.max_desync_angle();
+        let is_lby_updating = local_player.is_lby_updating();
+        let side = command.tick_count % 2 == 0;
 
-            //tracing::trace!("max_desync_angle = {max_desync_angle}");
+        *send_packet = side;
 
-            command.view_angle.y += max_desync_angle;
+        if is_lby_updating {
+            *send_packet = false;
+        } else if !*send_packet {
+            command.view_angle.y += max_desync_angle * 2.0;
+        }
+
+        if command.movement.y.abs() < 5.0 {
+            let amount = if command.buttons.contains(Button::DUCK) {
+                3.25
+            } else {
+                1.1
+            };
+
+            command.movement.y = amount * if side { 1.0 } else { -1.0 };
         }
 
         if command.buttons.contains(Button::ATTACK)
@@ -97,7 +123,9 @@ unsafe extern "C" fn create_move(
 
         WalkingAnimation::Disabled.apply(command);
 
-        app.insert_resource(ptr::read(command));
+        if *send_packet {
+            app.insert_resource(ptr::read(command));
+        }
     });
 
     false

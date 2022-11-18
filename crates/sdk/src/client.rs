@@ -52,17 +52,6 @@ impl IBaseClientDLL {
             ));
 
             let activate_mouse = self.ptr.vtable_entry::<ptr::FnPtr>(16) as *const u8;
-            let hud_update = self.ptr.vtable_entry::<ptr::FnPtr>(11) as *const u8;
-
-            let address = hud_update.byte_add(13);
-            let ptr = *elysium_mem::next_abs_addr_ptr::<*mut u8>(address)
-                .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
-
-            let ptr = Ptr::new("CGlobalVarsBase", ptr)
-                .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
-
-            app.insert_resource(CGlobalVarsBase { ptr });
-
             let ptr = **elysium_mem::next_abs_addr_ptr::<*const *mut u8>(activate_mouse)
                 .unwrap_or_else(|| panic!("unable to find CInput"));
 
@@ -119,6 +108,23 @@ impl IBaseClientDLL {
         client_mode.setup();
         client_mode
     }
+
+    #[inline]
+    unsafe fn setup_global_vars(&self) -> CGlobalVarsBase {
+        tracing::trace!("obtain CGlobalVarsBase");
+
+        let hud_update = self.ptr.vtable_entry::<ptr::FnPtr>(11) as *const u8;
+        let address = hud_update.byte_add(13);
+        let ptr = *elysium_mem::next_abs_addr_ptr::<*mut u8>(address)
+            .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
+
+        let ptr = Ptr::new("CGlobalVarsBase", ptr)
+            .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
+
+        tracing::trace!("CGlobalVarsBase = {:?}", ptr.as_ptr());
+
+        CGlobalVarsBase { ptr }
+    }
 }
 
 unsafe extern "C" fn level_init_pre_entity(this: *mut u8, path: *const ffi::c_char) {
@@ -151,8 +157,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
     let method = global::with_app_mut(|app| {
         if !app.world.contains_resource::<IClientMode>() {
             let client = app.world.resource::<IBaseClientDLL>();
+            let client_mode = client.setup_client_mode();
+            let global_vars = client.setup_global_vars();
 
-            app.insert_resource(client.setup_client_mode());
+            app.insert_resource(client_mode);
+            app.insert_resource(global_vars);
         }
 
         let engine = app.world.resource::<IVEngineClient>();

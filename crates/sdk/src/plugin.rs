@@ -1,6 +1,7 @@
+use crate::entity::AnimState;
 use crate::{
-    global, Args, Error, IBaseClientDLL, IClientEntityList, IVEngineClient, ModuleMap, OnceLoaded,
-    SourceSettings,
+    global, Args, Error, IBaseClientDLL, IClientEntityList, IVEngineClient, KeyValues, ModuleMap,
+    OnceLoaded, SourceSettings,
 };
 use bevy::prelude::*;
 
@@ -20,6 +21,9 @@ unsafe fn source_setup() -> Result<(), Error> {
         app.world
             .resource_scope::<ModuleMap, _>(|world, mut module_map| {
                 let client_module = module_map.open("client_client.so")?;
+
+                AnimState::setup();
+                KeyValues::setup();
 
                 let ptr = client_module.create_interface("VClientEntityList003")?;
 

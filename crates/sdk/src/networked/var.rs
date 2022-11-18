@@ -1,4 +1,4 @@
-use crate::entity::PlayerFlag;
+use crate::{PlayerFlag, Tick};
 use bevy::math::Vec3;
 use core::marker::PhantomData;
 use core::time::Duration;
@@ -77,6 +77,13 @@ impl Var<Duration> {
     #[inline]
     pub unsafe fn write<T>(self, class: *mut T, value: Duration) {
         self.cast::<f32>().write(class, value.as_secs_f32());
+    }
+}
+
+impl Var<Tick> {
+    #[inline]
+    pub unsafe fn read<T>(self, class: *const T) -> Tick {
+        Tick(self.cast::<u32>().read(class))
     }
 }
 

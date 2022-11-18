@@ -20,7 +20,8 @@ fn main() {
 
     app.insert_resource(SourceSettings {
         max_fps: Some(144),
-        once_loaded: OnceLoaded::LoadMap("de_mirage".into()),
+        //once_loaded: OnceLoaded::LoadMap("de_mirage".into()),
+        once_loaded: OnceLoaded::ConnectTo("192.168.20.69:27015".parse().unwrap()),
         renderer: Renderer::OpenGl,
     })
     .add_plugin(SourcePlugin)

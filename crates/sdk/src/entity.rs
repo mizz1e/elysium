@@ -1,6 +1,6 @@
-use crate::{networked, ClientClass, Mat4x3, Ptr};
-use bevy::prelude::*;
-use std::mem::MaybeUninit;
+use crate::{global, networked, pattern, ClientClass, Mat4x3, Ptr, Tick, Time};
+use bevy::prelude::{Resource, Vec3};
+use std::time::Duration;
 use std::{ffi, mem};
 
 pub use id::EntityId;
@@ -214,8 +214,10 @@ impl IClientEntity {
     #[inline]
     pub fn anim_state(&self) -> Option<AnimState> {
         unsafe {
-            let ptr = networked::addr!(self.ptr.as_ptr(), cs_player.is_scoped).byte_sub(20);
-            let ptr = Ptr::new("AnimState", ptr)?;
+            let offset = global::with_app(|app| app.world.resource::<AnimStateOffset>().0);
+            let ptr = self.ptr.as_ptr().byte_add(offset);
+            let ptr = ptr as *const *mut u8;
+            let ptr = Ptr::new("AnimState", *ptr)?;
 
             Some(AnimState { ptr })
         }
@@ -223,23 +225,72 @@ impl IClientEntity {
 
     #[inline]
     pub fn max_desync_angle(&self) -> f32 {
-        let Some(anim_state) = self.anim_state() else {
-            return 0.0;
-        };
- 
-        let mut yaw_modifier = (anim_state.running_accel_progress() * -3.0 - 0.2)
-            - anim_state.foot_speed().clamp(0.0, 1.0)
-            + 1.0;
+        unsafe {
+            let Some(anim_state) = self.anim_state() else {
+                return 0.0;
+            };
 
-        if anim_state.duck_progress() > 0.0 {
-            yaw_modifier += anim_state.duck_progress()
-                * anim_state.foot_speed_2().clamp(0.0, 1.0)
-                * (0.5 - yaw_modifier);
+            let mut yaw_modifier = (anim_state.running_accel_progress() * -3.0 - 0.2)
+                * anim_state.feet_shuffle_speed().clamp(0.0, 1.0)
+                + 1.0;
+
+            if anim_state.duck_progress() > 0.0 {
+                yaw_modifier += anim_state.duck_progress()
+                    * anim_state.feet_shuffle_speed_2().clamp(0.0, 1.0)
+                    * (0.5 - yaw_modifier);
+            }
+
+            anim_state.velocity_subtract_y() * yaw_modifier
         }
+    }
 
-        anim_state.velocity_subtract_y() * yaw_modifier
+    #[inline]
+    pub fn is_lby_updating(&self) -> bool {
+        unsafe {
+            let Some(anim_state) = self.anim_state() else {
+                return false;
+            };
+
+            global::with_app_mut(|app| {
+                let mut lby_update_time = app
+                    .world
+                    .get_resource::<LbyUpdateTime>()
+                    .map(|time| time.0)
+                    .unwrap_or(Time(Duration::ZERO));
+
+                let current_time = self.tick_base().to_time();
+                let is_lby_updating = if anim_state.vertical_velocity() > 0.1
+                    || anim_state.horizontal_velocity().abs() > 100.0
+                {
+                    *lby_update_time = *current_time + Duration::from_secs_f32(0.22);
+
+                    false
+                } else if current_time > lby_update_time {
+                    *lby_update_time = *current_time + Duration::from_secs_f32(1.1);
+
+                    true
+                } else {
+                    false
+                };
+
+                app.insert_resource(LbyUpdateTime(lby_update_time));
+
+                is_lby_updating
+            })
+        }
+    }
+
+    #[inline]
+    pub fn tick_base(&self) -> Tick {
+        networked::read!(self.ptr.as_ptr(), base_player.tick_base)
     }
 }
+
+#[derive(Resource)]
+pub struct LbyUpdateTime(pub(crate) Time);
+
+#[derive(Resource)]
+pub struct AnimStateOffset(pub(crate) usize);
 
 #[repr(C)]
 pub struct AnimState {
@@ -247,31 +298,59 @@ pub struct AnimState {
 }
 
 impl AnimState {
-    unsafe fn read<T>(&self, offset: usize) -> T {
-        self.ptr.byte_add(offset).cast::<T>().read_unaligned()
+    pub unsafe fn setup() {
+        tracing::trace!("obtain CSPlayer::Spawn");
+
+        let module = link::load_module("client_client.so").unwrap();
+        let bytes = module.bytes();
+        let opcode = &pattern::CSPLAYER_SPAWN.find(bytes).unwrap().1[..56];
+
+        tracing::trace!("CSPlayer::Spawn = {opcode:02X?}");
+        tracing::trace!("obtain AnimState offset");
+
+        let ip = opcode.as_ptr().byte_add(52);
+        let offset = ip.cast::<u32>().read() as usize;
+
+        tracing::trace!("AnimState offset = {offset:?}");
+
+        global::with_app_mut(|app| {
+            app.insert_resource(AnimStateOffset(offset));
+        });
     }
-    
+
+    unsafe fn read<T>(&self, offset: usize) -> T {
+        self.ptr.byte_offset::<T>(offset).read_unaligned()
+    }
+
     unsafe fn write<T>(&self, offset: usize, value: T) {
-        self.ptr.byte_add(offset).cast::<T>().write_unaligned(value);
+        self.ptr.byte_offset::<T>(offset).write_unaligned(value);
     }
 
     unsafe fn duck_progress(&self) -> f32 {
-        self.read(184)
+        self.read(0xB8)
     }
 
-    unsafe fn foot_speed(&self) -> f32 {
-        self.read(268)
+    unsafe fn horizontal_velocity(&self) -> f32 {
+        self.read(0x100)
     }
 
-    unsafe fn foot_speed_2(&self) -> f32 {
-        self.read(272)
+    unsafe fn vertical_velocity(&self) -> f32 {
+        self.read(0x104)
+    }
+
+    unsafe fn feet_shuffle_speed(&self) -> f32 {
+        self.read(0x10C)
+    }
+
+    unsafe fn feet_shuffle_speed_2(&self) -> f32 {
+        self.read(0x110)
     }
 
     unsafe fn running_accel_progress(&self) -> f32 {
-        self.read(304)
+        self.read(0x130)
     }
 
     unsafe fn velocity_subtract_y(&self) -> f32 {
-        self.read(932)
+        self.read(0x3A4)
     }
 }

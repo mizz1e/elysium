@@ -1,5 +1,5 @@
 use crate::{global, Ptr};
-use bevy::prelude::*;
+use bevy::prelude::{Deref, DerefMut, Resource};
 use std::time::Duration;
 
 /// `public/globalvars_base.h`.
@@ -8,24 +8,20 @@ pub struct CGlobalVarsBase {
     pub(crate) ptr: Ptr,
 }
 
-#[derive(Clone, Copy)]
-pub struct Time {
-    time: Duration,
-}
+#[derive(Clone, Copy, Debug, Deref, DerefMut, PartialEq, PartialOrd)]
+pub struct Time(pub Duration);
 
-#[derive(Clone, Copy)]
-pub struct Tick {
-    tick: u32,
-}
+#[derive(Clone, Copy, Debug, Deref, DerefMut, PartialEq, PartialOrd)]
+pub struct Tick(pub u32);
 
 impl Time {
     /// `TIME_TO_TICKS` in `game/shared/shareddefs.h`.
     #[inline]
     pub fn to_tick(self) -> Tick {
         let interval_per_tick = unsafe { interval_per_tick() };
-        let tick = ((self.time.as_secs_f32() + 0.5) / interval_per_tick) as u32;
+        let tick = ((self.0.as_secs_f32() + 0.5) / interval_per_tick) as u32;
 
-        Tick { tick }
+        Tick(tick)
     }
 }
 
@@ -34,9 +30,9 @@ impl Tick {
     #[inline]
     pub fn to_time(self) -> Time {
         let interval_per_tick = unsafe { interval_per_tick() };
-        let time = Duration::from_secs_f32((self.tick as f32) * interval_per_tick);
+        let time = Duration::from_secs_f32((self.0 as f32) * interval_per_tick);
 
-        Time { time }
+        Time(time)
     }
 }
 

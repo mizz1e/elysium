@@ -17,8 +17,18 @@ path = "../mem"
 [dependencies.libc]
 version = "0.2"
 
+[dependencies.link]
+git = "https://github.com/elysian6969/link"
+rev = "02127c0516ec4f2a69a220f3a405787369d44b5e"
+
 [dependencies.libloading]
 version = "0.7"
+
+[dependencies.once_cell]
+version = "1.16"
+
+[dependencies.regex]
+version = "1.6"
 
 [dependencies.phf]
 features = ["macros"]

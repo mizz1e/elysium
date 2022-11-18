@@ -1056,7 +1056,7 @@ dependencies = [
  "cake",
  "dismal",
  "libc",
- "link",
+ "link 0.0.0 (git+https://github.com/elysian6969/link)",
  "log",
 ]
 
@@ -1069,7 +1069,10 @@ dependencies = [
  "elysium-mem",
  "libc",
  "libloading",
+ "link 0.0.0 (git+https://github.com/elysian6969/link?rev=02127c0516ec4f2a69a220f3a405787369d44b5e)",
+ "once_cell",
  "phf",
+ "regex",
  "thiserror",
  "tracing",
  "ubyte",
@@ -1651,6 +1654,16 @@ name = "libm"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "348108ab3fba42ec82ff6e9564fc4ca0247bdccdc68dd8af9764bbc79c3c8ffb"
+
+[[package]]
+name = "link"
+version = "0.0.0"
+source = "git+https://github.com/elysian6969/link?rev=02127c0516ec4f2a69a220f3a405787369d44b5e#02127c0516ec4f2a69a220f3a405787369d44b5e"
+dependencies = [
+ "cake",
+ "libc",
+ "memchr",
+]
 
 [[package]]
 name = "link"
