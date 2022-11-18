@@ -29,8 +29,11 @@ impl ICvar {
     }
 }
 
-#[derive(Resource)]
-pub struct SvCheats(pub(crate) ConVar<i32>);
+#[derive(Deref, Resource)]
+pub struct PanoramaDisableBlur(pub ConVar<i32>);
+
+#[derive(Deref, Resource)]
+pub struct SvCheats(pub ConVar<i32>);
 
 #[derive(Resource)]
 pub struct ConVar<T> {

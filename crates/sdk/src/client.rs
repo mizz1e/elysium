@@ -171,9 +171,12 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
             let cvar = ICvar { ptr };
             let sv_cheats = convar::SvCheats(cvar.find_var("sv_cheats").unwrap());
+            let panorama_disable_blur =
+                convar::PanoramaDisableBlur(cvar.find_var("@panorama_disable_blur").unwrap());
 
             app.insert_resource(cvar);
             app.insert_resource(sv_cheats);
+            app.insert_resource(panorama_disable_blur);
         }
 
         let engine = app.world.resource::<IVEngineClient>();
@@ -185,11 +188,15 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
         match frame {
             FRAME_NET_UPDATE_END => {
-                let sv_cheats = &app.world.resource::<convar::SvCheats>().0;
+                let sv_cheats = app.world.resource::<convar::SvCheats>();
 
                 sv_cheats.write(1);
             }
             FRAME_RENDER_START => {
+                let panorama_disable_blur = app.world.resource::<convar::PanoramaDisableBlur>();
+
+                panorama_disable_blur.write(1);
+
                 /*tracing::trace!("{:?}", engine.level_name());
 
                 if let Some(channel) = engine.net_channel() {
