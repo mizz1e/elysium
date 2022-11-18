@@ -18,8 +18,9 @@ path = "../mem"
 version = "0.2"
 
 [dependencies.link]
+default-features = false
 git = "https://github.com/elysian6969/link"
-rev = "02127c0516ec4f2a69a220f3a405787369d44b5e"
+rev = "0c54d56d5472a996a59f6e2bf18e603340ddf48f"
 
 [dependencies.libloading]
 version = "0.7"
