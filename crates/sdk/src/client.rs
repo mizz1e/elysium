@@ -1,5 +1,5 @@
 use crate::{
-    convar, global, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
+    convar, gl, global, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
     IClientEntityList, IClientMode, ICvar, IVEngineClient, ModuleMap, Ptr,
 };
 use bevy::prelude::*;
@@ -156,6 +156,15 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
     let method = global::with_app_mut(|app| {
         if !app.world.contains_resource::<IClientMode>() {
+            let context = gl::setup();
+
+            app.insert_resource(context);
+
+            let (poll_event, swap_window) = sdl::setup();
+
+            app.insert_resource(poll_event);
+            app.insert_resource(swap_window);
+
             let client = app.world.resource::<IBaseClientDLL>();
             let client_mode = client.setup_client_mode();
             let global_vars = client.setup_global_vars();

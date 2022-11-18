@@ -85,9 +85,9 @@ unsafe extern "C" fn create_move(
         let local_player_index = engine.local_player_index();
         let local_player = entity_list.get(local_player_index).unwrap();
 
-        command.view_angle.x = 89.0;
-        command.view_angle.y += 180.0;
-        command.view_angle.z -= 50.0;
+        //command.view_angle.x = 89.0;
+        //command.view_angle.y += 180.0;
+        //command.view_angle.z -= 50.0;
 
         let max_desync_angle = local_player.max_desync_angle();
         let is_lby_updating = local_player.is_lby_updating();
@@ -121,7 +121,7 @@ unsafe extern "C" fn create_move(
         command.movement =
             math::fix_movement(command.movement, command.view_angle, engine_view_angle);
 
-        WalkingAnimation::Disabled.apply(command);
+        WalkingAnimation::Enabled.apply(command);
 
         if *send_packet {
             app.insert_resource(ptr::read(command));

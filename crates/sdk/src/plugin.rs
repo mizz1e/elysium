@@ -1,7 +1,7 @@
 use crate::entity::AnimState;
 use crate::{
-    global, Args, Error, IBaseClientDLL, IClientEntityList, ICvar, IVEngineClient, KeyValues,
-    ModuleMap, OnceLoaded, SourceSettings,
+    global, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList, IVEngineClient,
+    KeyValues, ModuleMap, OnceLoaded, SourceSettings,
 };
 use bevy::prelude::*;
 
@@ -12,6 +12,7 @@ impl Plugin for SourcePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SourceSettings>()
             .init_resource::<ModuleMap>()
+            .init_resource::<Config>()
             .set_runner(source_runner);
     }
 }
@@ -20,6 +21,10 @@ unsafe fn source_setup() -> Result<(), Error> {
     let launcher_main = global::with_app_mut::<Result<_, Error>>(|app| {
         app.world
             .resource_scope::<ModuleMap, _>(|world, mut module_map| {
+                let loader = GlLoader::setup();
+
+                world.insert_resource(loader);
+
                 let client_module = module_map.open("client_client.so")?;
 
                 AnimState::setup();
