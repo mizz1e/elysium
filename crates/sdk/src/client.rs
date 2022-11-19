@@ -210,22 +210,22 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
         let mut system_state: SystemState<(
             Res<Config>,
+            Res<IBaseClientDLL>,
             Res<IVEngineClient>,
             Res<IClientEntityList>,
             Res<CInput>,
         )> = SystemState::new(&mut app.world);
 
-        let (config, engine, entity_list, input) = system_state.get(&app.world);
+        let (config, client, engine, entity_list, input) = system_state.get(&app.world);
         let mut in_thirdperson = config.thirdperson_enabled & config.in_thirdperson;
         let local_player_index = engine.local_player_index();
         let view_angle = engine.view_angle();
 
-        in_thirdperson &= !entity_list
-            .get(local_player_index)
-            .map(|player| player.observer_mode().breaks_thirdperson() | player.is_scoped())
-            .unwrap_or_default();
-
-        input.set_in_thirdperson(in_thirdperson);
+        if config.menu_open {
+            client.deactivate_mouse();
+        } else {
+            client.activate_mouse();
+        }
 
         match frame {
             FRAME_NET_UPDATE_END => {
@@ -234,6 +234,13 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 sv_cheats.write(1);
             }
             FRAME_RENDER_START => {
+                in_thirdperson &= !entity_list
+                    .get(local_player_index)
+                    .map(|player| player.observer_mode().breaks_thirdperson() | player.is_scoped())
+                    .unwrap_or_default();
+
+                input.set_in_thirdperson(in_thirdperson);
+
                 let panorama_disable_blur = app.world.resource::<convar::PanoramaDisableBlur>();
 
                 panorama_disable_blur.write(1);
@@ -263,7 +270,8 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             FRAME_RENDER_END => {
                 if let Some(original_view_angle) = app.world.get_resource::<OriginalViewAngle>() {
                     if let Some(player) = entity_list.get(local_player_index) {
-                        player.set_view_angle(original_view_angle.0);
+                        // restore some other way, this messes with thirdperson switching
+                        //player.set_view_angle(original_view_angle.0);
                     }
                 }
             }
