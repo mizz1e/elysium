@@ -50,6 +50,13 @@ pub fn render() {
             context.enable(glow::BLEND);
             context.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
 
+            context.viewport(
+                0,
+                0,
+                viewport.physical_width() as i32,
+                viewport.physical_height() as i32,
+            );
+
             program.update(viewport.clone(), cursor_position);
             program.render(context, viewport.clone());
 
@@ -58,6 +65,7 @@ pub fn render() {
 
             // disable alpha blending to not break vgui fonts
             context.disable(glow::BLEND);
+            context.blend_func(glow::ONE, glow::ZERO);
         });
     }
 }

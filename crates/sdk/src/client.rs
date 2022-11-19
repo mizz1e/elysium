@@ -3,6 +3,7 @@ use crate::{
     IClientEntityList, IClientMode, ICvar, IVEngineClient, ModuleMap, Ptr,
 };
 use bevy::prelude::*;
+use iced_native::Point;
 use std::{ffi, mem};
 
 const FRAME_NET_UPDATE_END: ffi::c_int = 4;
@@ -164,6 +165,7 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
             app.insert_resource(poll_event);
             app.insert_resource(swap_window);
+            app.insert_resource(sdl::CursorPosition(Point::ORIGIN));
 
             let client = app.world.resource::<IBaseClientDLL>();
             let client_mode = client.setup_client_mode();

@@ -1,5 +1,6 @@
 use crate::{global, iced};
-use bevy::prelude::Resource;
+use bevy::ecs::system::SystemState;
+use bevy::prelude::*;
 use iced_glow::Viewport;
 use iced_native::keyboard::Event::{KeyPressed, KeyReleased};
 use iced_native::keyboard::KeyCode::Insert;
@@ -37,9 +38,17 @@ pub unsafe fn setup() -> (PollEvent, SwapWindow) {
 
 unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
     let method = global::with_app(|app| app.world.resource::<PollEvent>().0);
+    let result = (method)(event);
 
-    elysium_input::map_event(*event, |event| {
-        global::with_app_mut(|app| {
+    global::with_app_mut(|app| {
+        elysium_input::map_event(*event, |event| {
+            let mut system_state: SystemState<(
+                ResMut<CursorPosition>,
+                ResMut<iced::IcedProgram<iced::Menu>>,
+            )> = SystemState::new(&mut app.world);
+
+            let (mut cursor_position, mut program) = system_state.get_mut(&mut app.world);
+
             match &event {
                 // insert
                 //Event::Keyboard(KeyPressed {
@@ -60,14 +69,18 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
 
                 // move cursor
                 Event::Mouse(mouse::Event::CursorMoved { position }) => {
-                    app.insert_resource(CursorPosition(*position));
+                    cursor_position.0 = *position;
                 }
                 _ => {}
             };
+
+            tracing::trace!("event = {event:?}");
+
+            program.queue_event(event);
         });
     });
 
-    (method)(event)
+    result
 }
 
 unsafe extern "C" fn swap_window(window: *mut SDL_Window) {

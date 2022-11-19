@@ -1,5 +1,5 @@
 use crate::{global, Config};
-use iced_native::{column, widget, Command, Element, Length, Program};
+use iced_native::{column, row, widget, Command, Element, Length, Program};
 
 pub struct Menu;
 
@@ -40,11 +40,14 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
         let config = app.world.resource::<Config>();
 
         let desync_checkbox = widget::checkbox("desync", config.desync_enabled, Message::Desync);
-        let yaw_offset_slider = widget::slider(
-            -180..=180,
-            config.yaw_offset.trunc() as i32,
-            Message::YawOffset,
-        );
+        let yaw_offset_slider = row![
+            widget::text("yaw offset "),
+            widget::slider(
+                -180..=180,
+                config.yaw_offset.trunc() as i32,
+                Message::YawOffset,
+            )
+        ];
 
         let options = column![desync_checkbox, yaw_offset_slider].spacing(15);
         let content = widget::scrollable(options);
