@@ -93,6 +93,7 @@ unsafe extern "C" fn create_move(
 
         config.pitch.apply(&mut command.view_angle.x);
         command.view_angle.y += config.yaw_offset;
+        command.view_angle.z = config.roll;
 
         if config.desync_enabled {
             let max_desync_angle = local_player.max_desync_angle();

@@ -7,14 +7,50 @@ use std::{env, fs};
 
 const SANE_LINKER_PATH: &str = "SANE_LINKER_PATH";
 
-/// Determine the directory CSGO is installed in.
-pub fn determine_csgo_dir() -> Option<PathBuf> {
-    const LIB_DIRS: &str = ".steam/steam/steamapps/libraryfolders.vdf";
+/// Determine the location of Steam, and read it's libraryfolders config.
+pub fn steam_csgo_dirs() -> Option<(PathBuf, PathBuf)> {
+    let home_dir = dirs::home_dir()?;
+    let steam_dir = home_dir.join(".steam/root");
+
+    if let Some(csgo_dir) = try_load_lib_dirs(&steam_dir) {
+        return Some((steam_dir, csgo_dir));
+    }
+
+    let steam_dir = home_dir.join(".steam/steam");
+
+    if let Some(csgo_dir) = try_load_lib_dirs(&steam_dir) {
+        return Some((steam_dir, csgo_dir));
+    }
+
+    let steam_dir = home_dir.join(".var/app/com.valvesoftware.Steam");
+
+    if let Some(csgo_dir) = try_load_lib_dirs(&steam_dir) {
+        return Some((steam_dir, csgo_dir));
+    }
+
+    let data_dir = dirs::data_dir()?;
+    let steam_dir = home_dir.join("esteem");
+
+    if let Some(csgo_dir) = try_load_lib_dirs(&steam_dir) {
+        return Some((steam_dir, csgo_dir));
+    }
+
+    let steam_dir = home_dir.join("Steam");
+
+    if let Some(csgo_dir) = try_load_lib_dirs(&steam_dir) {
+        return Some((steam_dir, csgo_dir));
+    }
+
+    None
+}
+
+fn try_load_lib_dirs(steam_dir: impl AsRef<Path>) -> Option<PathBuf> {
+    const LIB_DIRS: &str = "steamapps/libraryfolders.vdf";
     const CSGO_DIR: &str = "steamapps/common/Counter-Strike Global Offensive";
 
-    let home_dir: PathBuf = env::var_os("HOME")?.into();
-    let lib_dirs = home_dir.join(LIB_DIRS);
-    let config = fs::read_to_string(lib_dirs).ok()?;
+    let steam_dir = steam_dir.as_ref();
+    let lib_dirs_path = steam_dir.join(LIB_DIRS);
+    let config = fs::read_to_string(lib_dirs_path).ok()?;
     let vdf = vdf::Pair::from_str(&config).ok()?;
 
     let mut path = vdf.iter().flat_map(|pair| {
@@ -31,8 +67,8 @@ pub fn determine_csgo_dir() -> Option<PathBuf> {
 
     let path = path.next()?.join(CSGO_DIR);
 
-    if env::var_os(SANE_LINKER_PATH).is_none() {
-        tracing::info!("found csgo at {path:?}");
+    if !path.exists() {
+        return None;
     }
 
     Some(path)
@@ -47,7 +83,7 @@ pub fn check_display() -> Result<(), Error> {
 
 /// Automatically append `LD_LIBRARY_PATH` otherwise CSGO can't find any libraries, and likes to
 /// segmentation fault!!
-pub fn check_linker_path(csgo_dir: impl AsRef<Path>) -> Result<(), Error> {
+pub fn check_linker_path() -> Result<(), Error> {
     const LD_LIBRARY_PATH: &str = "LD_LIBRARY_PATH";
     const BIN_LINUX64: &str = "bin/linux64";
     const CSGO_BIN_LINUX64: &str = "csgo/bin/linux64";
@@ -60,10 +96,11 @@ pub fn check_linker_path(csgo_dir: impl AsRef<Path>) -> Result<(), Error> {
         return Ok(());
     }
 
-    let csgo_dir = csgo_dir.as_ref();
+    let (steam_dir, csgo_dir) = steam_csgo_dirs().ok_or(Error::NoCsgo)?;
     let current_exe = env::current_exe().map_err(|_| Error::NoCsgo)?;
-    let steam_dir = csgo_dir.ancestors().nth(3).ok_or(Error::NoCsgo)?;
     let mut linker_path = var_path(LD_LIBRARY_PATH);
+
+    tracing::info!("found csgo at {csgo_dir:?}");
 
     linker_path.insert(0, csgo_dir.join(BIN_LINUX64));
     linker_path.insert(0, csgo_dir.join(CSGO_BIN_LINUX64));
@@ -92,10 +129,7 @@ pub fn check_linker_path(csgo_dir: impl AsRef<Path>) -> Result<(), Error> {
 
 pub fn pre_launch() -> Result<(), Error> {
     check_display()?;
-
-    let csgo_dir = determine_csgo_dir().ok_or(Error::NoCsgo)?;
-
-    check_linker_path(csgo_dir)?;
+    check_linker_path()?;
 
     Ok(())
 }

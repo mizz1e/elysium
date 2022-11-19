@@ -44,9 +44,11 @@ impl fmt::Display for Pitch {
 #[serde(default)]
 pub struct Config {
     pub desync_enabled: bool,
+    pub desync_delta: f32,
     pub in_thirdperson: bool,
     pub menu_open: bool,
     pub pitch: Pitch,
+    pub roll: f32,
     pub thirdperson_enabled: bool,
     pub walking_animation: WalkingAnimation,
     pub yaw_offset: f32,

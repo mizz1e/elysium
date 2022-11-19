@@ -11,7 +11,9 @@ pub struct Menu;
 #[derive(Clone, Debug)]
 pub enum Message {
     Desync(bool),
+    DesyncDelta(i32),
     Pitch(Pitch),
+    Roll(i32),
     YawOffset(i32),
     WalkingAnimation(WalkingAnimation),
     Thirdperson(bool),
@@ -38,8 +40,10 @@ unsafe fn update(message: Message) -> Command<Message> {
 
         match message {
             Message::Desync(enabled) => config.desync_enabled = enabled,
+            Message::DesyncDelta(delta) => config.desync_delta = delta as f32,
             Message::Pitch(pitch) => config.pitch = pitch,
             Message::YawOffset(offset) => config.yaw_offset = offset as f32,
+            Message::Roll(roll) => config.roll = roll as f32,
             Message::WalkingAnimation(animation) => config.walking_animation = animation,
             Message::Thirdperson(enabled) => config.in_thirdperson = enabled,
             Message::Load => *config = config::load(),
@@ -56,18 +60,29 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
 
         let desync_checkbox = widget::checkbox("desync", config.desync_enabled, Message::Desync);
 
+        let desync_delta = config.desync_delta.trunc() as i32;
+
+        //debug desync
+        //let desync_delta_slider = row![
+        //    widget::text(format!("desync_delta ({desync_delta}) ")),
+        //    widget::slider(-180..=180, desync_delta, Message::DesyncDelta),
+        //];
+
         let pitch_list = row![
             widget::text("pitch "),
             widget::pick_list(PITCH_LIST, Some(config.pitch), Message::Pitch),
         ];
 
+        let yaw_offset = config.yaw_offset.trunc() as i32;
         let yaw_offset_slider = row![
-            widget::text("yaw offset "),
-            widget::slider(
-                -180..=180,
-                config.yaw_offset.trunc() as i32,
-                Message::YawOffset,
-            )
+            widget::text(format!("yaw offset ({yaw_offset}) ")),
+            widget::slider(-180..=180, yaw_offset, Message::YawOffset),
+        ];
+
+        let roll = config.roll.trunc() as i32;
+        let roll_slider = row![
+            widget::text(format!("roll ({roll}) ")),
+            widget::slider(-50..=50, roll, Message::Roll),
         ];
 
         let walking_animation_list = row![
@@ -87,8 +102,10 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
 
         let options = column![
             desync_checkbox,
+            //desync_delta_slider,
             pitch_list,
             yaw_offset_slider,
+            roll_slider,
             walking_animation_list,
             thirdperson_checkbox,
             load_button,

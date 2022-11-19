@@ -938,6 +938,7 @@ dependencies = [
  "bevy",
  "bevy_log",
  "clap",
+ "dirs",
  "elysium-sdk",
  "thiserror",
  "tracing",
