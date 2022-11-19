@@ -1,5 +1,6 @@
 use crate::{Ptr, TextureGroup};
 use bevy::prelude::*;
+use iced_native::Color;
 use std::ffi;
 use std::ffi::{CStr, OsStr};
 use std::os::unix::ffi::OsStrExt;
@@ -109,7 +110,7 @@ impl IMaterial {
 
     #[inline]
     pub fn color_modulate(&self, color: Color) {
-        let [r, g, b, a] = color.as_rgba_f32();
+        let Color { r, g, b, a } = color;
 
         let method: unsafe extern "C" fn(this: *mut u8, a: f32) =
             unsafe { self.ptr.vtable_entry(27) };
@@ -129,7 +130,7 @@ impl IMaterial {
     #[inline]
     pub fn set_tint(&self, color: Color) -> bool {
         if let Some(var) = self.var(ENV_TINT_MAP) {
-            let [r, g, b, _a] = color.as_rgba_f32();
+            let Color { r, g, b, .. } = color;
 
             var.set_vec3(Vec3::new(r, g, b));
 
