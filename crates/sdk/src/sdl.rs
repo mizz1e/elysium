@@ -1,12 +1,11 @@
-use crate::{global, iced};
+use crate::{global, iced, Config};
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
 use iced_glow::Viewport;
-use iced_native::keyboard::Event::{KeyPressed, KeyReleased};
-use iced_native::keyboard::KeyCode::Insert;
+use iced_native::keyboard::Event::KeyPressed;
+use iced_native::keyboard::KeyCode;
 use iced_native::mouse::Button::Other;
-use iced_native::mouse::Event::{ButtonPressed, ButtonReleased};
-use iced_native::mouse::Interaction;
+use iced_native::mouse::Event::ButtonPressed;
 use iced_native::{mouse, Event, Point, Size};
 use sdl2_sys::{SDL_Event, SDL_GL_SwapWindow, SDL_GetWindowSize, SDL_PollEvent, SDL_Window};
 use std::{ffi, ptr};
@@ -43,38 +42,36 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
     global::with_app_mut(|app| {
         elysium_input::map_event(*event, |event| {
             let mut system_state: SystemState<(
+                ResMut<Config>,
                 ResMut<CursorPosition>,
                 ResMut<iced::IcedProgram<iced::Menu>>,
             )> = SystemState::new(&mut app.world);
 
-            let (mut cursor_position, mut program) = system_state.get_mut(&mut app.world);
+            let (mut config, mut cursor_position, mut program) =
+                system_state.get_mut(&mut app.world);
 
             match &event {
                 // insert
-                //Event::Keyboard(KeyPressed {
-                //    key_code: Insert, ..
-                //}) => state.toggle_menu(),
+                Event::Keyboard(KeyPressed {
+                    key_code: KeyCode::Insert,
+                    ..
+                }) => config.menu_open ^= true,
 
-                // thirdperson
-                //Event::Mouse(ButtonPressed(Other(4))) => local_vars.toggle_thirdperson(),
-
-                // p100 duplicate input fixes
                 // insert
-                //Event::Keyboard(KeyReleased {
-                //    key_code: Insert, ..
-                //}) => state.release_menu_toggle(),
+                Event::Keyboard(KeyPressed {
+                    key_code: KeyCode::Escape,
+                    ..
+                }) => config.menu_open = false,
 
                 // thirdperson
-                //Event::Mouse(ButtonReleased(Other(4))) => local_vars.release_thirdperson_toggle(),
+                Event::Mouse(ButtonPressed(Other(4))) => config.thirdperson_enabled ^= true,
 
                 // move cursor
                 Event::Mouse(mouse::Event::CursorMoved { position }) => {
-                    cursor_position.0 = *position;
+                    cursor_position.0 = *position
                 }
                 _ => {}
             };
-
-            tracing::trace!("event = {event:?}");
 
             program.queue_event(event);
         });

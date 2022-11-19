@@ -1,4 +1,4 @@
-use crate::{global, Config};
+use crate::{config, global, Config};
 use iced_native::{column, row, widget, Command, Element, Length, Program};
 
 pub struct Menu;
@@ -7,6 +7,9 @@ pub struct Menu;
 pub enum Message {
     Desync(bool),
     YawOffset(i32),
+    Thirdperson(bool),
+    Load,
+    Save,
 }
 
 impl Program for Menu {
@@ -29,6 +32,9 @@ unsafe fn update(message: Message) -> Command<Message> {
         match message {
             Message::Desync(enabled) => config.desync_enabled = enabled,
             Message::YawOffset(offset) => config.yaw_offset = offset as f32,
+            Message::Thirdperson(enabled) => config.in_thirdperson = enabled,
+            Message::Load => *config = config::load(),
+            Message::Save => config::save(&config),
         }
 
         Command::none()
@@ -49,7 +55,20 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
             )
         ];
 
-        let options = column![desync_checkbox, yaw_offset_slider].spacing(15);
+        let thirdperson_checkbox =
+            widget::checkbox("thirdperson", config.in_thirdperson, Message::Thirdperson);
+
+        let load_button = widget::button("load").on_press(Message::Load);
+        let save_button = widget::button("save").on_press(Message::Save);
+
+        let options = column![
+            desync_checkbox,
+            yaw_offset_slider,
+            thirdperson_checkbox,
+            load_button,
+            save_button
+        ]
+        .spacing(15);
         let content = widget::scrollable(options);
 
         let menu = widget::container(content)

@@ -11,6 +11,9 @@ version = "0.9"
 [dependencies.bitflags]
 version = "1.3"
 
+[dependencies.dirs]
+version = "4.0"
+
 [dependencies.elysium-input]
 path = "../input"
 
@@ -43,6 +46,13 @@ version = "1.6"
 [dependencies.phf]
 features = ["macros"]
 version = "0.11"
+
+[dependencies.serde]
+features = ["derive"]
+version = "1.0"
+
+[dependencies.serde_json]
+version = "1.0"
 
 [dependencies.sdl2-sys]
 version = "0.35"

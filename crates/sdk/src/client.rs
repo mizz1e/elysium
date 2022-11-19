@@ -1,7 +1,8 @@
 use crate::{
     convar, gl, global, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
-    IClientEntityList, IClientMode, ICvar, IVEngineClient, ModuleMap, Ptr,
+    Config, IClientEntityList, IClientMode, ICvar, IVEngineClient, ModuleMap, Ptr,
 };
+use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
 use iced_native::Point;
 use std::{ffi, mem};
@@ -190,12 +191,24 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(panorama_disable_blur);
         }
 
-        let engine = app.world.resource::<IVEngineClient>();
-        let entity_list = app.world.resource::<IClientEntityList>();
-        let input = app.world.resource::<CInput>();
-        let in_thirdperson = input.in_thirdperson();
+        let mut system_state: SystemState<(
+            Res<Config>,
+            Res<IVEngineClient>,
+            Res<IClientEntityList>,
+            Res<CInput>,
+        )> = SystemState::new(&mut app.world);
+
+        let (config, engine, entity_list, input) = system_state.get(&app.world);
+        let mut in_thirdperson = config.thirdperson_enabled & config.in_thirdperson;
         let local_player_index = engine.local_player_index();
         let view_angle = engine.view_angle();
+
+        in_thirdperson &= !entity_list
+            .get(local_player_index)
+            .map(|player| player.observer_mode().breaks_thirdperson() | player.is_scoped())
+            .unwrap_or_default();
+
+        input.set_in_thirdperson(in_thirdperson);
 
         match frame {
             FRAME_NET_UPDATE_END => {

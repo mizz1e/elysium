@@ -284,6 +284,19 @@ impl IClientEntity {
     pub fn tick_base(&self) -> Tick {
         networked::read!(self.ptr.as_ptr(), base_player.tick_base)
     }
+
+    #[inline]
+    pub fn observer_mode(&self) -> ObserverMode {
+        let method: unsafe extern "C" fn(this: *mut u8) -> ObserverMode =
+            unsafe { self.ptr.vtable_entry(357) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+
+    #[inline]
+    pub fn is_scoped(&self) -> bool {
+        networked::read!(self.ptr.as_ptr(), cs_player.is_scoped)
+    }
 }
 
 #[derive(Resource)]

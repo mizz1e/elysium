@@ -1,9 +1,8 @@
-use crate::{gl, global, sdl};
+use crate::{gl, global, sdl, Config};
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
 use iced_glow::glow;
 use iced_glow::glow::HasContext;
-use std::ptr;
 
 pub use menu::Menu;
 pub use program::IcedProgram;
@@ -28,13 +27,14 @@ pub fn render() {
 
         global::with_app_mut(|app| {
             let mut system_state: SystemState<(
+                Res<Config>,
                 Res<gl::GlContext>,
                 Res<sdl::WindowViewport>,
                 Option<Res<sdl::CursorPosition>>,
                 ResMut<IcedProgram<Menu>>,
             )> = SystemState::new(&mut app.world);
 
-            let (context, viewport, cursor_position, mut program) =
+            let (config, context, viewport, cursor_position, mut program) =
                 system_state.get_mut(&mut app.world);
 
             let context = &context.0;
@@ -42,6 +42,10 @@ pub fn render() {
             let cursor_position = cursor_position
                 .map(|position| position.0)
                 .unwrap_or_default();
+
+            if !config.menu_open {
+                return;
+            }
 
             // enable auto-conversion from/to sRGB
             context.enable(glow::FRAMEBUFFER_SRGB);

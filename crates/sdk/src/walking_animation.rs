@@ -1,4 +1,5 @@
 use crate::{Button, CUserCmd};
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
 const MOVE: Button = Button::MOVE_FORWARD
@@ -13,7 +14,7 @@ struct Buttons {
     right: Button,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum WalkingAnimation {
     /// Regular walking animation.
     #[default]
