@@ -1,12 +1,19 @@
-use crate::{config, global, Config};
+use crate::config::Pitch;
+use crate::{config, global, Config, WalkingAnimation};
 use iced_native::{column, row, widget, Command, Element, Length, Program};
+
+const PITCH_LIST: &[Pitch] = &[Pitch::Default, Pitch::Up, Pitch::Down];
+const WALKING_ANIMATION_LIST: &[WalkingAnimation] =
+    &[WalkingAnimation::Enabled, WalkingAnimation::Disabled];
 
 pub struct Menu;
 
 #[derive(Clone, Debug)]
 pub enum Message {
     Desync(bool),
+    Pitch(Pitch),
     YawOffset(i32),
+    WalkingAnimation(WalkingAnimation),
     Thirdperson(bool),
     Load,
     Save,
@@ -31,7 +38,9 @@ unsafe fn update(message: Message) -> Command<Message> {
 
         match message {
             Message::Desync(enabled) => config.desync_enabled = enabled,
+            Message::Pitch(pitch) => config.pitch = pitch,
             Message::YawOffset(offset) => config.yaw_offset = offset as f32,
+            Message::WalkingAnimation(animation) => config.walking_animation = animation,
             Message::Thirdperson(enabled) => config.in_thirdperson = enabled,
             Message::Load => *config = config::load(),
             Message::Save => config::save(&config),
@@ -46,6 +55,12 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
         let config = app.world.resource::<Config>();
 
         let desync_checkbox = widget::checkbox("desync", config.desync_enabled, Message::Desync);
+
+        let pitch_list = row![
+            widget::text("pitch "),
+            widget::pick_list(PITCH_LIST, Some(config.pitch), Message::Pitch),
+        ];
+
         let yaw_offset_slider = row![
             widget::text("yaw offset "),
             widget::slider(
@@ -53,6 +68,15 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
                 config.yaw_offset.trunc() as i32,
                 Message::YawOffset,
             )
+        ];
+
+        let walking_animation_list = row![
+            widget::text("walking animation "),
+            widget::pick_list(
+                WALKING_ANIMATION_LIST,
+                Some(config.walking_animation),
+                Message::WalkingAnimation,
+            ),
         ];
 
         let thirdperson_checkbox =
@@ -63,7 +87,9 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
 
         let options = column![
             desync_checkbox,
+            pitch_list,
             yaw_offset_slider,
+            walking_animation_list,
             thirdperson_checkbox,
             load_button,
             save_button

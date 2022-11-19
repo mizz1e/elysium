@@ -1,11 +1,11 @@
 use crate::WalkingAnimation;
 use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
+use std::{fmt, fs};
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Pitch {
     #[default]
     Default,
@@ -13,7 +13,26 @@ pub enum Pitch {
     Up,
 }
 
+impl Pitch {
+    #[inline]
+    fn as_str(&self) -> &'static str {
+        match self {
+            Pitch::Default => "default",
+            Pitch::Down => "down",
+            Pitch::Up => "up",
+        }
+    }
+}
+
+impl fmt::Display for Pitch {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.as_str(), fmt)
+    }
+}
+
 #[derive(Debug, Default, Deserialize, Resource, Serialize)]
+#[serde(default)]
 pub struct Config {
     pub desync_enabled: bool,
     pub in_thirdperson: bool,

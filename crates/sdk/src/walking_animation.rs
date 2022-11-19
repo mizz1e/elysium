@@ -1,6 +1,7 @@
 use crate::{Button, CUserCmd};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::fmt;
 
 const MOVE: Button = Button::MOVE_FORWARD
     .union(Button::MOVE_BACKWARD)
@@ -55,5 +56,20 @@ impl WalkingAnimation {
             Some(Ordering::Less) => command.buttons.insert(buttons.left),
             _ => {}
         }
+    }
+
+    #[inline]
+    fn as_str(&self) -> &'static str {
+        match self {
+            WalkingAnimation::Enabled => "enabled",
+            WalkingAnimation::Disabled => "disabled",
+        }
+    }
+}
+
+impl fmt::Display for WalkingAnimation {
+    #[inline]
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.as_str(), fmt)
     }
 }
