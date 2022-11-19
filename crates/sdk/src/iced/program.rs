@@ -3,7 +3,7 @@ use bevy::prelude::Resource;
 use iced_glow::{glow, Backend, Renderer, Settings, Theme, Viewport};
 use iced_native::program::State;
 use iced_native::{clipboard, renderer, Color, Debug, Event, Point, Program};
-use std::fmt;
+use std::{fmt, mem};
 
 #[derive(Resource)]
 pub struct IcedProgram<P: Program + 'static> {
@@ -11,6 +11,7 @@ pub struct IcedProgram<P: Program + 'static> {
     pub debug: Debug,
     pub renderer: Renderer,
     pub state: State<P>,
+    pub damaged: bool,
 }
 
 impl<P, M> IcedProgram<P>
@@ -30,12 +31,14 @@ where
 
         let mut renderer = Renderer::new(Backend::new(context, settings));
         let state = State::new(program, viewport.logical_size(), &mut renderer, &mut debug);
+        let damaged = true;
 
         Self {
             clipboard,
             debug,
             renderer,
             state,
+            damaged,
         }
     }
 
@@ -50,6 +53,10 @@ where
 
     #[inline]
     pub fn update(&mut self, viewport: Viewport, cursor_position: Point) {
+        if !mem::take(&mut self.damaged) {
+            return;
+        }
+
         let theme = Theme::Dark;
         let style = renderer::Style {
             text_color: Color::WHITE,
@@ -68,6 +75,7 @@ where
 
     #[inline]
     pub fn queue_event(&mut self, event: Event) {
+        self.damaged = true;
         self.state.queue_event(event);
     }
 }

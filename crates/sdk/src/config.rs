@@ -1,4 +1,4 @@
-use crate::WalkingAnimation;
+use crate::{Color, WalkingAnimation};
 use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -43,6 +43,7 @@ impl fmt::Display for Pitch {
 #[derive(Debug, Default, Deserialize, Resource, Serialize)]
 #[serde(default)]
 pub struct Config {
+    pub active_tab: usize,
     pub desync_enabled: bool,
     pub desync_delta: f32,
     pub in_thirdperson: bool,
@@ -52,6 +53,7 @@ pub struct Config {
     pub thirdperson_enabled: bool,
     pub walking_animation: WalkingAnimation,
     pub yaw_offset: f32,
+    pub cham_color: Color,
 }
 
 pub fn config_dir() -> PathBuf {

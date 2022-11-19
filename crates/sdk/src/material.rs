@@ -1,11 +1,16 @@
-use crate::{Ptr, TextureGroup};
+use crate::{KeyValues, Ptr, TextureGroup};
 use bevy::prelude::*;
 use iced_native::Color;
 use std::ffi;
-use std::ffi::{CStr, OsStr};
+use std::ffi::{CStr, CString, OsStr};
 use std::os::unix::ffi::OsStrExt;
 
 const ENV_TINT_MAP: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"$envtintmap\0") };
+
+#[derive(Resource)]
+pub struct IMaterialSystem {
+    pub(crate) ptr: Ptr,
+}
 
 pub struct IMaterial {
     pub(crate) ptr: Ptr,
@@ -15,6 +20,9 @@ pub struct IMaterialVar {
     pub(crate) ptr: Ptr,
 }
 
+#[derive(Resource)]
+pub struct Glow(pub IMaterial);
+
 bitflags::bitflags! {
     /// Material flag.
     ///
@@ -22,7 +30,7 @@ bitflags::bitflags! {
     ///
     /// See [`public/materialsystem/imaterial.h`](https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/materialsystem/imaterial.h).
     #[repr(transparent)]
-    pub struct MaterialFlag: u32 {
+    pub struct MaterialFlag: i32 {
         const DEBUG = 1 << 0;
         const NO_DEBUG_OVERRIDE = 1 << 1;
         const NO_DRAW = 1 << 2;
@@ -57,6 +65,25 @@ bitflags::bitflags! {
         const VERTEX_FOG = 1 << 31;
     }
 }
+
+impl IMaterialSystem {
+    #[inline]
+    pub fn create(&self, name: impl AsRef<OsStr>, keyvalues: &KeyValues) -> Option<IMaterial> {
+        let method: unsafe extern "C" fn(
+            this: *mut u8,
+            name: *const ffi::c_char,
+            keyvalues: *mut u8,
+        ) -> *mut u8 = unsafe { self.ptr.vtable_entry(83) };
+
+        let name = name.as_ref().as_bytes();
+        let name = CString::new(name).ok()?;
+        let ptr = unsafe { (method)(self.ptr.as_ptr(), name.as_ptr(), keyvalues.ptr.as_ptr()) };
+        let ptr = Ptr::new("IMaterial", ptr)?;
+
+        Some(IMaterial { ptr })
+    }
+}
+
 impl IMaterial {
     #[inline]
     pub fn name(&self) -> Box<OsStr> {

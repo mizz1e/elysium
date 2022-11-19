@@ -1,6 +1,7 @@
 use crate::{
-    convar, gl, global, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
-    Config, IClientEntityList, IClientMode, ICvar, IVEngineClient, ModuleMap, Ptr,
+    convar, gl, global, material::Glow, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd,
+    ClientClass, Config, IClientEntityList, IClientMode, ICvar, IMaterialSystem, IVEngineClient,
+    KeyValues, MaterialFlag, ModuleMap, Ptr,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
@@ -189,6 +190,22 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(cvar);
             app.insert_resource(sv_cheats);
             app.insert_resource(panorama_disable_blur);
+
+            let material_system = app.world.resource::<IMaterialSystem>();
+            let keyvalues = KeyValues::from_str(
+                "UnlitGeneric",
+                r#"
+                    $additive 1
+                    $envmap models/effects/cube_white
+                    $envmapfresnel 1
+                    $alpha 0.8
+                "#,
+            )
+            .unwrap();
+
+            let material = material_system.create("elysium/glow", &keyvalues).unwrap();
+
+            app.insert_resource(Glow(material));
         }
 
         let mut system_state: SystemState<(

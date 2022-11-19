@@ -1,6 +1,5 @@
 use crate::{
     global, math, Button, CUserCmd, CViewSetup, Config, IClientEntityList, IVEngineClient, Ptr,
-    WalkingAnimation,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
@@ -106,6 +105,8 @@ unsafe extern "C" fn create_move(
                 *send_packet = false;
             } else if !*send_packet {
                 command.view_angle.y += max_desync_angle * 2.0;
+                //(rand::random::<f32>() + 1.0);
+                //command.view_angle.z = (rand::random::<f32>() * 100.0) - 50.0;
             }
 
             if command.movement.y.abs() < 5.0 {

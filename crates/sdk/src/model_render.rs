@@ -1,6 +1,6 @@
-use crate::{global, Mat4x3, Ptr};
+use crate::{global, material, IMaterial, Mat4x3, MaterialFlag, Ptr};
 use bevy::prelude::*;
-use std::ffi;
+use std::{ffi, ptr};
 
 #[derive(Resource)]
 pub struct DrawModelExecute(
@@ -29,7 +29,7 @@ impl IVModelRender {
     }
 
     #[inline]
-    fn override_material(&self, material: *mut u8) {
+    fn override_material(&self, material: Option<&IMaterial>) {
         let method: unsafe extern "C" fn(
             this: *mut u8,
             material: *mut u8,
@@ -37,7 +37,12 @@ impl IVModelRender {
             material_index: ffi::c_int,
         ) = unsafe { self.ptr.vtable_entry(1) };
 
-        unsafe { (method)(self.ptr.as_ptr(), material, 0, -1) }
+        let ptr = match material {
+            Some(material) => material.ptr.as_ptr(),
+            None => ptr::null_mut(),
+        };
+
+        unsafe { (method)(self.ptr.as_ptr(), ptr, 0, -1) }
     }
 
     #[inline]
@@ -73,6 +78,12 @@ unsafe extern "C" fn draw_model_execute(
 
     global::with_app(|app| {
         let model_render = app.world.resource::<IVModelRender>();
+        let glow = app.world.resource::<material::Glow>();
+        let glow = &glow.0;
+
+        glow.set_flag(MaterialFlag::IGNORE_Z, true);
+
+        model_render.override_material(Some(glow));
 
         model_render.draw_model_execute(
             render_context,
@@ -80,6 +91,8 @@ unsafe extern "C" fn draw_model_execute(
             model_render_info,
             custom_bone_to_world,
         );
+
+        model_render.override_material(None);
     });
 }
 

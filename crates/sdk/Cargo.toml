@@ -19,8 +19,17 @@ path = "../input"
 [dependencies.elysium-mem]
 path = "../mem"
 
+[dependencies.iced_aw]
+default-features = false
+features = ["color_picker", "glow", "tabs"]
+git = "https://github.com/iced-rs/iced_aw"
+rev = "c6a3bfdc4d01d28aeb433d42628e80a620f78bb3"
+
 [dependencies.iced_glow]
 version = "0.4"
+
+[dependencies.iced_lazy]
+version = "0.2"
 
 [dependencies.iced_native]
 version = "0.6"
@@ -46,6 +55,9 @@ version = "1.6"
 features = ["macros"]
 version = "0.11"
 
+[dependencies.rand]
+version = "0.8"
+
 [dependencies.serde]
 features = ["derive"]
 version = "1.0"
@@ -55,7 +67,6 @@ version = "1.0"
 
 [dependencies.sdl2-sys]
 version = "0.35"
-
 [dependencies.thiserror]
 version = "1.0"
 
