@@ -15,7 +15,16 @@ pub enum Pitch {
 
 impl Pitch {
     #[inline]
-    fn as_str(&self) -> &'static str {
+    pub fn apply(self, pitch: &mut f32) {
+        match self {
+            Pitch::Down => *pitch = 89.0,
+            Pitch::Up => *pitch = -89.0,
+            _ => {}
+        }
+    }
+
+    #[inline]
+    pub fn as_str(&self) -> &'static str {
         match self {
             Pitch::Default => "default",
             Pitch::Down => "down",

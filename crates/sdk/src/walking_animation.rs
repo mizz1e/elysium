@@ -27,7 +27,7 @@ pub enum WalkingAnimation {
 
 impl WalkingAnimation {
     #[inline]
-    pub(crate) fn apply(&mut self, command: &mut CUserCmd) {
+    pub(crate) fn apply(self, command: &mut CUserCmd) {
         let buttons = match self {
             WalkingAnimation::Enabled => Buttons {
                 forward: Button::MOVE_FORWARD,
@@ -59,7 +59,7 @@ impl WalkingAnimation {
     }
 
     #[inline]
-    fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             WalkingAnimation::Enabled => "enabled",
             WalkingAnimation::Disabled => "disabled",

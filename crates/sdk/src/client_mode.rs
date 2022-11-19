@@ -1,7 +1,8 @@
 use crate::{
-    global, math, Button, CUserCmd, CViewSetup, IClientEntityList, IVEngineClient, Ptr,
+    global, math, Button, CUserCmd, CViewSetup, Config, IClientEntityList, IVEngineClient, Ptr,
     WalkingAnimation,
 };
+use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
 use std::arch::asm;
 use std::ptr;
@@ -79,36 +80,42 @@ unsafe extern "C" fn create_move(
     }
 
     let method = global::with_app_mut(|app| {
-        let engine = app.world.resource::<IVEngineClient>();
-        let entity_list = app.world.resource::<IClientEntityList>();
+        let mut system_state: SystemState<(
+            Res<Config>,
+            Res<IVEngineClient>,
+            Res<IClientEntityList>,
+        )> = SystemState::new(&mut app.world);
+
+        let (config, engine, entity_list) = system_state.get(&app.world);
         let engine_view_angle = engine.view_angle();
         let local_player_index = engine.local_player_index();
         let local_player = entity_list.get(local_player_index).unwrap();
 
-        //command.view_angle.x = 89.0;
-        //command.view_angle.y += 180.0;
-        //command.view_angle.z -= 50.0;
+        config.pitch.apply(&mut command.view_angle.x);
+        command.view_angle.y += config.yaw_offset;
 
-        let max_desync_angle = local_player.max_desync_angle();
-        let is_lby_updating = local_player.is_lby_updating();
-        let flip = command.tick_count % 2 == 0;
+        if config.desync_enabled {
+            let max_desync_angle = local_player.max_desync_angle();
+            let is_lby_updating = local_player.is_lby_updating();
+            let flip = command.tick_count % 2 == 0;
 
-        *send_packet = flip;
+            *send_packet = flip;
 
-        if is_lby_updating {
-            *send_packet = false;
-        } else if !*send_packet {
-            command.view_angle.y += max_desync_angle * 2.0;
-        }
+            if is_lby_updating {
+                *send_packet = false;
+            } else if !*send_packet {
+                command.view_angle.y += max_desync_angle * 2.0;
+            }
 
-        if command.movement.y.abs() < 5.0 {
-            let amount = if command.buttons.contains(Button::DUCK) {
-                3.25
-            } else {
-                1.1
-            };
+            if command.movement.y.abs() < 5.0 {
+                let amount = if command.buttons.contains(Button::DUCK) {
+                    3.25
+                } else {
+                    1.1
+                };
 
-            command.movement.y = amount * if flip { 1.0 } else { -1.0 };
+                command.movement.y = amount * if flip { 1.0 } else { -1.0 };
+            }
         }
 
         if command.buttons.contains(Button::ATTACK)
@@ -121,7 +128,7 @@ unsafe extern "C" fn create_move(
         command.movement =
             math::fix_movement(command.movement, command.view_angle, engine_view_angle);
 
-        WalkingAnimation::Enabled.apply(command);
+        config.walking_animation.apply(command);
 
         if *send_packet {
             app.insert_resource(ptr::read(command));
