@@ -1,5 +1,5 @@
 use crate::config::Pitch;
-use crate::{config, global, Config, WalkingAnimation};
+use crate::{config, global, Color, Config, WalkingAnimation};
 use iced_aw::native::{ColorPicker, TabLabel, Tabs};
 use iced_native::{column, row, widget, Command, Element, Length, Program};
 
@@ -20,7 +20,7 @@ pub enum Message {
     WalkingAnimation(WalkingAnimation),
     TabSelected(usize),
     Thirdperson(bool),
-    ChamColor(iced_native::Color),
+    ChamColor(String),
     Load,
     Save,
 }
@@ -39,7 +39,8 @@ impl Program for Menu {
 }
 
 unsafe fn update(message: Message) -> Command<Message> {
-    global::with_app_mut(|app| {
+    global::with_app_mut(move |app| {
+        let message = message;
         let mut config = app.world.resource_mut::<Config>();
 
         match message {
@@ -51,7 +52,7 @@ unsafe fn update(message: Message) -> Command<Message> {
             Message::WalkingAnimation(animation) => config.walking_animation = animation,
             Message::TabSelected(tab) => config.active_tab = tab,
             Message::Thirdperson(enabled) => config.in_thirdperson = enabled,
-            Message::ChamColor(color) => config.cham_color = color.into(),
+            Message::ChamColor(color) => config.cham_color = Color::from_hex_str(&color),
             Message::Load => *config = config::load(),
             Message::Save => config::save(&config),
             Message::None => {}
@@ -141,9 +142,10 @@ unsafe fn view_visuals<'a>(config: &Config) -> Element<'a, Message, iced_glow::R
 
     widget::container(cham_color_picker).into()*/
 
-    let content = widget::text("visuals blocked by iced_aw ColorPicker rendering at 5 fps");
+    let color = config.cham_color.to_hex_string();
+    let cham_color_input = widget::text_input("cham color", &color, Message::ChamColor);
 
-    content.into()
+    cham_color_input.into()
 }
 
 unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {

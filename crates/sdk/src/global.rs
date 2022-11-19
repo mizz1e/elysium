@@ -17,7 +17,7 @@ unsafe impl Sync for AppGlobal {}
 ///
 /// The global [`App`] must be initialized prior.
 #[inline]
-pub unsafe fn with_app<T>(mut f: impl FnMut(&App) -> T) -> T {
+pub unsafe fn with_app<T>(mut f: impl FnOnce(&App) -> T) -> T {
     let app_ref = &*APP.0.get();
     let app = app_ref.as_ref().unwrap_unchecked();
 
@@ -30,7 +30,7 @@ pub unsafe fn with_app<T>(mut f: impl FnMut(&App) -> T) -> T {
 ///
 /// The global [`App`] must be initialized prior.
 #[inline]
-pub unsafe fn with_app_mut<T>(mut f: impl FnMut(&mut App) -> T) -> T {
+pub unsafe fn with_app_mut<T>(mut f: impl FnOnce(&mut App) -> T) -> T {
     let app_mut = &mut *APP.0.get();
     let app = app_mut.as_mut().unwrap_unchecked();
 
