@@ -44,8 +44,17 @@ pub const fn map_key_code(key: SDL_Scancode) -> Option<KeyCode> {
         SDL_Scancode::SDL_SCANCODE_Z => KeyCode::Z,
 
         SDL_Scancode::SDL_SCANCODE_BACKSPACE => KeyCode::Backspace,
+        SDL_Scancode::SDL_SCANCODE_DELETE => KeyCode::Delete,
+        SDL_Scancode::SDL_SCANCODE_ESCAPE => KeyCode::Escape,
         SDL_Scancode::SDL_SCANCODE_INSERT => KeyCode::Insert,
         SDL_Scancode::SDL_SCANCODE_SPACE => KeyCode::Space,
+        SDL_Scancode::SDL_SCANCODE_RETURN => KeyCode::Enter,
+
+        SDL_Scancode::SDL_SCANCODE_UP => KeyCode::Up,
+        SDL_Scancode::SDL_SCANCODE_DOWN => KeyCode::Down,
+        SDL_Scancode::SDL_SCANCODE_LEFT => KeyCode::Left,
+        SDL_Scancode::SDL_SCANCODE_RIGHT => KeyCode::Right,
+
         _ => return None,
     };
 
