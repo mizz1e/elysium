@@ -127,23 +127,17 @@ impl IClientEntity {
     /// Obtain an IClientEntity from an index.
     pub fn from_index(index: i32) -> Option<Self> {
         unsafe {
-            global::with_app(|app| {
-                let entity_list = app.world.resource::<IClientEntityList>();
-
-                entity_list.get(index)
-            })
+            global::with_resource::<IClientEntityList, _>(|entity_list| entity_list.get(index))
         }
     }
 
     /// Obtain an IClientEntity for the local player.
     pub fn local_player() -> Option<Self> {
-        unsafe {
-            global::with_app(|app| {
-                let engine = app.world.resource::<IVEngineClient>();
+        let index = unsafe {
+            global::with_resource::<IVEngineClient, _>(|engine| engine.local_player_index())
+        };
 
-                IClientEntity::from_index(engine.local_player_index())
-            })
-        }
+        IClientEntity::from_index(index)
     }
 
     #[inline]
@@ -249,7 +243,7 @@ impl IClientEntity {
     pub fn anim_state(&self) -> Option<AnimState> {
         tracing::trace!("anim_state");
         unsafe {
-            let offset = global::with_app(|app| app.world.resource::<AnimStateOffset>().0);
+            let offset = global::with_resource::<AnimStateOffset, _>(|offset| offset.0);
             let ptr = self.ptr.as_ptr().byte_add(offset);
             let ptr = ptr as *const *mut u8;
             let ptr = Ptr::new("AnimState", *ptr)?;
@@ -288,32 +282,29 @@ impl IClientEntity {
                 return false;
             };
 
-            global::with_app_mut(|app| {
-                let mut lby_update_time = app
-                    .world
-                    .get_resource::<LbyUpdateTime>()
-                    .map(|time| time.0)
-                    .unwrap_or(Time(Duration::ZERO));
+            global::with_resource_or_init::<LbyUpdateTime, _>(
+                |mut lby_update_time| {
+                    let mut lby_update_time = &mut lby_update_time.0;
 
-                let current_time = self.tick_base().to_time();
-                let is_lby_updating = if anim_state.vertical_velocity() > 0.1
-                    || anim_state.horizontal_velocity().abs() > 100.0
-                {
-                    *lby_update_time = *current_time + Duration::from_secs_f32(0.22);
+                    let current_time = self.tick_base().to_time();
+                    let is_lby_updating = if anim_state.vertical_velocity() > 0.1
+                        || anim_state.horizontal_velocity().abs() > 100.0
+                    {
+                        **lby_update_time = *current_time + Duration::from_secs_f32(0.22);
 
-                    false
-                } else if current_time > lby_update_time {
-                    *lby_update_time = *current_time + Duration::from_secs_f32(1.1);
+                        false
+                    } else if current_time > *lby_update_time {
+                        **lby_update_time = *current_time + Duration::from_secs_f32(1.1);
 
-                    true
-                } else {
-                    false
-                };
+                        true
+                    } else {
+                        false
+                    };
 
-                app.insert_resource(LbyUpdateTime(lby_update_time));
-
-                is_lby_updating
-            })
+                    is_lby_updating
+                },
+                || LbyUpdateTime(Time(Duration::ZERO)),
+            )
         }
     }
 
@@ -388,9 +379,15 @@ impl IClientEntity {
     pub fn is_enemy(&self) -> bool {
         tracing::trace!("is_enemy");
 
-        Self::local_player()
+        IClientEntity::local_player()
             .map(|local_player| self.team() != local_player.team())
             .unwrap_or_default()
+    }
+
+    /// Is this entity a valid target?
+    #[inline]
+    pub fn is_valid_target(&self) -> bool {
+        !self.is_dormant() && self.is_alive()
     }
 }
 

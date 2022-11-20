@@ -70,7 +70,7 @@ unsafe extern "C" fn create_move(
     debug_assert!(!command.is_null());
 
     let command = &mut *command;
-    let method = global::with_app(|app| app.world.resource::<CreateMove>().0);
+    let method = global::with_resource::<CreateMove, _>(|method| method.0);
 
     (method)(this, input_sample_time, command);
 
@@ -88,7 +88,6 @@ unsafe extern "C" fn create_move(
 
         let (config, engine, entity_list) = system_state.get(&app.world);
         let engine_view_angle = engine.view_angle();
-        let local_player_index = engine.local_player_index();
         let local_player = IClientEntity::local_player().unwrap();
 
         if !local_player.is_alive() {
@@ -137,23 +136,7 @@ unsafe extern "C" fn create_move(
                     continue;
                 };
 
-                if player.ptr.as_ptr() == local_player.ptr.as_ptr() {
-                    continue;
-                }
-
-                if player.is_dormant() {
-                    continue;
-                }
-
-                if !player.is_alive() {
-                    continue;
-                }
-
-                if player.is_immune() {
-                    continue;
-                }
-
-                if !player.is_enemy() {
+                if !(player.is_valid_target() && player.is_enemy()) {
                     continue;
                 }
 

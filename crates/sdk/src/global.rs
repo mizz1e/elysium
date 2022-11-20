@@ -1,6 +1,7 @@
 //! Globally accessible things.
 
 use bevy::app::App;
+use bevy::ecs::prelude::*;
 use std::cell::UnsafeCell;
 
 static APP: AppGlobal = AppGlobal(UnsafeCell::new(None));
@@ -35,6 +36,24 @@ pub unsafe fn with_app_mut<T>(mut f: impl FnOnce(&mut App) -> T) -> T {
     let app = app_mut.as_mut().unwrap_unchecked();
 
     f(app)
+}
+
+#[inline]
+pub unsafe fn with_resource<R: Resource, T>(mut f: impl FnOnce(&R) -> T) -> T {
+    with_app(|app| f(app.world.resource()))
+}
+
+#[inline]
+pub unsafe fn with_resource_mut<R: Resource, T>(mut f: impl FnOnce(Mut<'_, R>) -> T) -> T {
+    with_app_mut(|app| f(app.world.resource_mut()))
+}
+
+#[inline]
+pub unsafe fn with_resource_or_init<R: Resource, T>(
+    mut f: impl FnOnce(Mut<'_, R>) -> T,
+    mut g: impl FnOnce() -> R,
+) -> T {
+    with_app_mut(|app| f(app.world.get_resource_or_insert_with(g)))
 }
 
 /// Set the global [`App`].
