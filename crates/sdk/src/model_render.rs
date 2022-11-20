@@ -1,4 +1,4 @@
-use crate::{global, material, IMaterial, Mat4x3, MaterialFlag, Ptr};
+use crate::{global, material, Config, IMaterial, Mat4x3, MaterialFlag, Ptr};
 use bevy::prelude::*;
 use std::{ffi, ptr};
 
@@ -77,11 +77,20 @@ unsafe extern "C" fn draw_model_execute(
     debug_assert!(!this.is_null());
 
     global::with_app(|app| {
+        let config = app.world.resource::<Config>();
         let model_render = app.world.resource::<IVModelRender>();
         let glow = app.world.resource::<material::Glow>();
         let glow = &glow.0;
 
+        glow.color_modulate(config.cham_color.into());
         glow.set_flag(MaterialFlag::IGNORE_Z, true);
+
+        model_render.draw_model_execute(
+            render_context,
+            draw_model_state,
+            model_render_info,
+            custom_bone_to_world,
+        );
 
         model_render.override_material(Some(glow));
 

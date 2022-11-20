@@ -1,6 +1,6 @@
 use crate::entity::AnimState;
 use crate::{
-    config, global, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList,
+    config, engine, global, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList,
     IMaterialSystem, IVEngineClient, IVModelRender, KeyValues, ModuleMap, OnceLoaded,
     SourceSettings,
 };
@@ -45,6 +45,9 @@ unsafe fn source_setup() -> Result<(), Error> {
                 world.insert_resource(client);
 
                 let engine_module = module_map.open("engine_client.so")?;
+
+                engine::setup();
+
                 let ptr = engine_module.create_interface("VEngineClient014")?;
 
                 world.insert_resource(IVEngineClient { ptr });

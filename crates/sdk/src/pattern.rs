@@ -37,3 +37,5 @@ pub const CSPLAYER_SPAWN: Pattern = Pattern::new(
 
 pub const KEY_VALUES_FROM_STRING: Pattern =
     Pattern::new(r#"(?msx-u)\xE8....\x48\x89\xDF\x48\x89\x45\xE0"#);
+
+pub const INSERT_INTO_TREE: Pattern = Pattern::new(r#"(?msx-u)\x74\x24\x4C\x8B\x10"#);

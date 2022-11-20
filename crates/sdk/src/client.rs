@@ -206,6 +206,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             let material = material_system.create("elysium/glow", &keyvalues).unwrap();
 
             app.insert_resource(Glow(material));
+
+            let engine = app.world.resource::<IVEngineClient>();
+            let bsp_tree_query = engine.bsp_tree_query().unwrap();
+
+            bsp_tree_query.setup();
         }
 
         let mut system_state: SystemState<(

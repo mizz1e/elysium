@@ -1,6 +1,7 @@
 #![feature(addr_parse_ascii)]
 #![feature(cstr_from_bytes_until_nul)]
 #![feature(decl_macro)]
+#![feature(link_llvm_intrinsics)]
 #![feature(pointer_byte_offsets)]
 #![feature(strict_provenance)]
 
@@ -53,6 +54,7 @@ pub mod global_vars;
 pub mod hit_group;
 pub mod iced;
 pub mod input;
+pub mod intrinsics;
 pub mod item_kind;
 pub mod key_values;
 pub mod launcher;

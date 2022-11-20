@@ -1,8 +1,8 @@
-use crate::{INetChannel, Ptr};
+use crate::{global, intrinsics, pattern, IClientEntity, INetChannel, Ptr};
 use bevy::prelude::*;
-use std::ffi;
 use std::ffi::{CStr, OsStr};
 use std::os::unix::ffi::OsStrExt;
+use std::{ffi, mem};
 
 /// `engine/cdll_engine_int.cpp`.
 #[derive(Resource)]
@@ -68,14 +68,129 @@ impl IVEngineClient {
         let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(78) };
 
-        let network_channel = unsafe { (method)(self.ptr.as_ptr()) };
+        let ptr = unsafe { (method)(self.ptr.as_ptr()) };
+        let ptr = Ptr::new("INetChannel", ptr)?;
 
-        if network_channel.is_null() {
-            None
-        } else {
-            let ptr = Ptr::new("INetChannel", network_channel)?;
+        Some(INetChannel { ptr })
+    }
 
-            Some(INetChannel { ptr })
+    #[inline]
+    pub fn bsp_tree_query(&self) -> Option<BSPTreeQuery> {
+        let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
+            unsafe { self.ptr.vtable_entry(43) };
+
+        let ptr = unsafe { (method)(self.ptr.as_ptr()) };
+        let ptr = Ptr::new("BSPTreeQuery", ptr)?;
+
+        Some(BSPTreeQuery { ptr })
+    }
+}
+
+pub struct BSPTreeQuery {
+    pub(crate) ptr: Ptr,
+}
+
+impl BSPTreeQuery {
+    pub unsafe fn setup(&self) {
+        global::with_app_mut(|app| {
+            app.insert_resource(ListLeavesInBox(
+                self.ptr.vtable_replace(6, list_leaves_in_box),
+            ));
+        });
+    }
+}
+
+pub unsafe fn setup() {
+    tracing::trace!("obtain CClientLeafSystem::InsertIntoTree");
+
+    let module = link::load_module("client_client.so").unwrap();
+    let bytes = module.bytes();
+    let opcode = &pattern::INSERT_INTO_TREE.find(bytes).unwrap().1;
+    let addr = opcode.as_ptr().byte_add(31) as *mut u8;
+
+    tracing::trace!("CClientLeafSystem::InsertIntoTree = {addr:?}");
+
+    global::with_app_mut(|app| {
+        app.insert_resource(InsertIntoTree(addr));
+    });
+}
+
+#[derive(Resource)]
+pub struct InsertIntoTree(pub(crate) *mut u8);
+
+unsafe impl Send for InsertIntoTree {}
+unsafe impl Sync for InsertIntoTree {}
+
+#[derive(Resource)]
+pub struct ListLeavesInBox(
+    pub(crate)  unsafe extern "C" fn(
+        this: *mut u8,
+        min: *const Vec3,
+        max: *const Vec3,
+        list: *const ffi::c_ushort,
+        list_max: ffi::c_int,
+    ) -> ffi::c_int,
+);
+
+unsafe extern "C" fn list_leaves_in_box(
+    this: *mut u8,
+    min: *const Vec3,
+    max: *const Vec3,
+    list: *const ffi::c_ushort,
+    list_max: ffi::c_int,
+) -> ffi::c_int {
+    let frame_addr = intrinsics::frame_addr(0);
+    let return_addr = intrinsics::return_addr(0);
+
+    let (insert_into_tree, method) = global::with_app(|app| {
+        let insert_into_tree = app.world.resource::<InsertIntoTree>().0;
+        let list_leaves_in_box = app.world.resource::<ListLeavesInBox>().0;
+
+        (insert_into_tree, list_leaves_in_box)
+    });
+
+    // `CClientLeafSystem::InsertIntoTree` @ `game/client/clientleafsystem.cpp`
+    if return_addr == insert_into_tree {
+        let info = &**(frame_addr.byte_add(2392) as *const *const internal::RenderableInfo_t);
+
+        // Assume info.renderable points to an `IClientEntity`, wherein it contains an `IClientRenderable`
+        // at `base + size_of::<*const IClientNetworkable>()`.
+        let entity = info.renderable.byte_sub(mem::size_of::<*mut u8>());
+
+        // TODO: is entity a player.
+        if true {
+            let max = Vec3::splat(16384.0);
+            let min = -max;
+
+            return (method)(this, &min, &max, list, list_max);
         }
+    }
+
+    (method)(this, min, max, list, list_max)
+}
+
+mod internal {
+    use std::ffi;
+
+    #[repr(C)]
+    pub struct IClientRenderable;
+
+    #[repr(C)]
+    pub struct CClientAlphaProperty;
+
+    /// `struct RenderableInfo_t` @ `game/client/clientleafsystem.cpp`
+    #[repr(C)]
+    pub struct RenderableInfo_t {
+        pub renderable: *const IClientRenderable,
+        pub alpha_property: *const CClientAlphaProperty,
+        pub enum_count: ffi::c_int,
+        pub render_frame: ffi::c_int,
+        pub first_shadow: ffi::c_ushort,
+        pub leaf_list: ffi::c_ushort,
+        pub area: ffi::c_short,
+        pub flags: u16,
+        // TODO: Add the rest of the fields. Reason I haven't is due to the fact I cannot be
+        // bothered with figuring out the layout of C bitfields. Besides, these fields are not very
+        // important.
     }
 }

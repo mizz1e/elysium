@@ -46,7 +46,7 @@ impl Color {
     pub fn to_hex_string(self) -> String {
         let rgba = self.to_rgba_u32();
 
-        format!("{rgba:0X}")
+        format!("{rgba:08X}")
     }
 }
 
