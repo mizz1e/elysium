@@ -261,12 +261,14 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 if let Some(player) = entity_list.get(local_player_index) {
                     app.insert_resource(OriginalViewAngle(player.view_angle()));
 
-                    if in_thirdperson {
-                        if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
-                            player.set_view_angle(last_command.view_angle);
+                    if player.is_alive() {
+                        if in_thirdperson {
+                            if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
+                                player.set_view_angle(last_command.view_angle);
+                            }
+                        } else {
+                            player.set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0));
                         }
-                    } else {
-                        player.set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0));
                     }
                 }
 

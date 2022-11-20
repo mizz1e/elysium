@@ -1,4 +1,6 @@
+use bevy::math::Vec3Swizzles;
 use bevy::prelude::*;
+use std::f32::consts;
 
 /// [game/shared/gamemovement.h#L104](https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/gamemovement.h#L104)
 pub const AIR_SPEED_CAP: f32 = 30.0;
@@ -134,4 +136,19 @@ pub fn fix_movement(mut movement: Vec3, angle: Vec3, wish_angle: Vec3) -> Vec3 {
     }
 
     movement
+}
+
+#[inline]
+pub fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
+    let delta = src - dst;
+    let hypot = delta.xy().length();
+
+    let x = (delta.z / hypot).atan();
+    let mut y = (delta.y / delta.x).atan();
+
+    if delta.x >= 0.0 {
+        y += consts::PI;
+    }
+
+    to_degrees(Vec2::new(x, y).extend(0.0))
 }

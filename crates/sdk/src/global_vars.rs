@@ -15,6 +15,13 @@ pub struct Time(pub Duration);
 pub struct Tick(pub u32);
 
 impl Time {
+    #[inline]
+    pub fn now() -> Self {
+        let current_time = unsafe { current_time() };
+
+        Time(Duration::from_secs_f32(current_time))
+    }
+
     /// `TIME_TO_TICKS` in `game/shared/shareddefs.h`.
     #[inline]
     pub fn to_tick(self) -> Tick {
@@ -34,6 +41,16 @@ impl Tick {
 
         Time(time)
     }
+}
+
+#[inline]
+unsafe fn current_time() -> f32 {
+    global::with_app(|app| {
+        let global_vars = app.world.resource::<CGlobalVarsBase>();
+        let global_vars = &*global_vars.ptr.as_ptr().cast::<internal::CGlobalVarsBase>();
+
+        global_vars.current_time
+    })
 }
 
 #[inline]

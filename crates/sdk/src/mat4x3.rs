@@ -7,6 +7,10 @@ pub struct Mat4x3 {
 }
 
 impl Mat4x3 {
+    pub const ZERO: Self = Self {
+        matrix: [[0.0; 4]; 3],
+    };
+
     #[inline]
     pub fn from_affine(affine: Affine3A) -> Self {
         let cols_array_2d = affine.to_cols_array_2d();

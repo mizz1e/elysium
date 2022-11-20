@@ -1,8 +1,9 @@
 use crate::{
-    global, math, Button, CUserCmd, CViewSetup, Config, IClientEntityList, IVEngineClient, Ptr,
+    global, math, Button, CUserCmd, CViewSetup, Config, IClientEntity, IClientEntityList,
+    IVEngineClient, Mat4x3, Ptr, Time,
 };
 use bevy::ecs::system::SystemState;
-use bevy::prelude::*;
+use bevy::prelude::{Res, Resource, Vec3};
 use std::arch::asm;
 use std::ptr;
 
@@ -78,7 +79,7 @@ unsafe extern "C" fn create_move(
         return false;
     }
 
-    let method = global::with_app_mut(|app| {
+    global::with_app_mut(|app| {
         let mut system_state: SystemState<(
             Res<Config>,
             Res<IVEngineClient>,
@@ -88,7 +89,12 @@ unsafe extern "C" fn create_move(
         let (config, engine, entity_list) = system_state.get(&app.world);
         let engine_view_angle = engine.view_angle();
         let local_player_index = engine.local_player_index();
-        let local_player = entity_list.get(local_player_index).unwrap();
+        let local_player = IClientEntity::local_player().unwrap();
+
+        if !local_player.is_alive() {
+            tracing::trace!("local_player is not alive");
+            return false;
+        }
 
         config.pitch.apply(&mut command.view_angle.x);
         command.view_angle.y += config.yaw_offset;
@@ -123,7 +129,43 @@ unsafe extern "C" fn create_move(
         if command.buttons.contains(Button::ATTACK)
             || command.buttons.contains(Button::ATTACK_SECONDARY)
         {
-            command.view_angle = engine_view_angle;
+            let now = Time::now();
+            let eye_pos = local_player.eye_pos();
+
+            for i in 1..=64 {
+                let Some(player) = entity_list.get(i) else {
+                    continue;
+                };
+
+                if player.ptr.as_ptr() == local_player.ptr.as_ptr() {
+                    continue;
+                }
+
+                if player.is_dormant() {
+                    continue;
+                }
+
+                if !player.is_alive() {
+                    continue;
+                }
+
+                if player.is_immune() {
+                    continue;
+                }
+
+                if !player.is_enemy() {
+                    continue;
+                }
+
+                let mut bones = [Mat4x3::ZERO; 256];
+
+                player.setup_bones(&mut bones, 0x100 /* BONE_USED_BY_HITBOX */, now);
+
+                let head_bone = bones[8];
+                let head_origin: Vec3 = head_bone.to_affine().translation.into();
+
+                command.view_angle = math::calculate_angle(eye_pos, head_origin);
+            }
         }
 
         command.view_angle = math::sanitize_angle(command.view_angle);
@@ -135,7 +177,7 @@ unsafe extern "C" fn create_move(
         if *send_packet {
             app.insert_resource(ptr::read(command));
         }
-    });
 
-    false
+        false
+    })
 }

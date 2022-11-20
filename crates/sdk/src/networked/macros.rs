@@ -45,9 +45,7 @@ macro_rules! networked {
 
         #[inline]
         unsafe fn iterate_table(networked: &mut Networked, recv_table: &RecvTable, table: Table, base_offset: usize) {
-            let props = slice::from_raw_parts_mut(recv_table.props, recv_table.props_len as usize);
-
-            for prop in props {
+            for prop in recv_table.props() {
                 let offset = base_offset + prop.offset as usize;
                 let prop_name = CStr::from_ptr(prop.name).to_bytes();
 

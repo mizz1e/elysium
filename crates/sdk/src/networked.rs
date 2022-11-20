@@ -11,8 +11,12 @@ pub use var::Var;
 mod macros;
 mod var;
 
-fn panic(class: &'static str, var: &'static str) {
-    panic!("networked variable {class}.{var} was not found");
+fn panic(table: &'static str, var: &'static str) {
+    tracing::error!("networked variable {table}.{var} was not found");
+    tracing::error!("create an issue at https://github.com/elysian6969/elysium");
+    tracing::error!("or join our discord https://discord.gg/4F3x3eaTDn");
+
+    std::process::exit(1);
 }
 
 pub macro addr($base:expr, $struct:ident.$field:ident) {{
@@ -57,22 +61,11 @@ networked! {
     (BaseCombatWeapon, base_combat_weapon): b"DT_BaseCombatWeapon" {
         owner: i32 = b"m_hOwner",
         magazine: i32 = b"m_iClip1",
-        item_id_hi: i32 = b"m_iItemIDHigh",
-        account_id: i32 = b"m_iAccountID",
-        paint_kit: i32 = b"m_nFallbackPaintKit",
-        wear: f32 = b"m_flFallbackWear",
-        stat_track: i32 = b"m_nFallbackStatTrak",
-        next_primary_attack: Duration = b"m_flNextPrimaryAttack",
-        next_secondary_attack: Duration = b"m_flNextSecondaryAttack",
     },
     (BaseEntity, base_entity): b"DT_BaseEntity" {
-        animation_time: Duration = b"m_flAnimTime",
-        collision: i32 = b"m_Collision",
         name: Option<Box<OsStr>> = b"m_iName",
         model_index: i32 = b"m_nModelIndex",
         origin: Vec3 = b"m_vecOrigin",
-        owner: i32 = b"m_hOwnerEntity",
-        pending_team: i32 = b"m_iPendingTeamNum",
         render_mode: i32 = b"m_nRenderMode",
         rotation: Vec3 = b"m_angRotation",
         simulation_time: Duration = b"m_flSimulationTime",
@@ -80,17 +73,11 @@ networked! {
         team: i32 = b"m_iTeamNum",
     },
     (BasePlayer, base_player): b"DT_BasePlayer" {
-        cycle: i32 = b"m_flCycle",
-        eye_offset: Vec3 = b"m_vecViewOffset[0]",
+        flags: PlayerFlag = b"m_fFlags",
         health: i32 = b"m_iHealth",
         is_dead: bool = b"deadflag",
-        flags: PlayerFlag = b"m_fFlags",
         life_state: i32 = b"m_lifeState",
         location_name: Option<Box<OsStr>> = b"m_szLastPlaceName",
-        model_scale: f32 = b"m_flModelScale",
-        pose_parameters: f32 = b"m_flPoseParameter",
-        sequence: i32 = b"m_nSequence",
-        skin: i32 = b"m_nSkin",
         spectator_mode: i32 = b"m_iObserverMode",
         spectator_target: i32 = b"m_hObserverTarget",
         tick_base: Tick = b"m_nTickBase",
@@ -99,15 +86,25 @@ networked! {
     (CSPlayer, cs_player): b"DT_CSPlayer" {
         aim_punch: Vec3 = b"m_aimPunchAngle",
         armor_value: i32 = b"m_ArmorValue",
-        flash_alpha: bool = b"m_flFlashMaxAlpha",
         has_defuser: bool = b"m_bHasDefuser",
+        has_heavy_armor: bool = b"m_bHasHeavyArmor",
         has_helmet: bool = b"m_bHasHelmet",
+        has_moved_since_spawn: bool = b"m_bHasMovedSinceSpawn",
+        is_defusing: bool = b"m_bIsDefusing",
+        is_grabing_hostage: bool = b"m_bIsGrabbingHostage",
         is_immune: bool = b"m_bGunGameImmunity",
+        is_in_bomb_area: bool = b"m_bInBombZone",
+        is_in_buy_area: bool = b"m_bInBuyZone",
+        is_in_hostage_rescue_area: bool = b"m_bInHostageRescueZone",
+        is_not_in_defuse_area: bool = b"m_bInNoDefuseArea",
+        is_rescuing: bool = b"m_bIsRescuing",
         is_scoped: bool = b"m_bIsScoped",
         lower_body_yaw: f32 = b"m_flLowerBodyYawTarget",
+        max_flash_alpha: f32 = b"m_flFlashMaxAlpha",
         money: i32 = b"m_iAccount",
         survival_team: i32 = b"m_nSurvivalTeam",
         view_punch: Vec3 = b"m_viewPunchAngle",
+        view_angle: Vec3 = b"m_angEyeAngles",
     },
     (CSPlayerResource, csplayer_resource): b"DT_CSPlayerResource" {
         active_coin_rank: i32 = b"m_nActiveCoinRank",
@@ -150,6 +147,11 @@ networked! {
         rgb: [u8; 3] = b"m_fog.colorPrimary",
         start: f32 = b"m_fog.start",
     },
+    (PlantedC4, planted_c4): b"DT_PlantedC4" {
+        defuse_time: Duration = b"m_flDefuseCountDown",
+        defuser: i32 = b"m_hBombDefuser",
+        detonation_time: Duration = b"m_flC4Blow",
+    },
     (PlayerResource, player_resource): b"DT_PlayerResource" {
         alive: bool = b"m_bAlive",
         assists: i32 = b"m_iAssists",
@@ -159,12 +161,6 @@ networked! {
         kills: i32 = b"m_iKills",
         pending_team: i32 = b"m_iPendingTeam",
         ping: i32 = b"m_iPing",
-        team: i32 = b"m_iTeam",
-    },
-    (PlantedC4, planted_c4): b"DT_PlantedC4" {
-        defuse_time: Duration = b"m_flDefuseCountDown",
-        defuser: i32 = b"m_hBombDefuser",
-        detonation_time: Duration = b"m_flC4Blow",
     },
     (WeaponCSBase, weapon_cs_base): b"DT_WeaponCSBase" {
         accuracy_penalty: f32 = b"m_fAccuracyPenalty",

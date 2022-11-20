@@ -1,6 +1,5 @@
 use crate::config::Pitch;
 use crate::{config, global, Color, Config, WalkingAnimation};
-use iced_aw::native::{ColorPicker, TabLabel, Tabs};
 use iced_native::{column, row, widget, Command, Element, Length, Program};
 
 const PITCH_LIST: &[Pitch] = &[Pitch::Default, Pitch::Up, Pitch::Down];
@@ -18,7 +17,8 @@ pub enum Message {
     Roll(i32),
     YawOffset(i32),
     WalkingAnimation(WalkingAnimation),
-    TabSelected(usize),
+    AntiAimTab,
+    VisualsTab,
     Thirdperson(bool),
     ChamColor(String),
     Load,
@@ -50,7 +50,8 @@ unsafe fn update(message: Message) -> Command<Message> {
             Message::YawOffset(offset) => config.yaw_offset = offset as f32,
             Message::Roll(roll) => config.roll = roll as f32,
             Message::WalkingAnimation(animation) => config.walking_animation = animation,
-            Message::TabSelected(tab) => config.active_tab = tab,
+            Message::AntiAimTab => config.active_tab = 0,
+            Message::VisualsTab => config.active_tab = 1,
             Message::Thirdperson(enabled) => config.in_thirdperson = enabled,
             Message::ChamColor(color) => config.cham_color = Color::from_hex_str(&color),
             Message::Load => *config = config::load(),
@@ -65,13 +66,12 @@ unsafe fn update(message: Message) -> Command<Message> {
 unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
     let desync_checkbox = widget::checkbox("desync", config.desync_enabled, Message::Desync);
 
-    let desync_delta = config.desync_delta.trunc() as i32;
-
-    //debug desync
-    //let desync_delta_slider = row![
-    //    widget::text(format!("desync_delta ({desync_delta}) ")),
-    //    widget::slider(-180..=180, desync_delta, Message::DesyncDelta),
-    //];
+    // debug desync
+    // let desync_delta = config.desync_delta.trunc() as i32;
+    // let desync_delta_slider = row![
+    //     widget::text(format!("desync_delta ({desync_delta}) ")),
+    //     widget::slider(-180..=180, desync_delta, Message::DesyncDelta),
+    // ];
 
     let pitch_list = row![
         widget::text("pitch "),
@@ -104,6 +104,7 @@ unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::
 
     let load_button = widget::button("load").on_press(Message::Load);
     let save_button = widget::button("save").on_press(Message::Save);
+    let buttons = row![load_button, save_button].spacing(15);
 
     let options = column![
         desync_checkbox,
@@ -113,8 +114,7 @@ unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::
         roll_slider,
         walking_animation_list,
         thirdperson_checkbox,
-        load_button,
-        save_button
+        buttons,
     ];
 
     let content = widget::scrollable(options.spacing(15));
@@ -123,25 +123,6 @@ unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::
 }
 
 unsafe fn view_visuals<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
-    /*let cham_color_picker = iced_lazy::lazy(config.cham_color, || {
-        tracing::info!("rebuilt");
-
-        global::with_app(|app| {
-            let config = app.world.resource::<Config>();
-            let cham_color_button = widget::Button::new(widget::Text::new("cham color"));
-
-            ColorPicker::new(
-                true,
-                config.cham_color.into(),
-                cham_color_button,
-                Message::None,
-                Message::ChamColor,
-            )
-        })
-    });
-
-    widget::container(cham_color_picker).into()*/
-
     let color = config.cham_color.to_hex_string();
     let cham_color_input = widget::text_input("cham color", &color, Message::ChamColor);
 
@@ -151,9 +132,17 @@ unsafe fn view_visuals<'a>(config: &Config) -> Element<'a, Message, iced_glow::R
 unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
     global::with_app(|app| {
         let config = app.world.resource::<Config>();
-        let content = Tabs::new(config.active_tab, Message::TabSelected)
-            .push(TabLabel::Text("anti aim".into()), view_anti_aim(config))
-            .push(TabLabel::Text("visuals".into()), view_visuals(config));
+
+        let aa_button = widget::button("anti aim").on_press(Message::AntiAimTab);
+        let visuals_button = widget::button("visuals").on_press(Message::VisualsTab);
+        let tab_bar = row![aa_button, visuals_button].spacing(15);
+        let content = match config.active_tab {
+            0 => view_anti_aim(config),
+            1 => view_visuals(config),
+            _ => unreachable!(),
+        };
+
+        let content = column![tab_bar, content,];
 
         let content = widget::container(content)
             .width(Length::Units(800))

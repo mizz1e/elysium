@@ -19,12 +19,6 @@ path = "../input"
 [dependencies.elysium-mem]
 path = "../mem"
 
-[dependencies.iced_aw]
-default-features = false
-features = ["color_picker", "glow", "tabs"]
-git = "https://github.com/iced-rs/iced_aw"
-rev = "c6a3bfdc4d01d28aeb433d42628e80a620f78bb3"
-
 [dependencies.iced_glow]
 version = "0.4"
 

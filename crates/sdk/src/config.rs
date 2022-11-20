@@ -43,10 +43,13 @@ impl fmt::Display for Pitch {
 #[derive(Debug, Default, Deserialize, Resource, Serialize)]
 #[serde(default)]
 pub struct Config {
+    #[serde(skip_serializing)]
     pub active_tab: usize,
     pub desync_enabled: bool,
+    #[serde(skip_serializing)]
     pub desync_delta: f32,
     pub in_thirdperson: bool,
+    #[serde(skip_serializing)]
     pub menu_open: bool,
     pub pitch: Pitch,
     pub roll: f32,

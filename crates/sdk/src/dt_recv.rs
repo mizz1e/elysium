@@ -1,7 +1,7 @@
 //! `public/dt_recv.h`
 
 use bevy::prelude::*;
-use std::ffi;
+use std::{ffi, slice};
 
 // `base` is the structure the data table variable is in
 // `field` is the field the data table variable is stored in
@@ -88,4 +88,10 @@ pub struct RecvProxyData {
     pub value: PropVariant,
     pub element: ffi::c_int,
     pub object_id: ffi::c_int,
+}
+
+impl RecvTable {
+    pub(crate) unsafe fn props(&self) -> &mut [RecvProp] {
+        slice::from_raw_parts_mut(self.props, self.props_len as usize)
+    }
 }

@@ -1,4 +1,7 @@
-use crate::{global, networked, pattern, ClientClass, Mat4x3, Ptr, Tick, Time};
+use crate::{
+    global, networked, pattern, ClientClass, IClientEntityList, IVEngineClient, Mat4x3, Ptr, Tick,
+    Time,
+};
 use bevy::prelude::{Resource, Vec3};
 use std::time::Duration;
 use std::{ffi, mem};
@@ -121,6 +124,28 @@ pub struct IClientEntity {
 }
 
 impl IClientEntity {
+    /// Obtain an IClientEntity from an index.
+    pub fn from_index(index: i32) -> Option<Self> {
+        unsafe {
+            global::with_app(|app| {
+                let entity_list = app.world.resource::<IClientEntityList>();
+
+                entity_list.get(index)
+            })
+        }
+    }
+
+    /// Obtain an IClientEntity for the local player.
+    pub fn local_player() -> Option<Self> {
+        unsafe {
+            global::with_app(|app| {
+                let engine = app.world.resource::<IVEngineClient>();
+
+                IClientEntity::from_index(engine.local_player_index())
+            })
+        }
+    }
+
     #[inline]
     unsafe fn client_renderable(&self) -> Ptr {
         let ptr = self.ptr.byte_offset(mem::size_of::<*mut u8>());
@@ -139,6 +164,7 @@ impl IClientEntity {
 
     #[inline]
     pub fn client_class(&self) -> *const ClientClass {
+        tracing::trace!("client_class");
         let networkable = unsafe { self.client_networkable() };
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
             unsafe { networkable.vtable_entry(2) };
@@ -148,6 +174,7 @@ impl IClientEntity {
 
     #[inline]
     pub fn index(&self) -> i32 {
+        tracing::trace!("index");
         let networkable = unsafe { self.client_networkable() };
         let method: unsafe extern "C" fn(this: *mut u8) -> i32 =
             unsafe { networkable.vtable_entry(10) };
@@ -157,6 +184,8 @@ impl IClientEntity {
 
     #[inline]
     pub fn is_dormant(&self) -> bool {
+        tracing::trace!("is_dormant");
+
         let networkable = unsafe { self.client_networkable() };
         let method: unsafe extern "C" fn(this: *mut u8) -> bool =
             unsafe { networkable.vtable_entry(9) };
@@ -165,7 +194,8 @@ impl IClientEntity {
     }
 
     #[inline]
-    pub fn setup_bones(&self, bones: &mut [Mat4x3; 256], mask: ffi::c_int, time: f32) {
+    pub fn setup_bones(&self, bones: &mut [Mat4x3; 256], mask: ffi::c_int, time: Time) {
+        tracing::trace!("setup_bones");
         let renderable = unsafe { self.client_renderable() };
         let method: unsafe extern "C" fn(
             this: *mut u8,
@@ -181,7 +211,7 @@ impl IClientEntity {
                 bones.as_mut_ptr(),
                 bones.len() as i32,
                 mask,
-                time,
+                time.0.as_secs_f32(),
             )
         }
     }
@@ -194,6 +224,8 @@ impl IClientEntity {
     /// effects! Be sure to reset it to the original value during
     #[inline]
     pub unsafe fn set_view_angle(&self, angle: Vec3) {
+        tracing::trace!("set_view_angle");
+
         networked::addr!(self.ptr.as_ptr(), base_player.is_dead)
             .byte_add(4)
             .cast::<Vec3>()
@@ -203,6 +235,8 @@ impl IClientEntity {
     /// The player's view angle.
     #[inline]
     pub fn view_angle(&self) -> Vec3 {
+        tracing::trace!("view_angle");
+
         unsafe {
             networked::addr!(self.ptr.as_ptr(), base_player.is_dead)
                 .byte_add(4)
@@ -213,6 +247,7 @@ impl IClientEntity {
 
     #[inline]
     pub fn anim_state(&self) -> Option<AnimState> {
+        tracing::trace!("anim_state");
         unsafe {
             let offset = global::with_app(|app| app.world.resource::<AnimStateOffset>().0);
             let ptr = self.ptr.as_ptr().byte_add(offset);
@@ -225,6 +260,7 @@ impl IClientEntity {
 
     #[inline]
     pub fn max_desync_angle(&self) -> f32 {
+        tracing::trace!("max_desync_angle");
         unsafe {
             let Some(anim_state) = self.anim_state() else {
                 return 0.0;
@@ -246,6 +282,7 @@ impl IClientEntity {
 
     #[inline]
     pub fn is_lby_updating(&self) -> bool {
+        tracing::trace!("is_lby_updating");
         unsafe {
             let Some(anim_state) = self.anim_state() else {
                 return false;
@@ -280,22 +317,80 @@ impl IClientEntity {
         }
     }
 
+    /// The player's tick base.
     #[inline]
     pub fn tick_base(&self) -> Tick {
+        tracing::trace!("tick_base");
         networked::read!(self.ptr.as_ptr(), base_player.tick_base)
     }
 
+    /// The player's eye origin.
+    #[inline]
+    pub fn eye_pos(&self) -> Vec3 {
+        tracing::trace!("eye_pos");
+        let method: unsafe extern "C" fn(this: *mut u8) -> Vec3 =
+            unsafe { self.ptr.vtable_entry(348) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+
+    /// The player's observing mode.
     #[inline]
     pub fn observer_mode(&self) -> ObserverMode {
+        tracing::trace!("observer_mode");
         let method: unsafe extern "C" fn(this: *mut u8) -> ObserverMode =
             unsafe { self.ptr.vtable_entry(357) };
 
         unsafe { (method)(self.ptr.as_ptr()) }
     }
 
+    /// Whether the player is scoped.
     #[inline]
     pub fn is_scoped(&self) -> bool {
+        tracing::trace!("is_scoped");
         networked::read!(self.ptr.as_ptr(), cs_player.is_scoped)
+    }
+
+    /// Whether the player is immune to damage.
+    #[inline]
+    pub fn is_immune(&self) -> bool {
+        tracing::trace!("is immune");
+        //networked::read!(self, cs_player.is_immune)
+        false
+    }
+
+    /// The player's team.
+    #[inline]
+    pub fn team(&self) -> i32 {
+        tracing::trace!("team");
+        networked::read!(self.ptr.as_ptr(), base_entity.team) as i32
+    }
+
+    /// The entity's health.
+    #[inline]
+    pub fn health(&self) -> i32 {
+        tracing::trace!("health");
+        networked::read!(self.ptr.as_ptr(), base_player.health) as i32
+    }
+
+    /// Is this entity alive?
+    #[inline]
+    pub fn is_alive(&self) -> bool {
+        tracing::trace!("is_alive");
+        let method: unsafe extern "C" fn(this: *mut u8) -> bool =
+            unsafe { self.ptr.vtable_entry(208) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+
+    /// Is this player an enemy?
+    #[inline]
+    pub fn is_enemy(&self) -> bool {
+        tracing::trace!("is_enemy");
+
+        Self::local_player()
+            .map(|local_player| self.team() != local_player.team())
+            .unwrap_or_default()
     }
 }
 
