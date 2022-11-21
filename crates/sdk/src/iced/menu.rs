@@ -11,6 +11,7 @@ pub struct Menu;
 #[derive(Clone, Debug)]
 pub enum Message {
     None,
+    AutoShoot(bool),
     Desync(bool),
     DesyncDelta(i32),
     Pitch(Pitch),
@@ -18,6 +19,7 @@ pub enum Message {
     YawOffset(i32),
     WalkingAnimation(WalkingAnimation),
     AntiAimTab,
+    RageBotTab,
     VisualsTab,
     Thirdperson(bool),
     ChamColor(String),
@@ -44,6 +46,7 @@ unsafe fn update(message: Message) -> Command<Message> {
         let mut config = app.world.resource_mut::<Config>();
 
         match message {
+            Message::AutoShoot(enabled) => config.auto_shoot = enabled,
             Message::Desync(enabled) => config.desync_enabled = enabled,
             Message::DesyncDelta(delta) => config.desync_delta = delta as f32,
             Message::Pitch(pitch) => config.pitch = pitch,
@@ -51,7 +54,8 @@ unsafe fn update(message: Message) -> Command<Message> {
             Message::Roll(roll) => config.roll = roll as f32,
             Message::WalkingAnimation(animation) => config.walking_animation = animation,
             Message::AntiAimTab => config.active_tab = 0,
-            Message::VisualsTab => config.active_tab = 1,
+            Message::RageBotTab => config.active_tab = 1,
+            Message::VisualsTab => config.active_tab = 2,
             Message::Thirdperson(enabled) => config.in_thirdperson = enabled,
             Message::ChamColor(color) => config.cham_color = Color::from_hex_str(&color),
             Message::Load => *config = config::load(),
@@ -122,6 +126,15 @@ unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::
     content.into()
 }
 
+unsafe fn view_rage_bot<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
+    let auto_shoot_checkbox = widget::checkbox("auto shoot", config.auto_shoot, Message::AutoShoot);
+    let options = column![auto_shoot_checkbox];
+
+    let content = widget::scrollable(options.spacing(15));
+
+    content.into()
+}
+
 unsafe fn view_visuals<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
     let color = config.cham_color.to_hex_string();
     let cham_color_input = widget::text_input("cham color", &color, Message::ChamColor);
@@ -134,16 +147,17 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
         let config = app.world.resource::<Config>();
 
         let aa_button = widget::button("anti aim").on_press(Message::AntiAimTab);
+        let ragebot_button = widget::button("ragebot").on_press(Message::RageBotTab);
         let visuals_button = widget::button("visuals").on_press(Message::VisualsTab);
-        let tab_bar = row![aa_button, visuals_button].spacing(15);
+        let tab_bar = row![aa_button, ragebot_button, visuals_button].spacing(15);
         let content = match config.active_tab {
             0 => view_anti_aim(config),
-            1 => view_visuals(config),
+            1 => view_rage_bot(config),
+            2 => view_visuals(config),
             _ => unreachable!(),
         };
 
-        let content = column![tab_bar, content,];
-
+        let content = column![tab_bar, content];
         let content = widget::container(content)
             .width(Length::Units(800))
             .height(Length::Units(640))

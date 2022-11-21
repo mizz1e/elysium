@@ -5,6 +5,7 @@ use crate::{
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::{Res, ResMut, Resource, Vec3};
+use rand::Rng;
 use std::arch::asm;
 use std::ptr;
 
@@ -187,43 +188,56 @@ unsafe extern "C" fn create_move(
         }
 
         if let Some(weapon) = local_player.active_weapon() {
-            let now = Time::now();
-            let eye_pos = local_player.eye_pos();
-
-            const BONE_USED_BY_HITBOX: i32 = 0x100;
-            const CONTENTS_HITBOX: u32 = 0x40000000;
-            const CONTENTS_SOLID: u32 = 0x1;
-
-            for i in 1..=64 {
-                let Some(player) = entity_list.get(i) else {
-                    continue;
-                };
-
-                let flags = player.flags();
-
-                if !flags.contains(EntityFlag::ENEMY) {
-                    continue;
-                }
-
-                let mut bones = [Mat4x3::ZERO; 256];
-
-                player.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
-
-                let head_bone = bones[8];
-                let head_origin: Vec3 = head_bone.to_affine().translation.into();
-
-                command.view_angle = math::calculate_angle(eye_pos, head_origin);
-
-                let direction = command.view_angle.normalize_or_zero();
-                let info = weapon.weapon_info();
-                let data = simulate_shot(eye_pos, direction, info);
-            }
-
             let next_primary_attack = weapon.next_primary_attack().0;
             let server_time = local_player.tick_base().to_time().0;
 
             if server_time < next_primary_attack {
                 command.buttons.remove(Button::ATTACK);
+            } else if command.buttons.contains(Button::ATTACK) {
+                command.view_angle = engine_view_angle;
+            } else {
+                let now = Time::now();
+                let eye_pos = local_player.eye_pos();
+                let mut enemies = Vec::new();
+
+                for i in 1..=64 {
+                    let Some(player) = entity_list.get(i) else {
+                        continue;
+                    };
+
+                    let flags = player.flags();
+
+                    if !flags.contains(EntityFlag::ENEMY) {
+                        continue;
+                    }
+
+                    enemies.push(player);
+                }
+
+                let mut random = rand::thread_rng();
+                let skip = random.gen_range(0..=enemies.len());
+                let enemies = enemies.into_iter().cycle().skip(skip);
+
+                for enemy in enemies {
+                    let mut bones = [Mat4x3::ZERO; 256];
+
+                    const BONE_USED_BY_HITBOX: i32 = 0x100;
+                    enemy.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
+
+                    let head_bone = bones[8];
+                    let head_origin: Vec3 = head_bone.to_affine().translation.into();
+                    let view_angle = math::calculate_angle(eye_pos, head_origin);
+                    let direction = view_angle.normalize_or_zero();
+                    let info = weapon.weapon_info();
+                    let data = simulate_shot(eye_pos, direction, info);
+
+                    if config.auto_shoot {
+                        command.view_angle = view_angle;
+                        command.buttons.insert(Button::ATTACK);
+                    }
+
+                    break;
+                }
             }
         }
 
@@ -239,7 +253,7 @@ unsafe extern "C" fn create_move(
 
         config.walking_animation.apply(command);
 
-        if *send_packet {
+        if *send_packet || command.buttons.contains(Button::ATTACK) {
             app.insert_resource(ptr::read(command));
         }
 
@@ -345,9 +359,9 @@ impl ShotData {
     }
 
     fn handle_bullet_penetration(&mut self) -> bool {
-        return false;
-
         let enter_result = self.result.unwrap();
+        //tracing::trace!("{enter_result:?}");
+        return false;
         let enter_surface = global::with_resource::<IPhysicsSurfaceProps, _>(|surface_props| {
             surface_props
                 .data(enter_result.surface.surface_props as i32)

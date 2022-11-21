@@ -42,6 +42,7 @@ impl fmt::Display for Pitch {
 pub struct Config {
     #[serde(skip_serializing)]
     pub active_tab: usize,
+    pub auto_shoot: bool,
     pub desync_enabled: bool,
     #[serde(skip_serializing)]
     pub desync_delta: f32,
