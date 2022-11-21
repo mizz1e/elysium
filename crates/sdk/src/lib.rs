@@ -74,6 +74,5 @@ pub mod texture_group;
 pub mod trace;
 pub mod view_setup;
 pub mod walking_animation;
-pub mod weapon;
 
 pub(crate) mod global;

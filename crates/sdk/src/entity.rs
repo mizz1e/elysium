@@ -33,6 +33,47 @@ pub enum WeaponSound {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(i32)]
+pub enum WeaponKind {
+    Knife = 0,
+    Pistol = 1,
+    SMG = 2,
+    Rifle = 3,
+    Shotgun = 4,
+    SniperRifle = 5,
+    Machinegun = 6,
+    C4 = 7,
+    Placeholder = 8,
+    Grenade = 9,
+    Unknown = 10,
+    StackableItem = 11,
+    Fists = 12,
+    BreachCharge = 13,
+    BumpMine = 14,
+    Tablet = 15,
+    Melee = 16,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct WeaponInfo {
+    pub max_clip: u32,
+    pub kind: WeaponKind,
+    pub price: u32,
+    pub cycle_time: f32,
+    pub full_auto: bool,
+    pub damage: f32,
+    pub headshot_multiplier: f32,
+    pub armor_ratio: f32,
+    pub bullets: u32,
+    pub penetration: f32,
+    pub range: f32,
+    pub range_modifier: f32,
+    pub has_silencer: bool,
+    pub max_speed: f32,
+    pub max_speed_alt: f32,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(i32)]
 pub enum MoveKind {
     None = 0,
     Isometric = 1,
@@ -339,6 +380,48 @@ impl IClientEntity {
         networked::read!(self.ptr.as_ptr(), base_combat_weapon.next_primary_attack)
     }
 
+    pub fn weapon_info(&self) -> WeaponInfo {
+        let method: unsafe extern "C" fn(this: *mut u8) -> *const internal::WeaponInfo =
+            unsafe { self.ptr.vtable_entry(529) };
+
+        let internal::WeaponInfo {
+            max_clip,
+            kind,
+            price,
+            cycle_time,
+            full_auto,
+            damage,
+            headshot_multiplier,
+            armor_ratio,
+            bullets,
+            penetration,
+            range,
+            range_modifier,
+            has_silencer,
+            max_speed,
+            max_speed_alt,
+            ..
+        } = unsafe { *(method)(self.ptr.as_ptr()) };
+
+        WeaponInfo {
+            max_clip: max_clip as u32,
+            kind,
+            price: price as u32,
+            cycle_time,
+            full_auto,
+            damage: damage as f32,
+            headshot_multiplier,
+            armor_ratio,
+            bullets: bullets as u32,
+            penetration,
+            range,
+            range_modifier,
+            has_silencer,
+            max_speed,
+            max_speed_alt,
+        }
+    }
+
     /// Whether the player is scoped.
     pub fn is_scoped(&self) -> bool {
         networked::read!(self.ptr.as_ptr(), cs_player.is_scoped)
@@ -505,5 +588,53 @@ impl AnimState {
 
     unsafe fn velocity_subtract_y(&self) -> f32 {
         self.read(0x3A4)
+    }
+}
+
+mod internal {
+    use super::WeaponKind;
+    use std::mem::MaybeUninit;
+
+    impl WeaponKind {
+        pub const fn as_i32(&self) -> i32 {
+            *self as i32
+        }
+    }
+
+    /// information about a weapon
+    #[derive(Clone, Copy)]
+    #[repr(C)]
+    pub struct WeaponInfo {
+        _pad0: MaybeUninit<[u8; 32]>,
+        pub max_clip: i32,
+        _pad1: MaybeUninit<[u8; 204]>,
+        pub name: *const u8,
+        _pad2: MaybeUninit<[u8; 72]>,
+        pub kind: WeaponKind,
+        _pad3: MaybeUninit<[u8; 4]>,
+        pub price: i32,
+        _pad4: MaybeUninit<[u8; 12]>,
+        pub cycle_time: f32,
+        _pad5: MaybeUninit<[u8; 12]>,
+        pub full_auto: bool,
+        _pad6: MaybeUninit<[u8; 3]>,
+        pub damage: i32,
+        pub headshot_multiplier: f32,
+        pub armor_ratio: f32,
+        pub bullets: i32,
+        pub penetration: f32,
+        _pad7: MaybeUninit<[u8; 8]>,
+        pub range: f32,
+        pub range_modifier: f32,
+        _pad8: MaybeUninit<[u8; 16]>,
+        pub has_silencer: bool,
+        _pad9: MaybeUninit<[u8; 23]>,
+        pub max_speed: f32,
+        pub max_speed_alt: f32,
+        _pad10: MaybeUninit<[u8; 100]>,
+        pub recoil_magnitude: f32,
+        pub recoil_magnitude_alt: f32,
+        _pad11: MaybeUninit<[u8; 16]>,
+        pub recovery_time_stand: f32,
     }
 }
