@@ -19,7 +19,6 @@ where
     P: Program<Renderer = Renderer, Message = M> + 'static,
     M: fmt::Debug + Send,
 {
-    #[inline]
     pub fn from_context(context: &glow::Context, viewport: Viewport, program: P) -> Self {
         let clipboard = clipboard::Null;
         let mut debug = Debug::new();
@@ -42,7 +41,6 @@ where
         }
     }
 
-    #[inline]
     pub fn render(&mut self, context: &glow::Context, viewport: Viewport) {
         const DEBUG_OVERLAY: &[&str] = &[];
 
@@ -51,7 +49,6 @@ where
         });
     }
 
-    #[inline]
     pub fn update(&mut self, viewport: Viewport, cursor_position: Point) {
         if !mem::take(&mut self.damaged) {
             return;
@@ -73,7 +70,6 @@ where
         );
     }
 
-    #[inline]
     pub fn queue_event(&mut self, event: Event) {
         self.damaged = true;
         self.state.queue_event(event);

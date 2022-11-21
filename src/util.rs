@@ -29,13 +29,13 @@ pub fn steam_csgo_dirs() -> Option<(PathBuf, PathBuf)> {
     }
 
     let data_dir = dirs::data_dir()?;
-    let steam_dir = home_dir.join("esteem");
+    let steam_dir = data_dir.join("esteem");
 
     if let Some(csgo_dir) = try_load_lib_dirs(&steam_dir) {
         return Some((steam_dir, csgo_dir));
     }
 
-    let steam_dir = home_dir.join("Steam");
+    let steam_dir = data_dir.join("Steam");
 
     if let Some(csgo_dir) = try_load_lib_dirs(&steam_dir) {
         return Some((steam_dir, csgo_dir));

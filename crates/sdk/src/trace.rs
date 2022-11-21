@@ -11,7 +11,8 @@ pub struct IEngineTrace {
 }
 
 impl IEngineTrace {
-    #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+
     pub fn contents(&self, position: Vec3, mask: u32, entity: *mut *mut u8) -> u32 {
         let method: unsafe extern "C" fn(
             this: *mut u8,
@@ -23,7 +24,6 @@ impl IEngineTrace {
         unsafe { (method)(self.ptr.as_ptr(), &position, mask, entity) }
     }
 
-    #[inline]
     pub fn trace(&self, start: Vec3, end: Vec3, mask: u32) -> TraceResult {
         let method: unsafe extern "C" fn(
             this: *mut u8,
@@ -193,7 +193,7 @@ mod internal {
     ) -> bool {
         debug_assert!(!this.is_null());
 
-        (&*this).skip.contains(&entity)
+        (*this).skip.contains(&entity)
     }
 
     unsafe extern "C" fn trace_kind(this: *const ITraceFilter) -> ffi::c_int {
@@ -202,7 +202,6 @@ mod internal {
         TRACE_EVERYTHING
     }
 
-    #[inline]
     pub fn filter(skip: impl IntoIterator<Item = *mut u8>) -> ITraceFilter {
         ITraceFilter {
             vtable: &ITRACEFILTER_VTABLE,
@@ -210,7 +209,6 @@ mod internal {
         }
     }
 
-    #[inline]
     pub fn ray(start: Vec3, end: Vec3) -> Ray {
         let delta = end - start;
         let is_swept = delta.length() != 0.0;

@@ -13,7 +13,6 @@ pub struct Var<T> {
 }
 
 impl<T> Var<T> {
-    #[inline]
     pub(super) fn new(offset: usize) -> Self {
         Self {
             offset,
@@ -21,12 +20,10 @@ impl<T> Var<T> {
         }
     }
 
-    #[inline]
     pub unsafe fn addr<U>(self, class: *mut U) -> *mut u8 {
         class.cast::<u8>().add(self.offset)
     }
 
-    #[inline]
     unsafe fn _read<U, V>(self, class: *const V) -> U {
         class
             .cast::<u8>()
@@ -35,7 +32,6 @@ impl<T> Var<T> {
             .read_unaligned()
     }
 
-    #[inline]
     unsafe fn _write<U, V>(self, class: *mut V, value: U) {
         class
             .cast::<u8>()
@@ -44,7 +40,6 @@ impl<T> Var<T> {
             .write_unaligned(value);
     }
 
-    #[inline]
     fn cast<U>(self) -> Var<U> {
         unsafe { mem::transmute(self) }
     }
@@ -53,12 +48,12 @@ impl<T> Var<T> {
 macro_rules! vars {
     ($($ty:ty,)*) => {$(
         impl Var<$ty> {
-            #[inline]
+
             pub unsafe fn read<T>(self, class: *const T) -> $ty {
                 self._read(class)
             }
 
-            #[inline]
+
             pub unsafe fn write<T>(self, class: *mut T, value: $ty) {
                 self._write(class, value);
             }
@@ -69,26 +64,22 @@ macro_rules! vars {
 vars! { bool, f32, i32, u32, PlayerFlag, Vec3, }
 
 impl Var<Duration> {
-    #[inline]
     pub unsafe fn read<T>(self, class: *const T) -> Duration {
         Duration::from_secs_f32(self.cast::<f32>().read(class))
     }
 
-    #[inline]
     pub unsafe fn write<T>(self, class: *mut T, value: Duration) {
         self.cast::<f32>().write(class, value.as_secs_f32());
     }
 }
 
 impl Var<Tick> {
-    #[inline]
     pub unsafe fn read<T>(self, class: *const T) -> Tick {
         Tick(self.cast::<u32>().read(class))
     }
 }
 
 impl Var<Option<Box<OsStr>>> {
-    #[inline]
     pub unsafe fn read<T>(self, class: *const T) -> Option<Box<OsStr>> {
         let string = class.cast::<u8>().add(self.offset).cast::<ffi::c_char>();
         let string = CStr::from_ptr(string).to_bytes();
@@ -102,7 +93,6 @@ impl Var<Option<Box<OsStr>>> {
 }
 
 impl<T> Clone for Var<T> {
-    #[inline]
     fn clone(&self) -> Self {
         *self
     }
@@ -111,7 +101,6 @@ impl<T> Clone for Var<T> {
 impl<T> Copy for Var<T> {}
 
 impl<T> fmt::Debug for Var<T> {
-    #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(&ptr::from_exposed_addr::<()>(self.offset), fmt)
     }

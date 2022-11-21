@@ -15,7 +15,6 @@ pub enum HitGroup {
 
 impl HitGroup {
     /// returns the damage modifier for the given hit group
-    #[inline]
     pub const fn damage_modifier(&self) -> f32 {
         match self {
             HitGroup::Head => 4.0,
@@ -26,7 +25,6 @@ impl HitGroup {
     }
 
     // if the hit group is the head
-    #[inline]
     pub const fn is_head(&self) -> bool {
         matches!(self, HitGroup::Head)
     }

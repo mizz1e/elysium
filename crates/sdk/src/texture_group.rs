@@ -11,14 +11,14 @@ macro_rules! group {
         }
 
         impl TextureGroup {
-            #[inline]
+
             pub fn as_bytes(&self) -> &'static [u8] {
                 match self {
                     $(TextureGroup::$group => $bytes,)*
                 }
             }
 
-            #[inline]
+
             pub fn from_bytes(bytes: &[u8]) -> Self {
                 const MAP: phf::Map<&[u8], TextureGroup> = phf::phf_map! {
                     $($bytes => TextureGroup::$group,)*

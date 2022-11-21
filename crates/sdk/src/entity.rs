@@ -1,6 +1,6 @@
 use crate::{
-    global, networked, pattern, ClientClass, IClientEntityList, IVEngineClient, Mat4x3, Ptr, Tick,
-    Time,
+    convar, global, networked, pattern, ClientClass, IClientEntityList, IVEngineClient, Mat4x3,
+    Ptr, Tick, Time,
 };
 use bevy::prelude::{Resource, Vec3};
 use std::time::Duration;
@@ -71,7 +71,7 @@ pub enum ObserverMode {
 
 impl ObserverMode {
     /// if the observer mode breaks thirdperson
-    #[inline]
+
     pub const fn breaks_thirdperson(&self) -> bool {
         matches!(
             self,
@@ -119,6 +119,14 @@ bitflags::bitflags! {
     }
 }
 
+bitflags::bitflags! {
+    pub struct EntityFlag: u32 {
+        const ALIVE = 1 << 0;
+        const DORMANT = 1 << 1;
+        const ENEMY = 1 << 2;
+    }
+}
+
 pub struct IClientEntity {
     pub(crate) ptr: Ptr,
 }
@@ -140,7 +148,6 @@ impl IClientEntity {
         IClientEntity::from_index(index)
     }
 
-    #[inline]
     unsafe fn client_renderable(&self) -> Ptr {
         let ptr = self.ptr.byte_offset(mem::size_of::<*mut u8>());
         let ptr = Ptr::new("IClientRenderable", ptr);
@@ -148,7 +155,6 @@ impl IClientEntity {
         ptr.unwrap_unchecked()
     }
 
-    #[inline]
     unsafe fn client_networkable(&self) -> Ptr {
         let ptr = self.ptr.byte_offset(mem::size_of::<*mut u8>() * 2);
         let ptr = Ptr::new("IClientNetworkable", ptr);
@@ -156,9 +162,7 @@ impl IClientEntity {
         ptr.unwrap_unchecked()
     }
 
-    #[inline]
     pub fn client_class(&self) -> *const ClientClass {
-        tracing::trace!("client_class");
         let networkable = unsafe { self.client_networkable() };
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
             unsafe { networkable.vtable_entry(2) };
@@ -166,9 +170,7 @@ impl IClientEntity {
         unsafe { (method)(networkable.as_ptr()) }
     }
 
-    #[inline]
     pub fn index(&self) -> i32 {
-        tracing::trace!("index");
         let networkable = unsafe { self.client_networkable() };
         let method: unsafe extern "C" fn(this: *mut u8) -> i32 =
             unsafe { networkable.vtable_entry(10) };
@@ -176,20 +178,7 @@ impl IClientEntity {
         unsafe { (method)(networkable.as_ptr()) }
     }
 
-    #[inline]
-    pub fn is_dormant(&self) -> bool {
-        tracing::trace!("is_dormant");
-
-        let networkable = unsafe { self.client_networkable() };
-        let method: unsafe extern "C" fn(this: *mut u8) -> bool =
-            unsafe { networkable.vtable_entry(9) };
-
-        unsafe { (method)(networkable.as_ptr()) }
-    }
-
-    #[inline]
     pub fn setup_bones(&self, bones: &mut [Mat4x3; 256], mask: ffi::c_int, time: Time) {
-        tracing::trace!("setup_bones");
         let renderable = unsafe { self.client_renderable() };
         let method: unsafe extern "C" fn(
             this: *mut u8,
@@ -210,16 +199,19 @@ impl IClientEntity {
         }
     }
 
+    fn is_local_player(&self) -> bool {
+        IClientEntity::local_player()
+            .map(|local_player| local_player.index() == self.index())
+            .unwrap_or_default()
+    }
+
     /// Set the player's view angle.
     ///
     /// # Safety
     ///
     /// Modifying the view angle of a player via networked variables may have unintended side
     /// effects! Be sure to reset it to the original value during
-    #[inline]
     pub unsafe fn set_view_angle(&self, angle: Vec3) {
-        tracing::trace!("set_view_angle");
-
         networked::addr!(self.ptr.as_ptr(), base_player.is_dead)
             .byte_add(4)
             .cast::<Vec3>()
@@ -227,10 +219,7 @@ impl IClientEntity {
     }
 
     /// The player's view angle.
-    #[inline]
     pub fn view_angle(&self) -> Vec3 {
-        tracing::trace!("view_angle");
-
         unsafe {
             networked::addr!(self.ptr.as_ptr(), base_player.is_dead)
                 .byte_add(4)
@@ -239,9 +228,7 @@ impl IClientEntity {
         }
     }
 
-    #[inline]
     pub fn anim_state(&self) -> Option<AnimState> {
-        tracing::trace!("anim_state");
         unsafe {
             let offset = global::with_resource::<AnimStateOffset, _>(|offset| offset.0);
             let ptr = self.ptr.as_ptr().byte_add(offset);
@@ -252,9 +239,7 @@ impl IClientEntity {
         }
     }
 
-    #[inline]
     pub fn max_desync_angle(&self) -> f32 {
-        tracing::trace!("max_desync_angle");
         unsafe {
             let Some(anim_state) = self.anim_state() else {
                 return 0.0;
@@ -274,9 +259,7 @@ impl IClientEntity {
         }
     }
 
-    #[inline]
     pub fn is_lby_updating(&self) -> bool {
-        tracing::trace!("is_lby_updating");
         unsafe {
             let Some(anim_state) = self.anim_state() else {
                 return false;
@@ -284,7 +267,7 @@ impl IClientEntity {
 
             global::with_resource_or_init::<LbyUpdateTime, _>(
                 |mut lby_update_time| {
-                    let mut lby_update_time = &mut lby_update_time.0;
+                    let lby_update_time = &mut lby_update_time.0;
 
                     let current_time = self.tick_base().to_time();
                     let is_lby_updating = if anim_state.vertical_velocity() > 0.1
@@ -309,16 +292,12 @@ impl IClientEntity {
     }
 
     /// The player's tick base.
-    #[inline]
     pub fn tick_base(&self) -> Tick {
-        tracing::trace!("tick_base");
         networked::read!(self.ptr.as_ptr(), base_player.tick_base)
     }
 
     /// The player's eye origin.
-    #[inline]
     pub fn eye_pos(&self) -> Vec3 {
-        tracing::trace!("eye_pos");
         let method: unsafe extern "C" fn(this: *mut u8) -> Vec3 =
             unsafe { self.ptr.vtable_entry(348) };
 
@@ -326,9 +305,7 @@ impl IClientEntity {
     }
 
     /// The player's observing mode.
-    #[inline]
     pub fn observer_mode(&self) -> ObserverMode {
-        tracing::trace!("observer_mode");
         let method: unsafe extern "C" fn(this: *mut u8) -> ObserverMode =
             unsafe { self.ptr.vtable_entry(357) };
 
@@ -336,58 +313,71 @@ impl IClientEntity {
     }
 
     /// Whether the player is scoped.
-    #[inline]
     pub fn is_scoped(&self) -> bool {
-        tracing::trace!("is_scoped");
         networked::read!(self.ptr.as_ptr(), cs_player.is_scoped)
     }
 
-    /// Whether the player is immune to damage.
-    #[inline]
-    pub fn is_immune(&self) -> bool {
-        tracing::trace!("is immune");
-        //networked::read!(self, cs_player.is_immune)
-        false
-    }
-
-    /// The player's team.
-    #[inline]
-    pub fn team(&self) -> i32 {
-        tracing::trace!("team");
-        networked::read!(self.ptr.as_ptr(), base_entity.team) as i32
-    }
-
     /// The entity's health.
-    #[inline]
     pub fn health(&self) -> i32 {
-        tracing::trace!("health");
         networked::read!(self.ptr.as_ptr(), base_player.health) as i32
     }
 
-    /// Is this entity alive?
-    #[inline]
-    pub fn is_alive(&self) -> bool {
-        tracing::trace!("is_alive");
+    /// Determine whether this entity is alive.
+    fn is_alive(&self) -> bool {
         let method: unsafe extern "C" fn(this: *mut u8) -> bool =
             unsafe { self.ptr.vtable_entry(208) };
 
         unsafe { (method)(self.ptr.as_ptr()) }
     }
 
-    /// Is this player an enemy?
-    #[inline]
-    pub fn is_enemy(&self) -> bool {
-        tracing::trace!("is_enemy");
+    /// Determine whether this entity is dormant.
+    fn is_dormant(&self) -> bool {
+        let networkable = unsafe { self.client_networkable() };
+        let method: unsafe extern "C" fn(this: *mut u8) -> bool =
+            unsafe { networkable.vtable_entry(9) };
 
-        IClientEntity::local_player()
-            .map(|local_player| self.team() != local_player.team())
-            .unwrap_or_default()
+        unsafe { (method)(networkable.as_ptr()) }
     }
 
-    /// Is this entity a valid target?
-    #[inline]
-    pub fn is_valid_target(&self) -> bool {
-        !self.is_dormant() && self.is_alive()
+    /// Determine whether this entity is an enemy to the local player.
+    fn is_enemy(&self) -> bool {
+        unsafe {
+            global::with_resource::<convar::Ffa, _>(|ffa| ffa.read())
+                || IClientEntity::local_player()
+                    .map(|local_player| self.team() != local_player.team())
+                    .unwrap_or_default()
+        }
+    }
+
+    /// Determine whether the player is immune to damage.
+    fn is_immune(&self) -> bool {
+        networked::read!(self, cs_player.is_immune)
+    }
+
+    /// The entity's team.
+    fn team(&self) -> i32 {
+        networked::read!(self.ptr.as_ptr(), base_entity.team) as i32
+    }
+
+    /// Current state of the entity.
+    pub fn flags(&self) -> EntityFlag {
+        if self.is_dormant() {
+            // No longer networked, don't read anything more.
+            return EntityFlag::DORMANT;
+        }
+
+        if !self.is_alive() {
+            // No longer alive, don't read anything more.
+            return EntityFlag::empty();
+        }
+
+        let mut flags = EntityFlag::ALIVE;
+
+        if self.is_enemy() {
+            flags.insert(EntityFlag::ENEMY);
+        }
+
+        flags
     }
 }
 

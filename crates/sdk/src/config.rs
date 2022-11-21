@@ -14,7 +14,6 @@ pub enum Pitch {
 }
 
 impl Pitch {
-    #[inline]
     pub fn apply(self, pitch: &mut f32) {
         match self {
             Pitch::Down => *pitch = 89.0,
@@ -23,7 +22,6 @@ impl Pitch {
         }
     }
 
-    #[inline]
     pub fn as_str(&self) -> &'static str {
         match self {
             Pitch::Default => "default",
@@ -34,7 +32,6 @@ impl Pitch {
 }
 
 impl fmt::Display for Pitch {
-    #[inline]
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.as_str(), fmt)
     }
@@ -85,7 +82,7 @@ pub fn try_save(config: &Config) -> Option<()> {
     let config_dir = config_dir();
     let _ = fs::create_dir_all(&config_dir);
     let config_path = config_dir.join("config.json");
-    let mut config_file = File::options()
+    let config_file = File::options()
         .create(true)
         .truncate(true)
         .write(true)

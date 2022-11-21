@@ -10,7 +10,6 @@ pub struct Args {
 }
 
 impl Args {
-    #[inline]
     pub fn push(&mut self, arg: impl AsRef<OsStr>) -> &mut Self {
         self.args.push(arg.as_ref().into());
         self
@@ -19,7 +18,7 @@ impl Args {
     /// # Safety
     ///
     /// `launcher_main` must be valid.
-    #[inline]
+
     pub unsafe fn exec(self, launcher_main: LauncherMain) {
         tracing::trace!("launch with args: {:?}", self.args);
 

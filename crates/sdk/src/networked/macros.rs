@@ -6,7 +6,7 @@ macro_rules! networked {
         enum Table { $($struct,)* }
 
         impl Table {
-            #[inline]
+
             fn from_bytes(bytes: &[u8]) -> Option<Self> {
                 const MAP: phf::Map<&[u8], Table> = phf::phf_map! {
                     $($struct_name => Table::$struct,)*
@@ -22,7 +22,7 @@ macro_rules! networked {
             pub(super) enum $struct { $($field,)* }
 
             impl $struct {
-                #[inline]
+
                 pub(super) fn from_bytes(bytes: &[u8]) -> Option<Self> {
                     const MAP: phf::Map<&[u8], $struct> = phf::phf_map! {
                         $($field_name => $struct::$field,)*
@@ -43,7 +43,7 @@ macro_rules! networked {
             $(pub $struct_field: $struct,)*
         }
 
-        #[inline]
+
         unsafe fn iterate_table(networked: &mut Networked, recv_table: &RecvTable, table: Table, base_offset: usize) {
             for prop in recv_table.props() {
                 let offset = base_offset + prop.offset as usize;
@@ -63,7 +63,7 @@ macro_rules! networked {
             }
         }
 
-        #[inline]
+
         pub unsafe fn setup(mut class_list: *const ClientClass) {
             global::with_app_mut(|app| {
                 let mut networked = unsafe { MaybeUninit::zeroed().assume_init() };

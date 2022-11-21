@@ -1,4 +1,4 @@
-use crate::{global, intrinsics, pattern, IClientEntity, INetChannel, Ptr};
+use crate::{global, intrinsics, pattern, EntityFlag, IClientEntity, INetChannel, Ptr};
 use bevy::prelude::*;
 use std::ffi::{CStr, OsStr};
 use std::os::unix::ffi::OsStrExt;
@@ -11,7 +11,6 @@ pub struct IVEngineClient {
 }
 
 impl IVEngineClient {
-    #[inline]
     pub fn view_angle(&self) -> Vec3 {
         let method: unsafe extern "C" fn(this: *mut u8, view_angle: *mut Vec3) =
             unsafe { self.ptr.vtable_entry(18) };
@@ -25,7 +24,6 @@ impl IVEngineClient {
         view_angle
     }
 
-    #[inline]
     pub fn set_view_angle(&self, view_angle: Vec3) {
         let method: unsafe extern "C" fn(this: *mut u8, view_angle: *const Vec3) =
             unsafe { self.ptr.vtable_entry(19) };
@@ -35,7 +33,6 @@ impl IVEngineClient {
         }
     }
 
-    #[inline]
     pub fn level_name(&self) -> Option<Box<OsStr>> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ffi::c_char =
             unsafe { self.ptr.vtable_entry(53) };
@@ -55,7 +52,6 @@ impl IVEngineClient {
         }
     }
 
-    #[inline]
     pub fn local_player_index(&self) -> i32 {
         let method: unsafe extern "C" fn(this: *mut u8) -> i32 =
             unsafe { self.ptr.vtable_entry(12) };
@@ -63,7 +59,6 @@ impl IVEngineClient {
         unsafe { (method)(self.ptr.as_ptr()) }
     }
 
-    #[inline]
     pub fn net_channel(&self) -> Option<INetChannel> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(78) };
@@ -74,7 +69,6 @@ impl IVEngineClient {
         Some(INetChannel { ptr })
     }
 
-    #[inline]
     pub fn bsp_tree_query(&self) -> Option<BSPTreeQuery> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(43) };
@@ -155,10 +149,13 @@ unsafe extern "C" fn list_leaves_in_box(
 
         // Assume info.renderable points to an `IClientEntity`, wherein it contains an `IClientRenderable`
         // at `base + size_of::<*const IClientNetworkable>()`.
-        let entity = info.renderable.byte_sub(mem::size_of::<*mut u8>());
+        let ptr = info.renderable.byte_sub(mem::size_of::<*mut u8>()) as *mut u8;
+        let ptr = Ptr::new("IClientEntity", ptr).unwrap();
+        let entity = IClientEntity { ptr };
+        let flags = entity.flags();
 
         // TODO: is entity a player.
-        if true {
+        if flags.contains(EntityFlag::ENEMY) {
             let max = Vec3::splat(16384.0);
             let min = -max;
 

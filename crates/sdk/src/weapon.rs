@@ -24,7 +24,6 @@ pub enum WeaponKind {
 }
 
 impl WeaponKind {
-    #[inline]
     pub const fn as_i32(&self) -> i32 {
         *self as i32
     }

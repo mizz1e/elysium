@@ -1,7 +1,7 @@
 use crate::{
-    convar, gl, global, material::Glow, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd,
+    convar, gl, global, material, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd,
     ClientClass, Config, IClientEntityList, IClientMode, ICvar, IMaterialSystem, IVEngineClient,
-    KeyValues, MaterialFlag, ModuleMap, Ptr,
+    KeyValues, ModuleMap, Ptr,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
@@ -35,7 +35,6 @@ pub struct IBaseClientDLL {
 }
 
 impl IBaseClientDLL {
-    #[inline]
     pub(crate) unsafe fn setup(&self) {
         tracing::trace!("setup IBaseClientDLL");
 
@@ -66,7 +65,6 @@ impl IBaseClientDLL {
         });
     }
 
-    #[inline]
     pub(crate) fn all_classes(&self) -> *const ClientClass {
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
             unsafe { self.ptr.vtable_entry(8) };
@@ -74,25 +72,6 @@ impl IBaseClientDLL {
         unsafe { (method)(self.ptr.as_ptr()) }
     }
 
-    #[inline]
-    fn deactivate_mouse(&self) {
-        let method: unsafe extern "C" fn(this: *mut u8) = unsafe { self.ptr.vtable_entry(15) };
-
-        unsafe {
-            (method)(self.ptr.as_ptr());
-        }
-    }
-
-    #[inline]
-    fn activate_mouse(&self) {
-        let method: unsafe extern "C" fn(this: *mut u8) = unsafe { self.ptr.vtable_entry(16) };
-
-        unsafe {
-            (method)(self.ptr.as_ptr());
-        }
-    }
-
-    #[inline]
     unsafe fn setup_client_mode(&self) -> IClientMode {
         tracing::trace!("obtain IClientMode");
 
@@ -112,7 +91,6 @@ impl IBaseClientDLL {
         client_mode
     }
 
-    #[inline]
     unsafe fn setup_global_vars(&self) -> CGlobalVarsBase {
         tracing::trace!("obtain CGlobalVarsBase");
 
@@ -133,7 +111,7 @@ impl IBaseClientDLL {
 unsafe extern "C" fn level_init_pre_entity(this: *mut u8, path: *const ffi::c_char) {
     debug_assert!(!this.is_null());
 
-    let method = global::with_app(|app| app.world.resource::<LevelInitPreEntity>().0);
+    let method = global::with_resource::<LevelInitPreEntity, _>(|method| method.0);
 
     (method)(this, path)
 }
@@ -141,7 +119,7 @@ unsafe extern "C" fn level_init_pre_entity(this: *mut u8, path: *const ffi::c_ch
 unsafe extern "C" fn level_init_post_entity(this: *mut u8) {
     debug_assert!(!this.is_null());
 
-    let method = global::with_app(|app| app.world.resource::<LevelInitPostEntity>().0);
+    let method = global::with_resource::<LevelInitPostEntity, _>(|method| method.0);
 
     (method)(this)
 }
@@ -149,7 +127,7 @@ unsafe extern "C" fn level_init_post_entity(this: *mut u8) {
 unsafe extern "C" fn level_shutdown(this: *mut u8) {
     debug_assert!(!this.is_null());
 
-    let method = global::with_app(|app| app.world.resource::<LevelShutdown>().0);
+    let method = global::with_resource::<LevelShutdown, _>(|method| method.0);
 
     (method)(this)
 }
@@ -183,13 +161,17 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 .unwrap();
 
             let cvar = ICvar { ptr };
+
+            let ffa = convar::Ffa(cvar.find_var("mp_teammates_are_enemies").unwrap());
             let sv_cheats = convar::SvCheats(cvar.find_var("sv_cheats").unwrap());
             let panorama_disable_blur =
                 convar::PanoramaDisableBlur(cvar.find_var("@panorama_disable_blur").unwrap());
 
             app.insert_resource(cvar);
-            app.insert_resource(sv_cheats);
+
+            app.insert_resource(ffa);
             app.insert_resource(panorama_disable_blur);
+            app.insert_resource(sv_cheats);
 
             let material_system = app.world.resource::<IMaterialSystem>();
             let keyvalues = KeyValues::from_str(
@@ -205,12 +187,12 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
             let material = material_system.create("elysium/glow", &keyvalues).unwrap();
 
-            app.insert_resource(Glow(material));
+            app.insert_resource(material::Glow(material));
 
             let engine = app.world.resource::<IVEngineClient>();
             let bsp_tree_query = engine.bsp_tree_query().unwrap();
 
-            bsp_tree_query.setup();
+            //bsp_tree_query.setup();
         }
 
         let mut system_state: SystemState<(
@@ -226,17 +208,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
         let local_player_index = engine.local_player_index();
         let view_angle = engine.view_angle();
 
-        if config.menu_open {
-            client.deactivate_mouse();
-        } else {
-            client.activate_mouse();
-        }
-
         match frame {
             FRAME_NET_UPDATE_END => {
                 let sv_cheats = app.world.resource::<convar::SvCheats>();
 
-                sv_cheats.write(1);
+                sv_cheats.write(true);
             }
             FRAME_RENDER_START => {
                 in_thirdperson &= !entity_list
@@ -248,7 +224,7 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
                 let panorama_disable_blur = app.world.resource::<convar::PanoramaDisableBlur>();
 
-                panorama_disable_blur.write(1);
+                panorama_disable_blur.write(true);
 
                 /*tracing::trace!("{:?}", engine.level_name());
 
@@ -261,14 +237,12 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 if let Some(player) = entity_list.get(local_player_index) {
                     app.insert_resource(OriginalViewAngle(player.view_angle()));
 
-                    if player.is_alive() {
-                        if in_thirdperson {
-                            if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
-                                player.set_view_angle(last_command.view_angle);
-                            }
-                        } else {
-                            player.set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0));
+                    if in_thirdperson {
+                        if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
+                            player.set_view_angle(last_command.view_angle);
                         }
+                    } else {
+                        player.set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0));
                     }
                 }
 

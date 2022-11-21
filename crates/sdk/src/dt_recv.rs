@@ -91,7 +91,7 @@ pub struct RecvProxyData {
 }
 
 impl RecvTable {
-    pub(crate) unsafe fn props(&self) -> &mut [RecvProp] {
-        slice::from_raw_parts_mut(self.props, self.props_len as usize)
+    pub(crate) unsafe fn props(&self) -> &[RecvProp] {
+        slice::from_raw_parts(self.props, self.props_len as usize)
     }
 }

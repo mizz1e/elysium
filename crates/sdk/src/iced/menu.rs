@@ -164,28 +164,22 @@ mod style {
     use iced_native::widget::container;
     use iced_native::{color, theme, Background, Color, Theme};
 
-    #[inline]
     pub fn custom(f: fn(&Theme) -> container::Appearance) -> theme::Container {
         theme::Container::Custom(Box::from(f))
     }
 
-    #[inline]
     pub fn menu(_theme: &Theme) -> container::Appearance {
         background(color!(0x000000, 0.7))
     }
 
-    #[inline]
     pub fn overlay(_theme: &Theme) -> container::Appearance {
         background(color!(0x000000, 0.2))
     }
 
-    #[inline]
     pub fn background(color: Color) -> container::Appearance {
-        let appearance = container::Appearance {
+        container::Appearance {
             background: Some(Background::Color(color)),
             ..container::Appearance::default()
-        };
-
-        appearance
+        }
     }
 }

@@ -20,7 +20,6 @@ pub struct KeyValues {
 }
 
 impl KeyValues {
-    #[inline]
     pub fn from_str(name: impl AsRef<OsStr>, value: impl AsRef<OsStr>) -> Option<Self> {
         let name = name.as_ref().as_bytes();
         let name = CString::new(name).ok()?;
@@ -36,7 +35,6 @@ impl KeyValues {
         Some(KeyValues { ptr })
     }
 
-    #[inline]
     pub unsafe fn setup() {
         tracing::trace!("obtain KeyValues::FromString");
 

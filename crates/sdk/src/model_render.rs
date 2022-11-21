@@ -19,7 +19,6 @@ pub struct IVModelRender {
 }
 
 impl IVModelRender {
-    #[inline]
     pub(crate) unsafe fn setup(&self) {
         global::with_app_mut(|app| {
             app.insert_resource(DrawModelExecute(
@@ -28,7 +27,6 @@ impl IVModelRender {
         });
     }
 
-    #[inline]
     fn override_material(&self, material: Option<&IMaterial>) {
         let method: unsafe extern "C" fn(
             this: *mut u8,
@@ -45,7 +43,6 @@ impl IVModelRender {
         unsafe { (method)(self.ptr.as_ptr(), ptr, 0, -1) }
     }
 
-    #[inline]
     fn draw_model_execute(
         &self,
         render_context: *const internal::IMatRenderContext,

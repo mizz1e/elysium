@@ -14,7 +14,6 @@ const RWX: i32 = libc::PROT_READ | libc::PROT_WRITE | libc::PROT_EXEC;
 const RX: i32 = libc::PROT_READ | libc::PROT_EXEC;
 
 /// Set protection for the page of the given pointer.
-#[inline]
 unsafe fn set_protection<T>(ptr: *const T, protection: i32) {
     let page = ptr.map_addr(|addr| addr & PAGE_MASK);
 
@@ -26,7 +25,6 @@ unsafe fn set_protection<T>(ptr: *const T, protection: i32) {
 /// # Safety
 ///
 /// See [`ptr::replace`](ptr::replace).
-#[inline]
 pub unsafe fn replace_protected<T>(dst: *const T, src: T) -> T {
     set_protection(dst, RWX);
 
@@ -61,7 +59,6 @@ pub struct Ptr {
 
 impl Ptr {
     /// Construct a new pointer to a source engine object.
-    #[inline]
     #[must_use]
     pub fn new(label: &str, ptr: *mut u8) -> Option<Ptr> {
         let ptr = NonNull::new(ptr)?;
@@ -82,7 +79,6 @@ impl Ptr {
     }
 
     /// Returns a raw pointer to the object.
-    #[inline]
     #[must_use]
     pub fn as_ptr(&self) -> *mut u8 {
         self.ptr.as_ptr()
@@ -94,7 +90,6 @@ impl Ptr {
     ///
     /// - The pointed to type must contain a virtual table.
     /// - See [`ptr::read`](https://doc.rust-lang.org/std/primitive.pointer.html#method.offset).
-    #[inline]
     #[must_use]
     pub unsafe fn vtable_ptr(&self) -> *mut VTable {
         let object = *(self.as_ptr() as *mut Object);
@@ -108,7 +103,6 @@ impl Ptr {
     ///
     /// - `index` must be a valid virtual table index.
     /// - See [`vtable_ptr`](Ptr::vtable_ptr).
-    #[inline]
     #[must_use]
     pub unsafe fn vtable_index<T>(&self, index: usize) -> *mut T {
         let vtable = self.vtable_ptr() as *mut FnPtr;
@@ -122,7 +116,6 @@ impl Ptr {
     ///
     /// - `index` must be a valid virtual table index.
     /// - See [`vtable_ptr`](Ptr::vtable_ptr).
-    #[inline]
     #[must_use]
     pub unsafe fn vtable_entry<T>(&self, index: usize) -> T {
         self.vtable_index::<T>(index).read()
@@ -135,7 +128,6 @@ impl Ptr {
     /// - The memory page of which the virtual table entry resides is not needed for execution at
     /// the time of writing the new entry.
     /// - See [`vtable_index`](Ptr::vtable_index).
-    #[inline]
     pub unsafe fn vtable_replace<T: Copy>(&self, index: usize, f: T) -> T {
         let ptr = self.vtable_index::<T>(index);
         let old = replace_protected(ptr, f);
@@ -153,7 +145,6 @@ impl Ptr {
     /// # Safety
     ///
     /// See [`ptr::offset`](https://doc.rust-lang.org/std/primitive.pointer.html#method.offset).
-    #[inline]
     #[must_use]
     pub unsafe fn byte_offset<T>(&self, offset: usize) -> *mut T {
         let this = self.as_ptr() as *mut u8;

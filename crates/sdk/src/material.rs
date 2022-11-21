@@ -67,7 +67,6 @@ bitflags::bitflags! {
 }
 
 impl IMaterialSystem {
-    #[inline]
     pub fn create(&self, name: impl AsRef<OsStr>, keyvalues: &KeyValues) -> Option<IMaterial> {
         let method: unsafe extern "C" fn(
             this: *mut u8,
@@ -85,7 +84,6 @@ impl IMaterialSystem {
 }
 
 impl IMaterial {
-    #[inline]
     pub fn name(&self) -> Box<OsStr> {
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ffi::c_char =
             unsafe { self.ptr.vtable_entry(0) };
@@ -99,7 +97,6 @@ impl IMaterial {
         Box::from(OsStr::from_bytes(name))
     }
 
-    #[inline]
     pub fn texture_group(&self) -> TextureGroup {
         let method: unsafe extern "C" fn(this: *mut u8) -> *const ffi::c_char =
             unsafe { self.ptr.vtable_entry(1) };
@@ -113,7 +110,6 @@ impl IMaterial {
         TextureGroup::from_bytes(name)
     }
 
-    #[inline]
     pub fn var(&self, name: &CStr) -> Option<IMaterialVar> {
         let method: unsafe extern "C" fn(
             this: *mut u8,
@@ -135,7 +131,6 @@ impl IMaterial {
         found.then(|| IMaterialVar { ptr })
     }
 
-    #[inline]
     pub fn color_modulate(&self, color: Color) {
         let Color { r, g, b, a } = color;
 
@@ -154,7 +149,6 @@ impl IMaterial {
         }
     }
 
-    #[inline]
     pub fn set_tint(&self, color: Color) -> bool {
         if let Some(var) = self.var(ENV_TINT_MAP) {
             let Color { r, g, b, .. } = color;
@@ -167,7 +161,6 @@ impl IMaterial {
         }
     }
 
-    #[inline]
     pub fn set_flag(&self, flag: MaterialFlag, enabled: bool) {
         let method: unsafe extern "C" fn(this: *mut u8, flag: MaterialFlag, enabled: bool) =
             unsafe { self.ptr.vtable_entry(29) };
@@ -179,7 +172,6 @@ impl IMaterial {
 }
 
 impl IMaterialVar {
-    #[inline]
     pub fn set_vec3(&self, vec: Vec3) {
         let method: unsafe extern "C" fn(this: *mut u8, x: f32, y: f32, z: f32) =
             unsafe { self.ptr.vtable_entry(12) };

@@ -1,9 +1,9 @@
 use crate::Ptr;
 use bevy::prelude::*;
-use std::ffi;
 use std::ffi::{CString, OsStr};
 use std::marker::PhantomData;
 use std::os::unix::ffi::OsStrExt;
+use std::{ffi, mem};
 
 /// `public/tier1/convar.h`.
 #[derive(Resource)]
@@ -12,7 +12,6 @@ pub struct ICvar {
 }
 
 impl ICvar {
-    #[inline]
     pub fn find_var<T>(&self, var_name: impl AsRef<OsStr>) -> Option<ConVar<T>> {
         let var_name = var_name.as_ref().as_bytes();
         let var_name = CString::new(var_name).ok()?;
@@ -30,15 +29,37 @@ impl ICvar {
 }
 
 #[derive(Deref, Resource)]
-pub struct PanoramaDisableBlur(pub ConVar<i32>);
+pub struct Ffa(pub ConVar<bool>);
 
 #[derive(Deref, Resource)]
-pub struct SvCheats(pub ConVar<i32>);
+pub struct PanoramaDisableBlur(pub ConVar<bool>);
+
+#[derive(Deref, Resource)]
+pub struct SvCheats(pub ConVar<bool>);
 
 #[derive(Resource)]
 pub struct ConVar<T> {
     pub(crate) ptr: Ptr,
     _phantom: PhantomData<T>,
+}
+
+impl<T> ConVar<T> {
+    unsafe fn cast_copy<U>(&self) -> ConVar<U> {
+        ConVar {
+            ptr: Ptr::new("ConVar", self.ptr.as_ptr()).unwrap(),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl ConVar<bool> {
+    pub fn read(&self) -> bool {
+        unsafe { self.cast_copy::<i32>().read() != 0 }
+    }
+
+    pub fn write(&self, value: bool) {
+        unsafe { self.cast_copy::<i32>().write(value as i32) }
+    }
 }
 
 impl ConVar<i32> {

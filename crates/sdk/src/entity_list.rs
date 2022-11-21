@@ -11,7 +11,6 @@ pub struct IClientEntityList {
 }
 
 impl IClientEntityList {
-    #[inline]
     pub fn get(&self, index: SourceIndex) -> Option<IClientEntity> {
         let method: unsafe extern "C" fn(this: *mut u8, index: SourceIndex) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(3) };
@@ -22,7 +21,6 @@ impl IClientEntityList {
         Some(IClientEntity { ptr })
     }
 
-    #[inline]
     pub fn highest_index(&self) -> SourceIndex {
         let method: unsafe extern "C" fn(this: *mut u8) -> SourceIndex =
             unsafe { self.ptr.vtable_entry(6) };

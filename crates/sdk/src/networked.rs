@@ -2,7 +2,6 @@ use crate::{global, ClientClass, PlayerFlag, PropKind, RecvTable, Tick};
 use bevy::prelude::*;
 use std::ffi::{CStr, OsStr};
 use std::mem::MaybeUninit;
-use std::slice;
 use std::time::Duration;
 
 pub use var::Var;

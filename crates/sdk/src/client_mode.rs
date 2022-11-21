@@ -1,6 +1,6 @@
 use crate::{
-    global, math, Button, CUserCmd, CViewSetup, Config, IClientEntity, IClientEntityList,
-    IVEngineClient, Mat4x3, Ptr, Time,
+    global, math, Button, CUserCmd, CViewSetup, Config, EntityFlag, IClientEntity,
+    IClientEntityList, IVEngineClient, Mat4x3, Ptr, Time,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::{Res, Resource, Vec3};
@@ -24,7 +24,6 @@ pub struct IClientMode {
 }
 
 impl IClientMode {
-    #[inline]
     pub(crate) unsafe fn setup(&self) {
         tracing::trace!("setup IClientMode");
 
@@ -90,11 +89,6 @@ unsafe extern "C" fn create_move(
         let engine_view_angle = engine.view_angle();
         let local_player = IClientEntity::local_player().unwrap();
 
-        if !local_player.is_alive() {
-            tracing::trace!("local_player is not alive");
-            return false;
-        }
-
         config.pitch.apply(&mut command.view_angle.x);
         command.view_angle.y += config.yaw_offset;
         command.view_angle.z = config.roll;
@@ -136,7 +130,11 @@ unsafe extern "C" fn create_move(
                     continue;
                 };
 
-                if !(player.is_valid_target() && player.is_enemy()) {
+                let flags = player.flags();
+
+                tracing::trace!("{i} {flags:?}");
+
+                if !flags.contains(EntityFlag::ENEMY) {
                     continue;
                 }
 

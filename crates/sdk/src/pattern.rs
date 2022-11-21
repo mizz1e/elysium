@@ -7,7 +7,6 @@ pub struct Pattern {
 }
 
 impl Pattern {
-    #[inline]
     #[must_use]
     pub const fn new(pattern: &'static str) -> Self {
         let cell = OnceCell::new();
@@ -15,7 +14,6 @@ impl Pattern {
         Self { cell, pattern }
     }
 
-    #[inline]
     pub fn find<'a>(&self, bytes: &'a [u8]) -> Option<(usize, &'a [u8])> {
         let regex = self
             .cell
@@ -31,11 +29,11 @@ impl Pattern {
     }
 }
 
-pub const CSPLAYER_SPAWN: Pattern = Pattern::new(
+pub static CSPLAYER_SPAWN: Pattern = Pattern::new(
     r#"(?msx-u)\x55\x48\x89\xE5\x53\x48\x89\xFB\x48\x83\xEC\x28\x48\x8B\x05....\x48\x8B\x00"#,
 );
 
-pub const KEY_VALUES_FROM_STRING: Pattern =
+pub static KEY_VALUES_FROM_STRING: Pattern =
     Pattern::new(r#"(?msx-u)\xE8....\x48\x89\xDF\x48\x89\x45\xE0"#);
 
-pub const INSERT_INTO_TREE: Pattern = Pattern::new(r#"(?msx-u)\x74\x24\x4C\x8B\x10"#);
+pub static INSERT_INTO_TREE: Pattern = Pattern::new(r#"(?msx-u)\x74\x24\x4C\x8B\x10"#);
