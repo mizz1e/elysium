@@ -146,20 +146,21 @@ unsafe extern "C" fn list_leaves_in_box(
     // `CClientLeafSystem::InsertIntoTree` @ `game/client/clientleafsystem.cpp`
     if return_addr == insert_into_tree {
         let info = &**(frame_addr.byte_add(2392) as *const *const internal::RenderableInfo_t);
-
-        // Assume info.renderable points to an `IClientEntity`, wherein it contains an `IClientRenderable`
-        // at `base + size_of::<*const IClientNetworkable>()`.
         let ptr = info.renderable.byte_sub(mem::size_of::<*mut u8>()) as *mut u8;
-        let ptr = Ptr::new("IClientEntity", ptr).unwrap();
-        let entity = IClientEntity { ptr };
-        let flags = entity.flags();
+        let renderable = Ptr::new("IClientRenderable", ptr).unwrap();
+        let index: unsafe extern "C" fn(this: *mut u8) -> ffi::c_int =
+            unsafe { renderable.vtable_entry(8) };
+        let index = (index)(renderable.as_ptr());
 
-        // TODO: is entity a player.
-        if flags.contains(EntityFlag::ENEMY) {
-            let max = Vec3::splat(16384.0);
-            let min = -max;
+        if let Some(entity) = IClientEntity::from_index(index) {
+            let is_player = entity.is_player();
 
-            return (method)(this, &min, &max, list, list_max);
+            if entity.is_player() {
+                let max = Vec3::splat(16384.0);
+                let min = -max;
+
+                return (method)(this, &min, &max, list, list_max);
+            }
         }
     }
 

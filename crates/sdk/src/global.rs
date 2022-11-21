@@ -17,10 +17,9 @@ unsafe impl Sync for AppGlobal {}
 /// # Safety
 ///
 /// The global [`App`] must be initialized prior.
-
-pub unsafe fn with_app<T>(f: impl FnOnce(&App) -> T) -> T {
-    let app_ref = &*APP.0.get();
-    let app = app_ref.as_ref().unwrap_unchecked();
+pub fn with_app<T>(f: impl FnOnce(&App) -> T) -> T {
+    let app_ref = unsafe { &*APP.0.get() };
+    let app = app_ref.as_ref().unwrap();
 
     f(app)
 }
@@ -30,23 +29,22 @@ pub unsafe fn with_app<T>(f: impl FnOnce(&App) -> T) -> T {
 /// # Safety
 ///
 /// The global [`App`] must be initialized prior.
-
-pub unsafe fn with_app_mut<T>(f: impl FnOnce(&mut App) -> T) -> T {
-    let app_mut = &mut *APP.0.get();
-    let app = app_mut.as_mut().unwrap_unchecked();
+pub fn with_app_mut<T>(f: impl FnOnce(&mut App) -> T) -> T {
+    let app_mut = unsafe { &mut *APP.0.get() };
+    let app = app_mut.as_mut().unwrap();
 
     f(app)
 }
 
-pub unsafe fn with_resource<R: Resource, T>(f: impl FnOnce(&R) -> T) -> T {
+pub fn with_resource<R: Resource, T>(f: impl FnOnce(&R) -> T) -> T {
     with_app(|app| f(app.world.resource()))
 }
 
-pub unsafe fn with_resource_mut<R: Resource, T>(f: impl FnOnce(Mut<'_, R>) -> T) -> T {
+pub fn with_resource_mut<R: Resource, T>(f: impl FnOnce(Mut<'_, R>) -> T) -> T {
     with_app_mut(|app| f(app.world.resource_mut()))
 }
 
-pub unsafe fn with_resource_or_init<R: Resource, T>(
+pub fn with_resource_or_init<R: Resource, T>(
     f: impl FnOnce(Mut<'_, R>) -> T,
     init: impl FnOnce() -> R,
 ) -> T {
@@ -54,7 +52,6 @@ pub unsafe fn with_resource_or_init<R: Resource, T>(
 }
 
 /// Set the global [`App`].
-
 pub fn set_app(app: App) {
     unsafe {
         APP.0.get().write(Some(app));

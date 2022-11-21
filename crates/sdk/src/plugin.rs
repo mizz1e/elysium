@@ -1,8 +1,8 @@
 use crate::entity::AnimState;
 use crate::{
     config, engine, global, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList,
-    IEngineTrace, IMaterialSystem, IVEngineClient, IVModelRender, KeyValues, ModuleMap, OnceLoaded,
-    SourceSettings,
+    IEngineTrace, IMaterialSystem, IPhysicsSurfaceProps, IVEngineClient, IVModelRender, KeyValues,
+    ModuleMap, OnceLoaded, SourceSettings,
 };
 use bevy::prelude::*;
 
@@ -68,9 +68,9 @@ unsafe fn source_setup() -> Result<(), Error> {
                 let material_system_module = module_map.open("materialsystem_client.so")?;
                 let ptr = material_system_module.create_interface("VMaterialSystem080")?;
 
-                let material_system = IMaterialSystem { ptr };
+                world.insert_resource(IMaterialSystem { ptr });
 
-                world.insert_resource(material_system);
+                let _vphysics_module = module_map.open("vphysics_client.so").unwrap();
 
                 let launcher_module = module_map.open("launcher_client.so")?;
                 let launcher_main = launcher_module.symbol("LauncherMain\0")?;

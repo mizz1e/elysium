@@ -49,10 +49,10 @@ pub struct Object {
 }
 
 /// A type-erased pointer to a source engine object.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Ptr {
     #[cfg(debug_assertions)]
-    label: Box<str>,
+    label: &'static str,
 
     ptr: NonNull<u8>,
 }
@@ -60,13 +60,11 @@ pub struct Ptr {
 impl Ptr {
     /// Construct a new pointer to a source engine object.
     #[must_use]
-    pub fn new(label: &str, ptr: *mut u8) -> Option<Ptr> {
+    pub fn new(label: &'static str, ptr: *mut u8) -> Option<Ptr> {
         let ptr = NonNull::new(ptr)?;
 
         #[cfg(debug_assertions)]
         {
-            let label = Box::from(label);
-
             Some(Ptr { label, ptr })
         }
 

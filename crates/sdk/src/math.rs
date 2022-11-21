@@ -1,6 +1,4 @@
-use bevy::math::Vec3Swizzles;
 use bevy::prelude::*;
-use std::f32::consts;
 
 /// [game/shared/gamemovement.h#L104](https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/gamemovement.h#L104)
 pub const AIR_SPEED_CAP: f32 = 30.0;

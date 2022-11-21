@@ -1,7 +1,7 @@
 use crate::{
     convar, gl, global, material, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd,
-    ClientClass, Config, IClientEntityList, IClientMode, ICvar, IMaterialSystem, IVEngineClient,
-    KeyValues, ModuleMap, Ptr,
+    ClientClass, Config, IClientEntityList, IClientMode, ICvar, IMaterialSystem,
+    IPhysicsSurfaceProps, IVEngineClient, KeyValues, ModuleMap, Ptr,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
@@ -156,11 +156,16 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
             let module_map = app.world.resource::<ModuleMap>();
             let material_system_module = module_map.get_module("materialsystem_client.so").unwrap();
-            let ptr = material_system_module
+            let cvar = material_system_module
                 .create_interface("VEngineCvar007")
                 .unwrap();
 
-            let cvar = ICvar { ptr };
+            let vphysics_module = module_map.get_module("vphysics_client.so").unwrap();
+            let ptr = vphysics_module
+                .create_interface("VPhysicsSurfaceProps001")
+                .unwrap();
+
+            let cvar = ICvar { ptr: cvar };
 
             let ffa = convar::Ffa(cvar.find_var("mp_teammates_are_enemies").unwrap());
             let panorama_disable_blur =
@@ -194,7 +199,9 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             let engine = app.world.resource::<IVEngineClient>();
             let bsp_tree_query = engine.bsp_tree_query().unwrap();
 
-            //bsp_tree_query.setup();
+            bsp_tree_query.setup();
+
+            app.insert_resource(IPhysicsSurfaceProps { ptr });
         }
 
         let mut system_state: SystemState<(

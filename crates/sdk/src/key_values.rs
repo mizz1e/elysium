@@ -27,7 +27,7 @@ impl KeyValues {
         let value = value.as_ref().as_bytes();
         let value = CString::new(value).ok()?;
 
-        let method = unsafe { global::with_app(|app| app.world.resource::<FromString>().0) };
+        let method = global::with_resource::<FromString, _>(|method| method.0);
 
         let ptr = unsafe { (method)(name.as_ptr(), value.as_ptr(), ptr::null()) };
         let ptr = Ptr::new("KeyValues", ptr)?;

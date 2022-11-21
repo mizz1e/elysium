@@ -1,6 +1,7 @@
 use crate::{
     global, math, Button, CUserCmd, CViewSetup, Config, EntityFlag, IClientEntity,
-    IClientEntityList, IEngineTrace, IVEngineClient, Mat4x3, Ptr, Time,
+    IClientEntityList, IEngineTrace, IPhysicsSurfaceProps, IVEngineClient, Mat4x3, Ptr,
+    SurfaceKind, Time, TraceResult, WeaponInfo,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::{Res, ResMut, Resource, Vec3};
@@ -185,49 +186,39 @@ unsafe extern "C" fn create_move(
             }
         }
 
-        let now = Time::now();
-        let eye_pos = local_player.eye_pos();
+        if let Some(weapon) = local_player.active_weapon() {
+            let now = Time::now();
+            let eye_pos = local_player.eye_pos();
 
-        const BONE_USED_BY_HITBOX: i32 = 0x100;
-        const CONTENTS_HITBOX: u32 = 0x40000000;
-        const CONTENTS_SOLID: u32 = 0x1;
+            const BONE_USED_BY_HITBOX: i32 = 0x100;
+            const CONTENTS_HITBOX: u32 = 0x40000000;
+            const CONTENTS_SOLID: u32 = 0x1;
 
-        for i in 1..=64 {
-            let Some(player) = entity_list.get(i) else {
+            for i in 1..=64 {
+                let Some(player) = entity_list.get(i) else {
                     continue;
                 };
 
-            let flags = player.flags();
+                let flags = player.flags();
 
-            if !flags.contains(EntityFlag::ENEMY) {
-                continue;
+                if !flags.contains(EntityFlag::ENEMY) {
+                    continue;
+                }
+
+                let mut bones = [Mat4x3::ZERO; 256];
+
+                player.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
+
+                let head_bone = bones[8];
+                let head_origin: Vec3 = head_bone.to_affine().translation.into();
+
+                command.view_angle = math::calculate_angle(eye_pos, head_origin);
+
+                let direction = command.view_angle.normalize_or_zero();
+                let info = weapon.weapon_info();
+                let data = simulate_shot(eye_pos, direction, info);
             }
 
-            let mut bones = [Mat4x3::ZERO; 256];
-
-            player.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
-
-            let head_bone = bones[8];
-            let head_origin: Vec3 = head_bone.to_affine().translation.into();
-
-            command.view_angle = math::calculate_angle(eye_pos, head_origin);
-
-            let direction = command.view_angle.normalize_or_zero() * 4096.0;
-
-            let result = trace.trace(
-                eye_pos,
-                eye_pos + direction,
-                CONTENTS_SOLID | CONTENTS_HITBOX,
-            );
-
-            if let Some(entity) = result.entity_hit {
-                command.buttons.insert(Button::ATTACK);
-
-                break;
-            }
-        }
-
-        if let Some(weapon) = local_player.active_weapon() {
             let next_primary_attack = weapon.next_primary_attack().0;
             let server_time = local_player.tick_base().to_time().0;
 
@@ -254,4 +245,228 @@ unsafe extern "C" fn create_move(
 
         false
     })
+}
+
+const CONTENTS_DEBRIS: u32 = 0x4000000;
+const CONTENTS_GRATE: u32 = 0x8;
+const CONTENTS_HITBOX: u32 = 0x40000000;
+const CONTENTS_MONSTER: u32 = 0x2000000;
+const CONTENTS_MOVEABLE: u32 = 0x4000;
+const CONTENTS_SOLID: u32 = 0x1;
+const CONTENTS_WINDOW: u32 = 0x2;
+
+const MASK_SHOT: u32 = CONTENTS_DEBRIS
+    | CONTENTS_HITBOX
+    | CONTENTS_MONSTER
+    | CONTENTS_MOVEABLE
+    | CONTENTS_SOLID
+    | CONTENTS_WINDOW;
+
+const MASK_SHOT_HULL: u32 = CONTENTS_DEBRIS
+    | CONTENTS_GRATE
+    | CONTENTS_MONSTER
+    | CONTENTS_MOVEABLE
+    | CONTENTS_SOLID
+    | CONTENTS_WINDOW;
+
+const MASK_TO_EXIT: u32 = MASK_SHOT_HULL | CONTENTS_HITBOX;
+
+const SURF_HITBOX: u16 = 0x8000;
+const SURF_LIGHT: u16 = 0x0001;
+const SURF_NODRAW: u16 = 0x0080;
+
+const TO_EXIT_STEP: f32 = 4.0;
+
+#[derive(Debug)]
+pub struct ShotData {
+    pub current_damage: f32,
+    pub direction: Vec3,
+    //pub damage_modifier: f32,
+    pub end: Vec3,
+    pub penetration_modifier: f32,
+    pub penetrations: u8,
+    pub range: f32,
+    pub range_modifier: f32,
+    pub result: Option<TraceResult>,
+    pub start: Vec3,
+    pub trace_length: f32,
+    pub trace_length_remaining: f32,
+}
+
+pub fn simulate_shot(eye_pos: Vec3, direction: Vec3, info: WeaponInfo) -> ShotData {
+    let mut data = ShotData {
+        current_damage: info.damage,
+        //damage_modifier: info.damage_modifier,
+        direction,
+        end: Vec3::ZERO,
+        penetration_modifier: info.penetration_modifier,
+        penetrations: 4,
+        range: info.range,
+        range_modifier: info.range_modifier,
+        result: None,
+        start: eye_pos,
+        trace_length: 0.0,
+        trace_length_remaining: 0.0,
+    };
+
+    data.simulate();
+    data
+}
+
+impl ShotData {
+    fn simulate(&mut self) {
+        global::with_resource::<IEngineTrace, _>(|trace| {
+            while self.penetrations > 0 && self.current_damage >= 1.0 {
+                self.trace_length_remaining = self.range - self.trace_length;
+                self.end = self.start + self.direction * self.trace_length_remaining;
+
+                let new_end = self.end + self.direction * 40.0;
+                let result = trace.filtered_trace(
+                    self.start,
+                    self.start + self.direction,
+                    MASK_SHOT,
+                    &IClientEntity::local_player(),
+                );
+
+                self.result = Some(result);
+
+                if let Some(entity) = result.entity_hit {
+                    self.trace_length = result.fraction * self.trace_length_remaining;
+                    self.current_damage = self.range_modifier.powf(self.trace_length * 0.002);
+
+                    break;
+                }
+
+                if !self.handle_bullet_penetration() {
+                    break;
+                }
+            }
+        })
+    }
+
+    fn handle_bullet_penetration(&mut self) -> bool {
+        return false;
+
+        let enter_result = self.result.unwrap();
+        let enter_surface = global::with_resource::<IPhysicsSurfaceProps, _>(|surface_props| {
+            surface_props
+                .data(enter_result.surface.surface_props as i32)
+                .unwrap()
+        });
+
+        self.trace_length = self.result.unwrap().fraction * self.trace_length_remaining;
+        self.current_damage = self.range_modifier.powf(self.trace_length * 0.002);
+
+        if self.trace_length > self.range || enter_surface.penetration_modifier < 0.1 {
+            self.penetrations = 0;
+
+            return false;
+        }
+
+        if !self.trace_to_exit() {
+            return false;
+        }
+
+        let exit_result = self.result.unwrap();
+        let exit_surface = global::with_resource::<IPhysicsSurfaceProps, _>(|surface_props| {
+            surface_props
+                .data(exit_result.surface.surface_props as i32)
+                .unwrap()
+        });
+
+        let is_solid = (enter_result.contents & CONTENTS_SOLID) != 0;
+        let is_light = (enter_result.surface.flags & SURF_LIGHT) != 0;
+
+        let (damage_lost, mut penetration_modifier) =
+            if matches!(enter_surface.kind, SurfaceKind::Grate | SurfaceKind::Glass) {
+                (0.05, 3.0)
+            } else if is_solid || is_light {
+                (0.16, 1.0)
+            } else {
+                let penetration_modifier =
+                    (enter_surface.penetration_modifier * exit_surface.penetration_modifier) / 2.0;
+
+                (0.16, penetration_modifier)
+            };
+
+        if enter_surface.kind == exit_surface.kind {
+            penetration_modifier = match exit_surface.kind {
+                SurfaceKind::Cardboard | SurfaceKind::Wood => 3.0,
+                SurfaceKind::Plastic => 2.0,
+                _ => penetration_modifier,
+            };
+        }
+
+        let modifier = 1.0 / penetration_modifier;
+        let distance_squared = exit_result.end.distance_squared(enter_result.end);
+        let lost_damage = modifier * 3.0 * (3.0 / self.penetration_modifier * 1.25)
+            + self.current_damage
+            + distance_squared * modifier / 24.0;
+
+        self.result = Some(enter_result);
+        self.current_damage -= lost_damage;
+
+        if self.current_damage < 1.0 {
+            return false;
+        }
+
+        self.penetrations -= 1;
+
+        true
+    }
+
+    fn trace_to_exit(&mut self) -> bool {
+        global::with_resource::<IEngineTrace, _>(|trace| {
+            let mut distance = 0.0;
+            let start = self.result.unwrap().end;
+
+            while distance <= 90.0 {
+                distance += TO_EXIT_STEP;
+
+                self.end = start + self.direction * distance;
+
+                let contents = trace.contents(self.end, MASK_TO_EXIT);
+
+                if (contents & MASK_TO_EXIT) != 0 {
+                    continue;
+                }
+
+                let new_end = self.end - self.direction * TO_EXIT_STEP;
+                let result = trace.trace(self.end, new_end, MASK_TO_EXIT);
+
+                self.result = Some(result);
+
+                if result.start_solid && (result.surface.flags & SURF_HITBOX) != 0 {
+                    let entity_hit = result.entity_hit;
+                    let result = trace.filtered_trace(self.end, new_end, MASK_TO_EXIT, &entity_hit);
+
+                    self.result = Some(result);
+
+                    if (result.fraction <= 1.0 || result.plane.is_some()) && !result.start_solid {
+                        self.end = result.end;
+
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                if result.entity_hit.is_some() && !result.start_solid {
+                    return true;
+                }
+
+                if (result.surface.flags & SURF_NODRAW) != 0 {
+                    continue;
+                }
+
+                if result.plane.unwrap().normal.dot(self.direction) <= 1.0 {
+                    self.end = self.end - self.direction * result.fraction * TO_EXIT_STEP;
+
+                    return true;
+                }
+            }
+
+            false
+        })
+    }
 }

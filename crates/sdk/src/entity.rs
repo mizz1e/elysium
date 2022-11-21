@@ -64,7 +64,7 @@ pub struct WeaponInfo {
     pub headshot_multiplier: f32,
     pub armor_ratio: f32,
     pub bullets: u32,
-    pub penetration: f32,
+    pub penetration_modifier: f32,
     pub range: f32,
     pub range_modifier: f32,
     pub has_silencer: bool,
@@ -171,6 +171,7 @@ bitflags::bitflags! {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct IClientEntity {
     pub(crate) ptr: Ptr,
 }
@@ -178,16 +179,13 @@ pub struct IClientEntity {
 impl IClientEntity {
     /// Obtain an IClientEntity from an index.
     pub fn from_index(index: i32) -> Option<Self> {
-        unsafe {
-            global::with_resource::<IClientEntityList, _>(|entity_list| entity_list.get(index))
-        }
+        global::with_resource::<IClientEntityList, _>(|entity_list| entity_list.get(index))
     }
 
     /// Obtain an IClientEntity for the local player.
     pub fn local_player() -> Option<Self> {
-        let index = unsafe {
-            global::with_resource::<IVEngineClient, _>(|engine| engine.local_player_index())
-        };
+        let index =
+            global::with_resource::<IVEngineClient, _>(|engine| engine.local_player_index());
 
         IClientEntity::from_index(index)
     }
@@ -358,10 +356,8 @@ impl IClientEntity {
 
     /// Player's aim punch.
     pub fn aim_punch(&self) -> Vec3 {
-        unsafe {
-            networked::read!(self.ptr.as_ptr(), cs_player.aim_punch)
-                * global::with_resource::<convar::RecoilScale, _>(|scale| scale.read())
-        }
+        networked::read!(self.ptr.as_ptr(), cs_player.aim_punch)
+            * global::with_resource::<convar::RecoilScale, _>(|scale| scale.read())
     }
 
     /// Player's active weapon.
@@ -394,7 +390,7 @@ impl IClientEntity {
             headshot_multiplier,
             armor_ratio,
             bullets,
-            penetration,
+            penetration_modifier,
             range,
             range_modifier,
             has_silencer,
@@ -413,7 +409,7 @@ impl IClientEntity {
             headshot_multiplier,
             armor_ratio,
             bullets: bullets as u32,
-            penetration,
+            penetration_modifier,
             range,
             range_modifier,
             has_silencer,
@@ -436,6 +432,14 @@ impl IClientEntity {
         networked::read!(self.ptr.as_ptr(), base_player.velocity)
     }
 
+    /// Determine whether this entity is a player.
+    pub fn is_player(&self) -> bool {
+        let method: unsafe extern "C" fn(this: *mut u8) -> bool =
+            unsafe { self.ptr.vtable_entry(210) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+
     /// Determine whether this entity is alive.
     fn is_alive(&self) -> bool {
         let method: unsafe extern "C" fn(this: *mut u8) -> bool =
@@ -455,12 +459,10 @@ impl IClientEntity {
 
     /// Determine whether this entity is an enemy to the local player.
     fn is_enemy(&self) -> bool {
-        unsafe {
-            (global::with_resource::<convar::Ffa, _>(|ffa| ffa.read()) && !self.is_local_player())
-                || IClientEntity::local_player()
-                    .map(|local_player| self.team() != local_player.team())
-                    .unwrap_or_default()
-        }
+        (global::with_resource::<convar::Ffa, _>(|ffa| ffa.read()) && !self.is_local_player())
+            || IClientEntity::local_player()
+                .map(|local_player| self.team() != local_player.team())
+                .unwrap_or_default()
     }
 
     /// Determine whether the player is immune to damage.
@@ -622,7 +624,7 @@ mod internal {
         pub headshot_multiplier: f32,
         pub armor_ratio: f32,
         pub bullets: i32,
-        pub penetration: f32,
+        pub penetration_modifier: f32,
         _pad7: MaybeUninit<[u8; 8]>,
         pub range: f32,
         pub range_modifier: f32,

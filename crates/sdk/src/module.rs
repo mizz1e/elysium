@@ -81,7 +81,7 @@ impl Module {
 
         // Extra check on top of result claiming it's okay.
         let interface =
-            Ptr::new(name, interface).ok_or_else(|| Error::Interface(Box::from(name)))?;
+            Ptr::new("Interface", interface).ok_or_else(|| Error::Interface(Box::from(name)))?;
 
         tracing::trace!("added interface: {name:?} from module {:?}", self.name());
 

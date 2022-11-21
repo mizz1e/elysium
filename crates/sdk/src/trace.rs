@@ -3,6 +3,7 @@
 use crate::{HitGroup, IClientEntity, Ptr};
 use bevy::prelude::*;
 use std::mem::MaybeUninit;
+use std::ptr;
 
 /// `https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/engine/IEngineTrace.h`.
 #[derive(Resource)]
@@ -13,7 +14,7 @@ pub struct IEngineTrace {
 impl IEngineTrace {
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
 
-    pub fn contents(&self, position: Vec3, mask: u32, entity: *mut *mut u8) -> u32 {
+    pub fn contents(&self, position: Vec3, mask: u32) -> u32 {
         let method: unsafe extern "C" fn(
             this: *mut u8,
             position: *const Vec3,
@@ -21,10 +22,20 @@ impl IEngineTrace {
             entity: *mut *mut u8,
         ) -> u32 = unsafe { self.ptr.vtable_entry(0) };
 
-        unsafe { (method)(self.ptr.as_ptr(), &position, mask, entity) }
+        unsafe { (method)(self.ptr.as_ptr(), &position, mask, ptr::null_mut()) }
     }
 
     pub fn trace(&self, start: Vec3, end: Vec3, mask: u32) -> TraceResult {
+        self.filtered_trace(start, end, mask, None)
+    }
+
+    pub fn filtered_trace<'a>(
+        &self,
+        start: Vec3,
+        end: Vec3,
+        mask: u32,
+        filter: impl IntoIterator<Item = &'a IClientEntity>,
+    ) -> TraceResult {
         let method: unsafe extern "C" fn(
             this: *mut u8,
             ray: *const internal::Ray,
@@ -35,7 +46,7 @@ impl IEngineTrace {
 
         let trace = unsafe {
             let ray = internal::ray(start, end);
-            let filter = internal::filter(None);
+            let filter = internal::filter(filter);
             let mut trace = MaybeUninit::zeroed();
 
             (method)(self.ptr.as_ptr(), &ray, mask, &filter, trace.as_mut_ptr());
@@ -89,11 +100,12 @@ impl IEngineTrace {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct TraceResult {
     pub start: Vec3,
     pub end: Vec3,
     pub fraction: f32,
-    pub contents: i32,
+    pub contents: u32,
     pub displacement_flags: u32,
     pub plane: Option<Plane>,
     pub start_solid: bool,
@@ -106,7 +118,7 @@ pub struct TraceResult {
     pub hitbox: i32,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct Plane {
     pub normal: Vec3,
@@ -116,17 +128,17 @@ pub struct Plane {
     pub _pad0: [u8; 2],
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct Surface {
     pub name: *const u8,
-    pub surface_props: i16,
+    pub surface_props: u16,
     pub flags: u16,
 }
 
 mod internal {
     use super::{Plane, Surface};
-    use crate::{HitGroup, Mat4x3};
+    use crate::{HitGroup, IClientEntity, Mat4x3};
     use bevy::math::{Vec3, Vec4};
     use std::collections::HashSet;
     use std::mem::MaybeUninit;
@@ -174,7 +186,7 @@ mod internal {
         pub end: Vec3,
         pub plane: MaybeUninit<Plane>,
         pub fraction: f32,
-        pub contents: i32,
+        pub contents: u32,
         pub displacement_flags: u32,
         pub all_solid: bool,
         pub start_solid: bool,
@@ -203,10 +215,10 @@ mod internal {
         TRACE_EVERYTHING
     }
 
-    pub fn filter(skip: impl IntoIterator<Item = *mut u8>) -> ITraceFilter {
+    pub fn filter<'a>(skip: impl IntoIterator<Item = &'a IClientEntity>) -> ITraceFilter {
         ITraceFilter {
             vtable: &ITRACEFILTER_VTABLE,
-            skip: skip.into_iter().collect(),
+            skip: skip.into_iter().map(|entity| entity.ptr.as_ptr()).collect(),
         }
     }
 
