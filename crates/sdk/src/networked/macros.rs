@@ -43,7 +43,6 @@ macro_rules! networked {
             $(pub $struct_field: $struct,)*
         }
 
-
         unsafe fn iterate_table(networked: &mut Networked, recv_table: &RecvTable, table: Table, base_offset: usize) {
             for prop in recv_table.props() {
                 let offset = base_offset + prop.offset as usize;
@@ -62,7 +61,6 @@ macro_rules! networked {
                 }
             }
         }
-
 
         pub unsafe fn setup(mut class_list: *const ClientClass) {
             global::with_app_mut(|app| {

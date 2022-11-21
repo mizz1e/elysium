@@ -26,7 +26,6 @@ pub enum Renderer {
 
 impl Renderer {
     /// Returns the argument passed to tier0's command line.
-
     pub(crate) fn arg(&self) -> &'static str {
         match self {
             Renderer::OpenGl => "-opengl",
@@ -36,7 +35,6 @@ impl Renderer {
     }
 
     /// Returns a display string for this renderer.
-
     pub(crate) fn display(&self) -> &'static str {
         match self {
             Renderer::OpenGl => "DX9 (OpenGL)",
@@ -46,7 +44,6 @@ impl Renderer {
     }
 
     /// Returns the value returned by *pMaterialSystem + 164 (GetShaderAPI).
-
     pub(crate) fn value(&self) -> ffi::c_int {
         match self {
             Renderer::OpenGl => 2,

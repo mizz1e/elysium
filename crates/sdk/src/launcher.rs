@@ -18,7 +18,6 @@ impl Args {
     /// # Safety
     ///
     /// `launcher_main` must be valid.
-
     pub unsafe fn exec(self, launcher_main: LauncherMain) {
         tracing::trace!("launch with args: {:?}", self.args);
 
