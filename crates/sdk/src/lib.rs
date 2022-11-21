@@ -33,6 +33,7 @@ pub use ptr::Ptr;
 pub use sdl::PollEvent;
 pub use settings::{OnceLoaded, Renderer, SourceSettings};
 pub use texture_group::TextureGroup;
+pub use trace::IEngineTrace;
 pub use view_setup::CViewSetup;
 pub use walking_animation::WalkingAnimation;
 

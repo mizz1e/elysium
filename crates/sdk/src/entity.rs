@@ -43,7 +43,7 @@ pub enum MoveKind {
     VPhysics = 6,
     Push = 7,
     NoClip = 8,
-    Ladder = 9,
+    OnLadder = 9,
     Observer = 10,
     Custom = 11,
 }
@@ -124,6 +124,9 @@ bitflags::bitflags! {
         const ALIVE = 1 << 0;
         const DORMANT = 1 << 1;
         const ENEMY = 1 << 2;
+        const IN_AIR = 1 << 3;
+        const NO_CLIP = 1 << 4;
+        const ON_LADDER = 1 << 5;
     }
 }
 
@@ -312,6 +315,30 @@ impl IClientEntity {
         unsafe { (method)(self.ptr.as_ptr()) }
     }
 
+    /// Player's aim punch.
+    pub fn aim_punch(&self) -> Vec3 {
+        unsafe {
+            networked::read!(self.ptr.as_ptr(), cs_player.aim_punch)
+                * global::with_resource::<convar::RecoilScale, _>(|scale| scale.read())
+        }
+    }
+
+    /// Player's active weapon.
+    pub fn active_weapon(&self) -> Option<Self> {
+        let method: unsafe extern "C" fn(this: *mut u8) -> *mut u8 =
+            unsafe { self.ptr.vtable_entry(331) };
+
+        let ptr = unsafe { (method)(self.ptr.as_ptr()) };
+        let ptr = Ptr::new("IClientEntity", ptr)?;
+
+        Some(IClientEntity { ptr })
+    }
+
+    /// Next primary attack time.
+    pub fn next_primary_attack(&self) -> Time {
+        networked::read!(self.ptr.as_ptr(), base_combat_weapon.next_primary_attack)
+    }
+
     /// Whether the player is scoped.
     pub fn is_scoped(&self) -> bool {
         networked::read!(self.ptr.as_ptr(), cs_player.is_scoped)
@@ -320,6 +347,10 @@ impl IClientEntity {
     /// The entity's health.
     pub fn health(&self) -> i32 {
         networked::read!(self.ptr.as_ptr(), base_player.health) as i32
+    }
+
+    pub fn velocity(&self) -> Vec3 {
+        networked::read!(self.ptr.as_ptr(), base_player.velocity)
     }
 
     /// Determine whether this entity is alive.
@@ -342,7 +373,7 @@ impl IClientEntity {
     /// Determine whether this entity is an enemy to the local player.
     fn is_enemy(&self) -> bool {
         unsafe {
-            global::with_resource::<convar::Ffa, _>(|ffa| ffa.read())
+            (global::with_resource::<convar::Ffa, _>(|ffa| ffa.read()) && !self.is_local_player())
                 || IClientEntity::local_player()
                     .map(|local_player| self.team() != local_player.team())
                     .unwrap_or_default()
@@ -351,12 +382,25 @@ impl IClientEntity {
 
     /// Determine whether the player is immune to damage.
     fn is_immune(&self) -> bool {
-        networked::read!(self, cs_player.is_immune)
+        networked::read!(self.ptr.as_ptr(), cs_player.is_immune)
     }
 
     /// The entity's team.
     fn team(&self) -> i32 {
         networked::read!(self.ptr.as_ptr(), base_entity.team) as i32
+    }
+
+    fn player_flags(&self) -> PlayerFlag {
+        networked::read!(self.ptr.as_ptr(), base_player.flags)
+    }
+
+    fn move_kind(&self) -> MoveKind {
+        unsafe {
+            networked::addr!(self.ptr.as_ptr(), base_entity.render_mode)
+                .byte_add(1)
+                .cast::<MoveKind>()
+                .read_unaligned()
+        }
     }
 
     /// Current state of the entity.
@@ -375,6 +419,20 @@ impl IClientEntity {
 
         if self.is_enemy() {
             flags.insert(EntityFlag::ENEMY);
+        }
+
+        let move_kind = self.move_kind();
+
+        match move_kind {
+            MoveKind::OnLadder => flags.insert(EntityFlag::ON_LADDER),
+            MoveKind::NoClip => flags.insert(EntityFlag::NO_CLIP),
+            _ => {}
+        }
+
+        let player_flags = self.player_flags();
+
+        if !player_flags.contains(PlayerFlag::ON_GROUND) {
+            flags.insert(EntityFlag::IN_AIR);
         }
 
         flags

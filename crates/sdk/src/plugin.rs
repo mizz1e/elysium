@@ -1,7 +1,7 @@
 use crate::entity::AnimState;
 use crate::{
     config, engine, global, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList,
-    IMaterialSystem, IVEngineClient, IVModelRender, KeyValues, ModuleMap, OnceLoaded,
+    IEngineTrace, IMaterialSystem, IVEngineClient, IVModelRender, KeyValues, ModuleMap, OnceLoaded,
     SourceSettings,
 };
 use bevy::prelude::*;
@@ -57,6 +57,10 @@ unsafe fn source_setup() -> Result<(), Error> {
 
                 model_render.setup();
                 world.insert_resource(model_render);
+
+                let ptr = engine_module.create_interface("EngineTraceClient004")?;
+
+                world.insert_resource(IEngineTrace { ptr });
 
                 let _tier0_module = module_map.open("libtier0_client.so")?;
                 let _studio_render_module = module_map.open("studiorender_client.so")?;

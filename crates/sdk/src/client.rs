@@ -163,14 +163,16 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             let cvar = ICvar { ptr };
 
             let ffa = convar::Ffa(cvar.find_var("mp_teammates_are_enemies").unwrap());
-            let sv_cheats = convar::SvCheats(cvar.find_var("sv_cheats").unwrap());
             let panorama_disable_blur =
                 convar::PanoramaDisableBlur(cvar.find_var("@panorama_disable_blur").unwrap());
+            let sv_cheats = convar::SvCheats(cvar.find_var("sv_cheats").unwrap());
+            let recoil_scale = convar::RecoilScale(cvar.find_var("weapon_recoil_scale").unwrap());
 
             app.insert_resource(cvar);
 
             app.insert_resource(ffa);
             app.insert_resource(panorama_disable_blur);
+            app.insert_resource(recoil_scale);
             app.insert_resource(sv_cheats);
 
             let material_system = app.world.resource::<IMaterialSystem>();

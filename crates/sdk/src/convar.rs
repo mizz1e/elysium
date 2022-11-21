@@ -1,9 +1,9 @@
 use crate::Ptr;
 use bevy::prelude::*;
+use std::ffi;
 use std::ffi::{CString, OsStr};
 use std::marker::PhantomData;
 use std::os::unix::ffi::OsStrExt;
-use std::{ffi, mem};
 
 /// `public/tier1/convar.h`.
 #[derive(Resource)]
@@ -33,6 +33,9 @@ pub struct Ffa(pub ConVar<bool>);
 
 #[derive(Deref, Resource)]
 pub struct PanoramaDisableBlur(pub ConVar<bool>);
+
+#[derive(Deref, Resource)]
+pub struct RecoilScale(pub ConVar<f32>);
 
 #[derive(Deref, Resource)]
 pub struct SvCheats(pub ConVar<bool>);

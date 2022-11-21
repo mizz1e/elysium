@@ -31,6 +31,9 @@ version = "0.6"
 [dependencies.libc]
 version = "0.2"
 
+[dependencies.libm]
+version = "0.2"
+
 [dependencies.link]
 default-features = false
 git = "https://github.com/elysian6969/link"

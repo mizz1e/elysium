@@ -14,15 +14,7 @@ pub fn normalize_component(mut value: f32) -> f32 {
         return 0.0;
     }
 
-    while value > 180.0 {
-        value -= 360.0;
-    }
-
-    while value < -180.0 {
-        value += 360.0;
-    }
-
-    value
+    libm::remainderf(value, 360.0)
 }
 
 #[inline]
@@ -101,7 +93,7 @@ pub fn to_vectors(angle: Vec3) -> (Vec3, Vec3, Vec3) {
 }
 
 #[inline]
-pub fn direction(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
+pub fn calculate_direction(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
     let movement = movement.truncate();
     let forward = forward.truncate();
     let right = right.truncate();
@@ -112,8 +104,13 @@ pub fn direction(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
 /// Calculate movement vectors from the current view angle and a wish view angle.
 #[inline]
 pub fn fix_movement(mut movement: Vec3, angle: Vec3, wish_angle: Vec3) -> Vec3 {
-    let (mut forward, mut right, _up) = to_vectors(angle);
-    let (mut wish_forward, mut wish_right, _wish_up) = to_vectors(wish_angle);
+    //if movement.length() < 1.1 {
+    // Nothing to fix.
+    //return movement;
+    //}
+
+    let (mut forward, mut right, _up) = to_vectors(normalize_angle(angle));
+    let (mut wish_forward, mut wish_right, _wish_up) = to_vectors(normalize_angle(wish_angle));
 
     forward.z = 0.0;
     right.z = 0.0;
@@ -125,8 +122,8 @@ pub fn fix_movement(mut movement: Vec3, angle: Vec3, wish_angle: Vec3) -> Vec3 {
     wish_forward = wish_forward.normalize_or_zero();
     wish_right = wish_right.normalize_or_zero();
 
-    let dir = direction(movement, forward, right);
-    let wish_dir = direction(movement, wish_forward, wish_right);
+    let dir = calculate_direction(movement, forward, right);
+    let wish_dir = calculate_direction(movement, wish_forward, wish_right);
 
     if wish_dir != dir {
         let denominator = right.y * forward.x - right.x * forward.y;
@@ -140,15 +137,15 @@ pub fn fix_movement(mut movement: Vec3, angle: Vec3, wish_angle: Vec3) -> Vec3 {
 
 #[inline]
 pub fn calculate_angle(src: Vec3, dst: Vec3) -> Vec3 {
-    let delta = src - dst;
-    let hypot = delta.xy().length();
+    normalize_angle(to_angle(dst - src))
+}
 
-    let x = (delta.z / hypot).atan();
-    let mut y = (delta.y / delta.x).atan();
+#[inline]
+pub fn to_angle(vec: Vec3) -> Vec3 {
+    let Vec3 { x, y, z } = vec;
+    let hypot = vec.truncate().length();
+    let pitch = (-z).atan2(hypot);
+    let yaw = y.atan2(x);
 
-    if delta.x >= 0.0 {
-        y += consts::PI;
-    }
-
-    to_degrees(Vec2::new(x, y).extend(0.0))
+    to_degrees(Vec2::new(pitch, yaw).extend(0.0))
 }

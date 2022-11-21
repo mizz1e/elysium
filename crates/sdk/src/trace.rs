@@ -1,6 +1,6 @@
 //! Trace interface
 
-use crate::{HitGroup, Ptr};
+use crate::{HitGroup, IClientEntity, Ptr};
 use bevy::prelude::*;
 use std::mem::MaybeUninit;
 
@@ -68,6 +68,8 @@ impl IEngineTrace {
             Some(unsafe { MaybeUninit::assume_init(plane) })
         };
 
+        let entity_hit = Ptr::new("IClientEntity", entity_hit).map(|ptr| IClientEntity { ptr });
+
         TraceResult {
             start,
             end,
@@ -87,7 +89,6 @@ impl IEngineTrace {
     }
 }
 
-#[derive(Debug)]
 pub struct TraceResult {
     pub start: Vec3,
     pub end: Vec3,
@@ -101,7 +102,7 @@ pub struct TraceResult {
     pub hit_group: HitGroup,
     pub physics_bone: i16,
     pub world_surface_index: u16,
-    pub entity_hit: *mut u8,
+    pub entity_hit: Option<IClientEntity>,
     pub hitbox: i32,
 }
 

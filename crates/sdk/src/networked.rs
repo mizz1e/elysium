@@ -1,5 +1,5 @@
-use crate::{global, ClientClass, PlayerFlag, PropKind, RecvTable, Tick};
-use bevy::prelude::*;
+use crate::{global, ClientClass, PlayerFlag, PropKind, RecvTable, Tick, Time};
+use bevy::prelude::{Resource, Vec3};
 use std::ffi::{CStr, OsStr};
 use std::mem::MaybeUninit;
 use std::time::Duration;
@@ -58,6 +58,7 @@ networked! {
         wearables: i32 = b"m_hMyWearables",
     },
     (BaseCombatWeapon, base_combat_weapon): b"DT_BaseCombatWeapon" {
+        next_primary_attack: Time = b"m_flNextPrimaryAttack",
         owner: i32 = b"m_hOwner",
         magazine: i32 = b"m_iClip1",
     },
