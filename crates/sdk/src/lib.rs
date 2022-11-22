@@ -32,7 +32,7 @@ pub use physics::{IPhysicsSurfaceProps, SurfaceKind};
 pub use plugin::SourcePlugin;
 pub use ptr::Ptr;
 pub use sdl::PollEvent;
-pub use settings::{OnceLoaded, Renderer, SourceSettings};
+pub use settings::{OnceLoaded, Renderer, SourceSettings, WindowMode};
 pub use texture_group::TextureGroup;
 pub use trace::{IEngineTrace, TraceResult};
 pub use view_setup::CViewSetup;

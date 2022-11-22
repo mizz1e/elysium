@@ -2,9 +2,9 @@ use crate::entity::AnimState;
 use crate::{
     config, engine, global, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList,
     IEngineTrace, IMaterialSystem, IPhysicsSurfaceProps, IVEngineClient, IVModelRender, KeyValues,
-    ModuleMap, OnceLoaded, SourceSettings,
+    ModuleMap, OnceLoaded, SourceSettings, WindowMode,
 };
-use bevy::prelude::*;
+use bevy::prelude::{App, Plugin};
 
 /// Source engine bevy plugin.
 pub struct SourcePlugin;
@@ -83,9 +83,13 @@ unsafe fn source_setup() -> Result<(), Error> {
         let settings = app.world.resource::<SourceSettings>();
         let mut args = Args::default();
 
-        args.push("csgo_linux64")
-            .push("-steam")
-            .push(settings.renderer.arg());
+        args.push("csgo_linux64");
+
+        if !settings.no_vac {
+            args.push("-steam");
+        }
+
+        args.push(settings.renderer.arg());
 
         if let Some(ref max_fps) = settings.max_fps {
             args.push("+fps_max").push(max_fps.to_string());
@@ -97,6 +101,16 @@ unsafe fn source_setup() -> Result<(), Error> {
             }
             OnceLoaded::LoadMap(ref map) => {
                 args.push("+map").push(map);
+            }
+            _ => {}
+        }
+
+        match settings.window_mode {
+            WindowMode::Windowed => {
+                args.push("-windowed");
+            }
+            WindowMode::Fullscreen => {
+                args.push("-fullscreen");
             }
             _ => {}
         }

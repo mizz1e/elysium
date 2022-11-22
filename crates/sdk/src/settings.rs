@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::prelude::Resource;
 use std::ffi;
 use std::net::SocketAddrV4;
 use std::path::PathBuf;
@@ -66,15 +66,30 @@ pub enum OnceLoaded {
     LoadMap(PathBuf),
 }
 
+/// Defines the way the window is displayed.
+#[derive(Debug, Default)]
+pub enum WindowMode {
+    #[default]
+    Last,
+    Windowed,
+    Fullscreen,
+}
+
 /// Source engine settings resource.
 #[derive(Debug, Default, Resource)]
 pub struct SourceSettings {
     /// The default maximum FPS (`+fps_max <fps>`).
     pub max_fps: Option<u16>,
 
+    /// Disable Valve Anti-Cheat.
+    pub no_vac: bool,
+
     /// Actions to perform once the engine is loaded.
     pub once_loaded: OnceLoaded,
 
     /// The renderer to use.
     pub renderer: Renderer,
+
+    /// Defines the way the window is displayed.
+    pub window_mode: WindowMode,
 }
