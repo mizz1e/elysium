@@ -1,5 +1,5 @@
 use crate::{
-    global, math, Button, CUserCmd, CViewSetup, Config, EntityFlag, IClientEntity,
+    global, math, trace, Button, CUserCmd, CViewSetup, Config, EntityFlag, IClientEntity,
     IClientEntityList, IEngineTrace, IPhysicsSurfaceProps, IVEngineClient, Mat4x3, Ptr,
     SurfaceKind, Time, TraceResult, WeaponInfo,
 };
@@ -103,6 +103,7 @@ unsafe extern "C" fn create_move(
 
         let (config, engine, entity_list, trace, mut last_yaw) =
             system_state.get_mut(&mut app.world);
+
         let engine_view_angle = engine.view_angle();
         let local_player = IClientEntity::local_player().unwrap();
         let local_flags = local_player.flags();
@@ -202,7 +203,7 @@ unsafe extern "C" fn create_move(
                 command.view_angle = engine_view_angle;
             } else {
                 let now = Time::now();
-                let eye_pos = local_player.eye_pos();
+                let eye_origin = local_player.eye_origin();
                 let mut enemies = Vec::new();
 
                 for i in 1..=64 {
@@ -231,10 +232,10 @@ unsafe extern "C" fn create_move(
 
                     let head_bone = bones[8];
                     let head_origin: Vec3 = head_bone.to_affine().translation.into();
-                    let view_angle = math::calculate_angle(eye_pos, head_origin);
+                    let view_angle = math::calculate_angle(eye_origin, head_origin);
                     let direction = view_angle.normalize_or_zero();
                     let info = weapon.weapon_info();
-                    let data = simulate_shot(eye_pos, direction, info);
+                    let data = simulate_shot(eye_origin, direction, info);
 
                     if config.auto_shoot {
                         command.view_angle = view_angle;
@@ -266,36 +267,6 @@ unsafe extern "C" fn create_move(
     })
 }
 
-const CONTENTS_DEBRIS: u32 = 0x4000000;
-const CONTENTS_GRATE: u32 = 0x8;
-const CONTENTS_HITBOX: u32 = 0x40000000;
-const CONTENTS_MONSTER: u32 = 0x2000000;
-const CONTENTS_MOVEABLE: u32 = 0x4000;
-const CONTENTS_SOLID: u32 = 0x1;
-const CONTENTS_WINDOW: u32 = 0x2;
-
-const MASK_SHOT: u32 = CONTENTS_DEBRIS
-    | CONTENTS_HITBOX
-    | CONTENTS_MONSTER
-    | CONTENTS_MOVEABLE
-    | CONTENTS_SOLID
-    | CONTENTS_WINDOW;
-
-const MASK_SHOT_HULL: u32 = CONTENTS_DEBRIS
-    | CONTENTS_GRATE
-    | CONTENTS_MONSTER
-    | CONTENTS_MOVEABLE
-    | CONTENTS_SOLID
-    | CONTENTS_WINDOW;
-
-const MASK_TO_EXIT: u32 = MASK_SHOT_HULL | CONTENTS_HITBOX;
-
-const SURF_HITBOX: u16 = 0x8000;
-const SURF_LIGHT: u16 = 0x0001;
-const SURF_NODRAW: u16 = 0x0080;
-
-const TO_EXIT_STEP: f32 = 4.0;
-
 #[derive(Debug)]
 pub struct ShotData {
     pub current_damage: f32,
@@ -312,7 +283,7 @@ pub struct ShotData {
     pub trace_length_remaining: f32,
 }
 
-pub fn simulate_shot(eye_pos: Vec3, direction: Vec3, info: WeaponInfo) -> ShotData {
+pub fn simulate_shot(eye_origin: Vec3, direction: Vec3, info: WeaponInfo) -> ShotData {
     let mut data = ShotData {
         current_damage: info.damage,
         //damage_modifier: info.damage_modifier,
@@ -323,7 +294,7 @@ pub fn simulate_shot(eye_pos: Vec3, direction: Vec3, info: WeaponInfo) -> ShotDa
         range: info.range,
         range_modifier: info.range_modifier,
         result: None,
-        start: eye_pos,
+        start: eye_origin,
         trace_length: 0.0,
         trace_length_remaining: 0.0,
     };
@@ -343,7 +314,7 @@ impl ShotData {
                 let result = trace.filtered_trace(
                     self.start,
                     self.start + self.direction,
-                    MASK_SHOT,
+                    trace::MASK_SHOT,
                     &IClientEntity::local_player(),
                 );
 
@@ -373,7 +344,7 @@ impl ShotData {
                 .unwrap()
         });
 
-        self.trace_length = self.result.unwrap().fraction * self.trace_length_remaining;
+        self.trace_length = enter_result.fraction * self.trace_length_remaining;
         self.current_damage = self.range_modifier.powf(self.trace_length * 0.002);
 
         if self.trace_length > self.range || enter_surface.penetration_modifier < 0.1 {
@@ -393,8 +364,8 @@ impl ShotData {
                 .unwrap()
         });
 
-        let is_solid = (enter_result.contents & CONTENTS_SOLID) != 0;
-        let is_light = (enter_result.surface.flags & SURF_LIGHT) != 0;
+        let is_solid = (enter_result.contents & trace::CONTENTS_SOLID) != 0;
+        let is_light = (enter_result.surface.flags & trace::SURF_LIGHT) != 0;
 
         let (damage_lost, mut penetration_modifier) =
             if matches!(enter_surface.kind, SurfaceKind::Grate | SurfaceKind::Glass) {
@@ -440,24 +411,25 @@ impl ShotData {
             let start = self.result.unwrap().end;
 
             while distance <= 90.0 {
-                distance += TO_EXIT_STEP;
+                distance += trace::TO_EXIT_STEP;
 
                 self.end = start + self.direction * distance;
 
-                let contents = trace.contents(self.end, MASK_TO_EXIT);
+                let contents = trace.contents(self.end, trace::MASK_TO_EXIT);
 
-                if (contents & MASK_TO_EXIT) != 0 {
+                if (contents & trace::MASK_TO_EXIT) != 0 {
                     continue;
                 }
 
-                let new_end = self.end - self.direction * TO_EXIT_STEP;
-                let result = trace.trace(self.end, new_end, MASK_TO_EXIT);
+                let new_end = self.end - self.direction * trace::TO_EXIT_STEP;
+                let result = trace.trace(self.end, new_end, trace::MASK_TO_EXIT);
 
                 self.result = Some(result);
 
-                if result.start_solid && (result.surface.flags & SURF_HITBOX) != 0 {
+                if result.start_solid && (result.surface.flags & trace::SURF_HITBOX) != 0 {
                     let entity_hit = result.entity_hit;
-                    let result = trace.filtered_trace(self.end, new_end, MASK_TO_EXIT, &entity_hit);
+                    let result =
+                        trace.filtered_trace(self.end, new_end, trace::MASK_TO_EXIT, &entity_hit);
 
                     self.result = Some(result);
 
@@ -474,12 +446,12 @@ impl ShotData {
                     return true;
                 }
 
-                if (result.surface.flags & SURF_NODRAW) != 0 {
+                if (result.surface.flags & trace::SURF_NODRAW) != 0 {
                     continue;
                 }
 
                 if result.plane.unwrap().normal.dot(self.direction) <= 1.0 {
-                    self.end = self.end - self.direction * result.fraction * TO_EXIT_STEP;
+                    self.end = self.end - self.direction * result.fraction * trace::TO_EXIT_STEP;
 
                     return true;
                 }

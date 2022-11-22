@@ -338,12 +338,25 @@ impl IClientEntity {
         networked::read!(self.ptr.as_ptr(), base_player.tick_base)
     }
 
-    /// The player's eye origin.
-    pub fn eye_pos(&self) -> Vec3 {
-        let method: unsafe extern "C" fn(this: *mut u8) -> Vec3 =
-            unsafe { self.ptr.vtable_entry(348) };
+    /// The player's origin.
+    pub fn origin(&self) -> Vec3 {
+        let method: unsafe extern "C" fn(this: *mut u8) -> *const Vec3 =
+            unsafe { self.ptr.vtable_entry(12) };
 
-        unsafe { (method)(self.ptr.as_ptr()) }
+        unsafe { *(method)(self.ptr.as_ptr()) }
+    }
+
+    /// The player's eye origin.
+    pub fn eye_origin(&self) -> Vec3 {
+        let mut origin = self.origin();
+
+        origin.z += if self.player_flags().contains(PlayerFlag::DUCKING) {
+            46.0
+        } else {
+            64.0
+        };
+
+        origin
     }
 
     /// The player's observing mode.

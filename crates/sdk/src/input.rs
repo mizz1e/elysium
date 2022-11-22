@@ -1,4 +1,4 @@
-use crate::{global, Config, IClientEntity, IVEngineClient, Ptr};
+use crate::{global, math, trace, Config, IClientEntity, IEngineTrace, IVEngineClient, Ptr};
 use bevy::prelude::*;
 use std::ffi;
 
@@ -213,6 +213,7 @@ unsafe extern "C" fn cam_think(this: *mut u8) {
         let config = app.world.resource::<Config>();
         let engine = app.world.resource::<IVEngineClient>();
         let input = app.world.resource::<CInput>();
+        let trace = app.world.resource::<IEngineTrace>();
 
         let mut in_thirdperson = config.thirdperson_enabled & config.in_thirdperson;
 
@@ -242,7 +243,21 @@ unsafe extern "C" fn cam_think(this: *mut u8) {
 
         if in_thirdperson {
             let engine_view_angle = engine.view_angle();
-            let camera_offset = engine_view_angle.truncate().extend(100.0);
+            let mut camera_offset = engine_view_angle.truncate().extend(120.0);
+
+            if let Some(local_player) = IClientEntity::local_player() {
+                // See `CInput::CAM_Think`.
+                let eye_origin = local_player.origin() + Vec3::new(0.0, 0.0, 64.0);
+                let (forward, _right, _up) = math::to_vectors(camera_offset);
+                let result = trace.filtered_trace(
+                    eye_origin,
+                    eye_origin - (forward * camera_offset.z),
+                    trace::MASK_SOLID,
+                    Some(&local_player),
+                );
+
+                camera_offset.z *= result.fraction.clamp(0.0, 1.0);
+            }
 
             input.set_camera_offset(camera_offset);
         }

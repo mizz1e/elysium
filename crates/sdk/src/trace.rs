@@ -5,6 +5,34 @@ use bevy::prelude::*;
 use std::mem::MaybeUninit;
 use std::ptr;
 
+pub const CONTENTS_DEBRIS: u32 = 0x4000000;
+pub const CONTENTS_GRATE: u32 = 0x8;
+pub const CONTENTS_HITBOX: u32 = 0x40000000;
+pub const CONTENTS_MONSTER: u32 = 0x2000000;
+pub const CONTENTS_MOVEABLE: u32 = 0x4000;
+pub const CONTENTS_SOLID: u32 = 0x1;
+pub const CONTENTS_WINDOW: u32 = 0x2;
+
+pub const MASK_SOLID: u32 =
+    CONTENTS_GRATE | CONTENTS_MONSTER | CONTENTS_MOVEABLE | CONTENTS_SOLID | CONTENTS_WINDOW;
+
+pub const MASK_SHOT: u32 = CONTENTS_DEBRIS
+    | CONTENTS_HITBOX
+    | CONTENTS_MONSTER
+    | CONTENTS_MOVEABLE
+    | CONTENTS_SOLID
+    | CONTENTS_WINDOW;
+
+pub const MASK_SHOT_HULL: u32 = MASK_SOLID | CONTENTS_DEBRIS;
+
+pub const MASK_TO_EXIT: u32 = MASK_SHOT_HULL | CONTENTS_HITBOX;
+
+pub const SURF_HITBOX: u16 = 0x8000;
+pub const SURF_LIGHT: u16 = 0x0001;
+pub const SURF_NODRAW: u16 = 0x0080;
+
+pub const TO_EXIT_STEP: f32 = 4.0;
+
 /// `https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/public/engine/IEngineTrace.h`.
 #[derive(Resource)]
 pub struct IEngineTrace {
@@ -206,7 +234,7 @@ mod internal {
     ) -> bool {
         debug_assert!(!this.is_null());
 
-        (*this).skip.contains(&entity)
+        !(*this).skip.contains(&entity)
     }
 
     unsafe extern "C" fn trace_kind(this: *const ITraceFilter) -> ffi::c_int {

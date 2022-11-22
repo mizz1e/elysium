@@ -82,6 +82,7 @@ networked! {
         spectator_target: i32 = b"m_hObserverTarget",
         tick_base: Tick = b"m_nTickBase",
         velocity: Vec3 = b"m_vecVelocity[0]",
+        eye_offset: Vec3 = b"m_vecViewOffset[0]",
     },
     (CSPlayer, cs_player): b"DT_CSPlayer" {
         aim_punch: Vec3 = b"m_aimPunchAngle",
