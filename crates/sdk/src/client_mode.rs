@@ -197,7 +197,11 @@ unsafe extern "C" fn create_move(
             let next_primary_attack = weapon.next_primary_attack().0;
             let server_time = local_player.tick_base().to_time().0;
 
-            if server_time < next_primary_attack {
+            let weapon_cant_fire = server_time < next_primary_attack;
+            let switching_weapons = command.weapon_select != 0;
+            let no_ammo = weapon.remaining_ammo() == 0;
+
+            if weapon_cant_fire || switching_weapons || no_ammo {
                 command.buttons.remove(Button::ATTACK);
             } else if command.buttons.contains(Button::ATTACK) {
                 command.view_angle = engine_view_angle;
@@ -245,11 +249,6 @@ unsafe extern "C" fn create_move(
                     break;
                 }
             }
-        }
-
-        // https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/client/in_main.cpp#L1166
-        if command.weapon_select != 0 {
-            command.buttons.remove(Button::ATTACK);
         }
 
         command.view_angle -= local_player.aim_punch();

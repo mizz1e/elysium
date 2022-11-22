@@ -182,13 +182,13 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
             let material_system = app.world.resource::<IMaterialSystem>();
             let keyvalues = KeyValues::from_str(
-                "UnlitGeneric",
-                r#"
+                "VertexLitGeneric",
+                "
                     $additive 1
                     $envmap models/effects/cube_white
                     $envmapfresnel 1
                     $alpha 0.8
-                "#,
+                ",
             )
             .unwrap();
 

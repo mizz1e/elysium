@@ -60,7 +60,7 @@ networked! {
     (BaseCombatWeapon, base_combat_weapon): b"DT_BaseCombatWeapon" {
         next_primary_attack: Time = b"m_flNextPrimaryAttack",
         owner: i32 = b"m_hOwner",
-        magazine: i32 = b"m_iClip1",
+        remaining_ammo: i32 = b"m_iClip1",
     },
     (BaseEntity, base_entity): b"DT_BaseEntity" {
         name: Option<Box<OsStr>> = b"m_iName",

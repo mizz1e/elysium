@@ -1,11 +1,10 @@
-use crate::{KeyValues, Ptr, TextureGroup};
+use crate::{Color, KeyValues, Ptr, TextureGroup};
 use bevy::prelude::*;
-use iced_native::Color;
 use std::ffi;
 use std::ffi::{CStr, CString, OsStr};
 use std::os::unix::ffi::OsStrExt;
 
-const ENV_TINT_MAP: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"$envtintmap\0") };
+const ENV_MAP_TINT: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"$envmaptint\0") };
 
 #[derive(Resource)]
 pub struct IMaterialSystem {
@@ -116,7 +115,7 @@ impl IMaterial {
             name: *const ffi::c_char,
             found: *mut bool,
             complain: *const bool,
-        ) -> *mut u8 = unsafe { self.ptr.vtable_entry(1) };
+        ) -> *mut u8 = unsafe { self.ptr.vtable_entry(11) };
 
         let mut found = false;
 
@@ -131,33 +130,44 @@ impl IMaterial {
         found.then(|| IMaterialVar { ptr })
     }
 
-    pub fn color_modulate(&self, color: Color) {
-        let Color { r, g, b, a } = color;
-
-        let method: unsafe extern "C" fn(this: *mut u8, a: f32) =
+    fn alpha_modulate(&self, alpha: f32) {
+        let method: unsafe extern "C" fn(this: *mut u8, alpha: f32) =
             unsafe { self.ptr.vtable_entry(27) };
 
         unsafe {
-            (method)(self.ptr.as_ptr(), a);
-        }
-
-        let method: unsafe extern "C" fn(this: *mut u8, r: f32, g: f32, b: f32) =
-            unsafe { self.ptr.vtable_entry(28) };
-
-        unsafe {
-            (method)(self.ptr.as_ptr(), r, g, b);
+            (method)(self.ptr.as_ptr(), alpha);
         }
     }
 
-    pub fn set_tint(&self, color: Color) -> bool {
-        if let Some(var) = self.var(ENV_TINT_MAP) {
-            let Color { r, g, b, .. } = color;
+    fn color_modulate(&self, red: f32, green: f32, blue: f32) {
+        let method: unsafe extern "C" fn(this: *mut u8, red: f32, green: f32, blue: f32) =
+            unsafe { self.ptr.vtable_entry(28) };
 
-            var.set_vec3(Vec3::new(r, g, b));
+        unsafe {
+            (method)(self.ptr.as_ptr(), 1.0, 0.0, 0.0);
+        }
+    }
 
-            true
-        } else {
-            false
+    pub fn set_color(&self, color: Color) {
+        let Color {
+            red,
+            green,
+            blue,
+            alpha,
+        } = color;
+
+        self.color_modulate(red, green, blue);
+        self.alpha_modulate(alpha);
+        self.set_tint(color);
+    }
+
+    pub fn set_tint(&self, color: Color) {
+        let Color {
+            red, green, blue, ..
+        } = color;
+
+        if let Some(var) = self.var(ENV_MAP_TINT) {
+            var.set_vec3(Vec3::new(red, green, blue));
         }
     }
 

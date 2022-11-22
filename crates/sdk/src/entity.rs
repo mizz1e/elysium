@@ -535,6 +535,10 @@ impl IClientEntity {
 
         flags
     }
+
+    pub fn remaining_ammo(&self) -> u32 {
+        networked::read!(self.ptr.as_ptr(), base_combat_weapon.remaining_ammo) as u32
+    }
 }
 
 #[derive(Resource)]
