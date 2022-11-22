@@ -1,4 +1,4 @@
-use crate::{global, intrinsics, pattern, EntityFlag, IClientEntity, INetChannel, Ptr};
+use crate::{global, intrinsics, pattern, IClientEntity, INetChannel, Ptr};
 use bevy::prelude::*;
 use std::ffi::{CStr, OsStr};
 use std::os::unix::ffi::OsStrExt;

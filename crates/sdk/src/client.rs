@@ -1,7 +1,7 @@
 use crate::{
     convar, gl, global, material, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd,
-    ClientClass, Config, IClientEntityList, IClientMode, ICvar, IMaterialSystem,
-    IPhysicsSurfaceProps, IVEngineClient, KeyValues, ModuleMap, Ptr,
+    ClientClass, Config, IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps,
+    IVEngineClient, KeyValues, ModuleMap, Ptr,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
@@ -208,13 +208,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             Res<Config>,
             Res<IBaseClientDLL>,
             Res<IVEngineClient>,
-            Res<IClientEntityList>,
             Res<CInput>,
         )> = SystemState::new(&mut app.world);
 
-        let (config, client, engine, entity_list, input) = system_state.get(&app.world);
+        let (config, client, engine, input) = system_state.get(&app.world);
         let mut in_thirdperson = config.thirdperson_enabled & config.in_thirdperson;
-        let local_player_index = engine.local_player_index();
         let view_angle = engine.view_angle();
 
         match frame {
@@ -224,44 +222,47 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 sv_cheats.write(true);
             }
             FRAME_RENDER_START => {
-                in_thirdperson &= !entity_list
-                    .get(local_player_index)
-                    .map(|player| player.observer_mode().breaks_thirdperson() | player.is_scoped())
-                    .unwrap_or_default();
-
-                input.set_in_thirdperson(in_thirdperson);
-
                 let panorama_disable_blur = app.world.resource::<convar::PanoramaDisableBlur>();
 
                 panorama_disable_blur.write(true);
 
-                /*tracing::trace!("{:?}", engine.level_name());
+                // for the eventual UI replacement
+                //
+                // tracing::trace!("{:?}", engine.level_name());
+                //
+                // if let Some(channel) = engine.net_channel() {
+                //     let info = channel.info();
+                //
+                //     tracing::trace!("{info:?}");
+                // }
 
-                if let Some(channel) = engine.net_channel() {
-                    let info = channel.info();
+                if let Some(local_player) = IClientEntity::local_player() {
+                    in_thirdperson &= !(local_player.observer_mode().breaks_thirdperson()
+                        | local_player.is_scoped());
 
-                    tracing::trace!("{info:?}");
-                }*/
-
-                if let Some(player) = entity_list.get(local_player_index) {
-                    app.insert_resource(OriginalViewAngle(player.view_angle()));
+                    input.set_in_thirdperson(in_thirdperson);
+                    app.insert_resource(OriginalViewAngle(local_player.view_angle()));
 
                     if in_thirdperson {
                         if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
-                            player.set_view_angle(last_command.view_angle);
+                            local_player.set_view_angle(last_command.view_angle);
                         }
                     } else {
-                        player.set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0));
+                        let aim_punch = local_player.aim_punch();
+
+                        local_player
+                            .set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0) - aim_punch);
                     }
+                } else {
+                    input.set_in_thirdperson(false);
                 }
 
                 app.update();
             }
             FRAME_RENDER_END => {
                 if let Some(original_view_angle) = app.world.get_resource::<OriginalViewAngle>() {
-                    if let Some(player) = entity_list.get(local_player_index) {
-                        // restore some other way, this messes with thirdperson switching
-                        //player.set_view_angle(original_view_angle.0);
+                    if let Some(local_player) = IClientEntity::local_player() {
+                        local_player.set_view_angle(original_view_angle.0);
                     }
                 }
             }
