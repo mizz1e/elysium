@@ -58,8 +58,10 @@ impl IBaseClientDLL {
                 .unwrap_or_else(|| panic!("unable to find CInput"));
 
             let ptr = Ptr::new("CInput", ptr).unwrap_or_else(|| panic!("unable to find CInput"));
+            let cinput = CInput { ptr };
 
-            app.insert_resource(CInput { ptr });
+            cinput.setup();
+            app.insert_resource(cinput);
 
             networked::setup(self.all_classes());
         });
@@ -170,7 +172,6 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             let ffa = convar::Ffa(cvar.find_var("mp_teammates_are_enemies").unwrap());
             let panorama_disable_blur =
                 convar::PanoramaDisableBlur(cvar.find_var("@panorama_disable_blur").unwrap());
-            let sv_cheats = convar::SvCheats(cvar.find_var("sv_cheats").unwrap());
             let recoil_scale = convar::RecoilScale(cvar.find_var("weapon_recoil_scale").unwrap());
 
             app.insert_resource(cvar);
@@ -178,7 +179,6 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(ffa);
             app.insert_resource(panorama_disable_blur);
             app.insert_resource(recoil_scale);
-            app.insert_resource(sv_cheats);
 
             let material_system = app.world.resource::<IMaterialSystem>();
             let keyvalues = KeyValues::from_str(
@@ -212,15 +212,9 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
         )> = SystemState::new(&mut app.world);
 
         let (config, client, engine, input) = system_state.get(&app.world);
-        let mut in_thirdperson = config.thirdperson_enabled & config.in_thirdperson;
         let view_angle = engine.view_angle();
 
         match frame {
-            FRAME_NET_UPDATE_END => {
-                let sv_cheats = app.world.resource::<convar::SvCheats>();
-
-                sv_cheats.write(true);
-            }
             FRAME_RENDER_START => {
                 let panorama_disable_blur = app.world.resource::<convar::PanoramaDisableBlur>();
 
@@ -237,10 +231,8 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 // }
 
                 if let Some(local_player) = IClientEntity::local_player() {
-                    in_thirdperson &= !(local_player.observer_mode().breaks_thirdperson()
-                        | local_player.is_scoped());
+                    let in_thirdperson = input.in_thirdperson();
 
-                    input.set_in_thirdperson(in_thirdperson);
                     app.insert_resource(OriginalViewAngle(local_player.view_angle()));
 
                     if in_thirdperson {
@@ -253,8 +245,6 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                         local_player
                             .set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0) - aim_punch);
                     }
-                } else {
-                    input.set_in_thirdperson(false);
                 }
 
                 app.update();

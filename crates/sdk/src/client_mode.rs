@@ -48,6 +48,11 @@ unsafe extern "C" fn override_view(this: *mut u8, setup: *mut CViewSetup) {
     let method = global::with_app(|app| {
         let engine = app.world.resource::<IVEngineClient>();
 
+        let is_scoped = IClientEntity::local_player()
+            .map(|local_player| local_player.is_scoped())
+            .unwrap_or_default();
+
+        setup.fov = if is_scoped { 70.0 } else { 110.0 };
         setup.view_angle = engine.view_angle();
 
         app.world.resource::<OverrideView>().0

@@ -37,9 +37,6 @@ pub struct PanoramaDisableBlur(pub ConVar<bool>);
 #[derive(Deref, Resource)]
 pub struct RecoilScale(pub ConVar<f32>);
 
-#[derive(Deref, Resource)]
-pub struct SvCheats(pub ConVar<bool>);
-
 #[derive(Resource)]
 pub struct ConVar<T> {
     pub(crate) ptr: Ptr,

@@ -1,4 +1,4 @@
-use crate::Ptr;
+use crate::{global, Config, IClientEntity, IVEngineClient, Ptr};
 use bevy::prelude::*;
 use std::ffi;
 
@@ -137,11 +137,36 @@ unsafe impl Send for CUserCmd {}
 unsafe impl Sync for CUserCmd {}
 
 #[derive(Resource)]
+pub struct CamThink(pub(crate) unsafe extern "C" fn(this: *mut u8));
+
+#[derive(Resource)]
+pub struct CamToFirstPerson(pub(crate) unsafe extern "C" fn(this: *mut u8));
+
+#[derive(Resource)]
+pub struct CamToThirdPerson(pub(crate) unsafe extern "C" fn(this: *mut u8));
+
+#[derive(Resource)]
 pub struct CInput {
     pub(crate) ptr: Ptr,
 }
 
 impl CInput {
+    pub(crate) unsafe fn setup(&self) {
+        tracing::trace!("setup CInput");
+
+        global::with_app_mut(|app| {
+            app.insert_resource(CamThink(self.ptr.vtable_replace(31, cam_think)));
+
+            app.insert_resource(CamToThirdPerson(
+                self.ptr.vtable_replace(35, cam_to_third_person),
+            ));
+
+            app.insert_resource(CamToFirstPerson(
+                self.ptr.vtable_replace(36, cam_to_first_person),
+            ));
+        });
+    }
+
     unsafe fn internal(&self) -> &mut internal::CInput {
         &mut *self.ptr.as_ptr().cast::<internal::CInput>()
     }
@@ -155,9 +180,91 @@ impl CInput {
             self.internal().in_thirdperson = enabled;
         }
     }
+
+    pub fn camera_offset(&self) -> Vec3 {
+        unsafe { self.internal().camera_offset }
+    }
+
+    pub fn set_camera_offset(&self, offset: Vec3) {
+        unsafe {
+            self.internal().camera_offset = offset;
+        }
+    }
+
+    fn to_firstperson(&self) {
+        let method = global::with_resource::<CamToFirstPerson, _>(|method| method.0);
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+
+    fn to_thirdperson(&self) {
+        let method = global::with_resource::<CamToThirdPerson, _>(|method| method.0);
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
+}
+
+unsafe extern "C" fn cam_think(this: *mut u8) {
+    debug_assert!(!this.is_null());
+
+    let method = global::with_resource::<CamThink, _>(|method| method.0);
+
+    global::with_app(|app| {
+        let config = app.world.resource::<Config>();
+        let engine = app.world.resource::<IVEngineClient>();
+        let input = app.world.resource::<CInput>();
+
+        let mut in_thirdperson = config.thirdperson_enabled & config.in_thirdperson;
+
+        in_thirdperson &= IClientEntity::local_player()
+            .map(|local_player| {
+                !(local_player.observer_mode().breaks_thirdperson() | local_player.is_scoped())
+            })
+            .unwrap_or_default();
+
+        // Only update if a difference occured.
+        if in_thirdperson != input.in_thirdperson() {
+            // Full control here as the CAM_To* methods are hooked, and do nothing.
+            if in_thirdperson {
+                // Camera view angle isn't updated if thirdperson is already enabled.
+                //
+                // See `CInput::CAM_ToThirdPerson` in `game/client/in_camera.cpp`.
+                input.set_in_thirdperson(false);
+                input.to_thirdperson();
+            } else {
+                // Doesn't properly update if already in firstperson.
+                //
+                // See `CInput::CAM_ToThirdPerson` in `game/client/in_camera.cpp`.
+                input.set_in_thirdperson(true);
+                input.to_firstperson();
+            }
+        }
+
+        if in_thirdperson {
+            let engine_view_angle = engine.view_angle();
+            let camera_offset = engine_view_angle.truncate().extend(100.0);
+
+            input.set_camera_offset(camera_offset);
+        }
+    });
+
+    (method)(this)
+}
+
+unsafe extern "C" fn cam_to_first_person(this: *mut u8) {
+    debug_assert!(!this.is_null());
+
+    return;
+}
+
+unsafe extern "C" fn cam_to_third_person(this: *mut u8) {
+    debug_assert!(!this.is_null());
+
+    return;
 }
 
 mod internal {
+    use bevy::math::Vec3;
     use std::mem::MaybeUninit;
 
     #[repr(C)]
@@ -166,5 +273,7 @@ mod internal {
         pub mouse_active: bool,
         _pad1: MaybeUninit<[u8; 162]>,
         pub in_thirdperson: bool,
+        pub is_camera_moving_with_mouse: bool,
+        pub camera_offset: Vec3,
     }
 }
