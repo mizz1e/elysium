@@ -1,6 +1,6 @@
 use crate::entity::AnimState;
 use crate::{
-    config, engine, global, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList,
+    config, engine, global, sdl, Args, Config, Error, GlLoader, IBaseClientDLL, IClientEntityList,
     IEngineTrace, IMaterialSystem, IPhysicsSurfaceProps, IVEngineClient, IVModelRender, KeyValues,
     ModuleMap, OnceLoaded, SourceSettings, WindowMode,
 };
@@ -13,6 +13,7 @@ impl Plugin for SourcePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SourceSettings>()
             .init_resource::<ModuleMap>()
+            .init_resource::<sdl::KeyCodeState>()
             .set_runner(source_runner);
 
         if !app.world.contains_resource::<Config>() {

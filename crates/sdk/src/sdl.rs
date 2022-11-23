@@ -2,12 +2,13 @@ use crate::{global, iced, Config};
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
 use iced_glow::Viewport;
-use iced_native::keyboard::Event::KeyPressed;
+use iced_native::keyboard::Event::{KeyPressed, KeyReleased};
 use iced_native::keyboard::KeyCode;
 use iced_native::mouse::Button::Other;
 use iced_native::mouse::Event::ButtonPressed;
 use iced_native::{mouse, Event, Point, Size};
 use sdl2_sys::{SDL_Event, SDL_GL_SwapWindow, SDL_GetWindowSize, SDL_PollEvent, SDL_Window};
+use std::collections::HashSet;
 use std::{ffi, ptr};
 
 #[derive(Resource)]
@@ -35,6 +36,9 @@ pub unsafe fn setup() -> (PollEvent, SwapWindow) {
     (poll_event, swap_window)
 }
 
+#[derive(Default, Deref, DerefMut, Resource)]
+pub struct KeyCodeState(pub HashSet<KeyCode>);
+
 unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
     let method = global::with_app(|app| app.world.resource::<PollEvent>().0);
     let result = (method)(event);
@@ -45,10 +49,25 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
                 ResMut<Config>,
                 ResMut<CursorPosition>,
                 ResMut<iced::IcedProgram<iced::Menu>>,
+                ResMut<KeyCodeState>,
             )> = SystemState::new(&mut app.world);
 
-            let (mut config, mut cursor_position, mut program) =
+            let (mut config, mut cursor_position, mut program, mut key_code_state) =
                 system_state.get_mut(&mut app.world);
+
+            match &event {
+                Event::Keyboard(KeyPressed { key_code, .. }) => {
+                    if !key_code_state.insert(*key_code) {
+                        return;
+                    }
+                }
+                Event::Keyboard(KeyReleased { key_code, .. }) => {
+                    if !key_code_state.remove(key_code) {
+                        return;
+                    }
+                }
+                _ => {}
+            }
 
             match &event {
                 // insert
