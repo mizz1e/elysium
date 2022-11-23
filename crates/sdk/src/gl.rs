@@ -12,12 +12,12 @@ pub struct GlLoader {
 
 impl GlLoader {
     pub unsafe fn setup() -> Self {
-        tracing::trace!("obtain glXGetProcAddress");
+        tracing::trace!("obtain eglGetProcAddress");
 
-        let library = libloading::Library::new("libGLX.so").unwrap();
-        let loader = *library.get(b"glXGetProcAddress\0").unwrap();
+        let library = libloading::Library::new("libEGL.so").unwrap();
+        let loader = *library.get(b"eglGetProcAddress\0").unwrap();
 
-        tracing::trace!("glXGetProcAddress = {loader:?}");
+        tracing::trace!("eglGetProcAddress = {loader:?}");
 
         Self { library, loader }
     }
