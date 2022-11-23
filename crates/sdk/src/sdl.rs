@@ -73,6 +73,8 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
                 _ => {}
             };
 
+            tracing::trace!("got event: {event:?}");
+
             program.queue_event(event);
         });
     });

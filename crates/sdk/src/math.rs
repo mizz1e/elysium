@@ -102,11 +102,6 @@ pub fn calculate_direction(movement: Vec3, forward: Vec3, right: Vec3) -> Vec3 {
 /// Calculate movement vectors from the current view angle and a wish view angle.
 #[inline]
 pub fn fix_movement(mut movement: Vec3, angle: Vec3, wish_angle: Vec3) -> Vec3 {
-    //if movement.length() < 1.1 {
-    // Nothing to fix.
-    //return movement;
-    //}
-
     let (mut forward, mut right, _up) = to_vectors(normalize_angle(angle));
     let (mut wish_forward, mut wish_right, _wish_up) = to_vectors(normalize_angle(wish_angle));
 
