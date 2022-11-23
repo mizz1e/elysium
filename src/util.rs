@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{env, fs};
 
-const SANE_LINKER_PATH: &str = "SANE_LINKER_PATH";
+const HAS_CSGO_LINKER_PATH: &str = "HAS_CSGO_LINKER_PATH";
+const HAS_STEAM_LINKER_PATH: &str = "HAS_STEAM_LINKER_PATH";
 
 /// Determine the location of Steam, and read it's libraryfolders config.
 pub fn steam_csgo_dirs() -> Option<(PathBuf, PathBuf)> {
@@ -92,7 +93,7 @@ pub fn check_linker_path() -> Result<(), Error> {
     const STEAM_RT_PINNED: &str = "ubuntu12_32/steam-runtime/pinned_libs_64";
     const STEAM_RT_PANORAMA: &str = "ubuntu12_32/panorama";
 
-    if env::var_os(SANE_LINKER_PATH).is_some() {
+    if env::var_os(HAS_CSGO_LINKER_PATH).is_some() {
         return Ok(());
     }
 
@@ -101,13 +102,19 @@ pub fn check_linker_path() -> Result<(), Error> {
     let mut linker_path = var_path(LD_LIBRARY_PATH);
 
     tracing::info!("found csgo at {csgo_dir:?}");
+    tracing::info!("appending csgo linker path");
 
     linker_path.insert(0, csgo_dir.join(BIN_LINUX64));
     linker_path.insert(0, csgo_dir.join(CSGO_BIN_LINUX64));
-    linker_path.insert(0, steam_dir.join(STEAM_RT_LIB));
-    linker_path.insert(0, steam_dir.join(STEAM_RT_USR_LIB));
-    linker_path.insert(0, steam_dir.join(STEAM_RT_PINNED));
-    linker_path.insert(0, steam_dir.join(STEAM_RT_PANORAMA));
+
+    if !env::var_os(HAS_STEAM_LINKER_PATH).is_some() {
+        tracing::info!("appending steamrt linker path");
+
+        linker_path.insert(0, steam_dir.join(STEAM_RT_LIB));
+        linker_path.insert(0, steam_dir.join(STEAM_RT_USR_LIB));
+        linker_path.insert(0, steam_dir.join(STEAM_RT_PINNED));
+        linker_path.insert(0, steam_dir.join(STEAM_RT_PANORAMA));
+    }
 
     let linker_path = env::join_paths(linker_path).unwrap_or_default();
 
@@ -120,7 +127,8 @@ pub fn check_linker_path() -> Result<(), Error> {
     let error = Command::new(current_exe)
         .args(env::args_os().skip(1))
         .current_dir(csgo_dir)
-        .env(SANE_LINKER_PATH, "sane")
+        .env(HAS_CSGO_LINKER_PATH, "elysium")
+        .env(HAS_STEAM_LINKER_PATH, "elysium")
         .env(LD_LIBRARY_PATH, linker_path)
         .exec();
 
