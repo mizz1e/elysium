@@ -36,9 +36,6 @@ pub unsafe fn setup() -> (PollEvent, SwapWindow) {
     (poll_event, swap_window)
 }
 
-#[derive(Default, Deref, DerefMut, Resource)]
-pub struct KeyCodeState(pub HashSet<KeyCode>);
-
 unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
     let method = global::with_app(|app| app.world.resource::<PollEvent>().0);
     let result = (method)(event);
@@ -49,25 +46,10 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
                 ResMut<Config>,
                 ResMut<CursorPosition>,
                 ResMut<iced::IcedProgram<iced::Menu>>,
-                ResMut<KeyCodeState>,
             )> = SystemState::new(&mut app.world);
 
-            let (mut config, mut cursor_position, mut program, mut key_code_state) =
+            let (mut config, mut cursor_position, mut program) =
                 system_state.get_mut(&mut app.world);
-
-            match &event {
-                Event::Keyboard(KeyPressed { key_code, .. }) => {
-                    if !key_code_state.insert(*key_code) {
-                        return;
-                    }
-                }
-                Event::Keyboard(KeyReleased { key_code, .. }) => {
-                    if !key_code_state.remove(key_code) {
-                        return;
-                    }
-                }
-                _ => {}
-            }
 
             match &event {
                 // insert

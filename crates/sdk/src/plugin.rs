@@ -13,7 +13,6 @@ impl Plugin for SourcePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SourceSettings>()
             .init_resource::<ModuleMap>()
-            .init_resource::<sdl::KeyCodeState>()
             .set_runner(source_runner);
 
         if !app.world.contains_resource::<Config>() {

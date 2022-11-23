@@ -117,6 +117,10 @@ pub fn map_key_pressed<F>(event: SDL_KeyboardEvent, mut f: F) -> Option<()>
 where
     F: FnMut(Event),
 {
+    if event.repeat != 0 {
+        return Some(());
+    }
+
     let key_code = map_key_code(event.keysym.scancode)?;
 
     f(Event::KeyPressed {
