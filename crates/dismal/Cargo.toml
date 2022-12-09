@@ -1,0 +1,44 @@
+[package]
+name = "dismal"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies.cpp_demangle]
+version = "0.4"
+
+[dependencies.goblin]
+default-features = false
+features = ["elf32", "elf64", "endian_fd", "std"]
+version = "0.6"
+
+[dependencies.libc]
+features = ["extra_traits"]
+version = "0.2"
+
+[dependencies.libloading]
+version = "0.7"
+
+[dependencies.iced-x86]
+default-features = false
+features = ["decoder", "encoder", "instr_info", "intel", "std"]
+version = "1.17"
+
+[dependencies.once_cell]
+version = "1.16"
+
+[dependencies.regex]
+version = "1.6"
+
+[dependencies.rustc-demangle]
+version = "0.1"
+
+[dependencies.thiserror]
+version = "1.0"
+
+[dependencies.tracing]
+default-features = false
+features = ["std"]
+version = "0.1"
+
+[dependencies.yansi]
+version = "0.5"

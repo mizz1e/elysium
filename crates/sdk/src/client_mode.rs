@@ -34,7 +34,7 @@ impl IClientMode {
 
             // rustc apparently is a little too overzealous with it's optimization, and
             // deletes this hook if the result is unused?
-            app.insert_resource(CreateMove(self.ptr.vtable_replace(25, create_move)));
+            //app.insert_resource(CreateMove(self.ptr.vtable_replace(25, create_move)));
         });
     }
 }
@@ -52,8 +52,9 @@ unsafe extern "C" fn override_view(this: *mut u8, setup: *mut CViewSetup) {
             .map(|local_player| local_player.is_scoped())
             .unwrap_or_default();
 
-        setup.fov = if is_scoped { 70.0 } else { 110.0 };
-        setup.view_angle = engine.view_angle();
+        //setup.fov = if is_scoped { 70.0 } else { 110.0 };
+        //setup.view_angle = engine.view_angle();
+        setup.view_angle.z = 0.0;
 
         app.world.resource::<OverrideView>().0
     });

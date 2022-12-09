@@ -21,9 +21,9 @@ pub struct IVModelRender {
 impl IVModelRender {
     pub(crate) unsafe fn setup(&self) {
         global::with_app_mut(|app| {
-            app.insert_resource(DrawModelExecute(
-                self.ptr.vtable_replace(21, draw_model_execute),
-            ));
+            //app.insert_resource(DrawModelExecute(
+            //    self.ptr.vtable_replace(21, draw_model_execute),
+            //));
         });
     }
 

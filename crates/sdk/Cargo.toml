@@ -10,8 +10,14 @@ version = "0.9"
 [dependencies.bitflags]
 version = "1.3"
 
+[dependencies.dismal]
+path = "../dismal"
+
 [dependencies.dirs]
 version = "4.0"
+
+[dependencies.csgo-friendcode]
+git = "https://github.com/not-wlan/csgo-friendcode"
 
 [dependencies.elysium-input]
 path = "../input"
@@ -64,6 +70,7 @@ version = "1.0"
 
 [dependencies.sdl2-sys]
 version = "0.35"
+
 [dependencies.thiserror]
 version = "1.0"
 
@@ -74,3 +81,6 @@ version = "0.1"
 
 [dependencies.ubyte]
 version = "0.10"
+
+[dependencies.yeslogic-fontconfig-sys]
+version = "4.0"
