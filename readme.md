@@ -4,6 +4,9 @@
 
 ### how use!?!??!
 
+install libSDL2
+install rust from [rustup.rs](https://rustup.rs).
+
 in the directory of where you cloned this:
 
 ```bash
