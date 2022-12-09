@@ -2,6 +2,8 @@
 
 <p align="center"><img src="assets/unknown.png" width="500" /></p>
 
+still very wip, send help
+
 ### how use!?!??!
 
 install libSDL2, libfontconfig
