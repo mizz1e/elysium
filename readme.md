@@ -4,7 +4,8 @@
 
 ### how use!?!??!
 
-install libSDL2
+install libSDL2, libfontconfig
+
 install rust from [rustup.rs](https://rustup.rs) **requires nightly**
 
 in the directory of where you cloned this:
