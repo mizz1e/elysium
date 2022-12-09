@@ -6,7 +6,7 @@ use iced_native::keyboard::Event::{KeyPressed, KeyReleased};
 use iced_native::keyboard::KeyCode;
 use iced_native::mouse::Button::Other;
 use iced_native::mouse::Event::ButtonPressed;
-use iced_native::{mouse, Event, Point, Size};
+use iced_native::{mouse, window, Event, Point, Size};
 use sdl2_sys::{SDL_Event, SDL_GL_SwapWindow, SDL_GetWindowSize, SDL_PollEvent, SDL_Window};
 use std::collections::HashSet;
 use std::{ffi, ptr};
@@ -48,8 +48,7 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
                 ResMut<iced::IcedProgram<iced::Menu>>,
             )> = SystemState::new(&mut app.world);
 
-            let (mut config, mut cursor_position, mut program) =
-                system_state.get_mut(&mut app.world);
+            let (mut config, mut cursor_position, mut menu) = system_state.get_mut(&mut app.world);
 
             match &event {
                 // insert
@@ -74,7 +73,9 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
                 _ => {}
             };
 
-            program.queue_event(event);
+            if config.menu_open {
+                menu.queue_event(event);
+            }
         });
     });
 
@@ -87,16 +88,28 @@ unsafe extern "C" fn swap_window(window: *mut SDL_Window) {
 
     SDL_GetWindowSize(window, &mut width, &mut height);
 
-    global::with_app_mut(move |app| {
-        let viewport = Viewport::with_physical_size(
-            Size {
-                width: width as u32,
-                height: height as u32,
-            },
-            1.0,
-        );
+    let width = width as u32;
+    let height = height as u32;
 
-        app.insert_resource(WindowViewport(viewport));
+    global::with_app_mut(move |app| {
+        let new_viewport = Viewport::with_physical_size(Size { width, height }, 1.0);
+
+        if let Some(viewport) = app.world.get_resource::<WindowViewport>() {
+            if viewport.0.physical_size() != new_viewport.physical_size() {
+                let mut system_state: SystemState<(
+                    ResMut<iced::IcedProgram<iced::Hud>>,
+                    ResMut<iced::IcedProgram<iced::Menu>>,
+                )> = SystemState::new(&mut app.world);
+
+                let (mut hud, mut menu) = system_state.get_mut(&mut app.world);
+                let event = Event::Window(window::Event::Resized { width, height });
+
+                hud.queue_event(event.clone());
+                menu.queue_event(event);
+            }
+        }
+
+        app.insert_resource(WindowViewport(new_viewport));
 
         iced::render();
     });

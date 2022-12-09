@@ -50,9 +50,9 @@ where
     }
 
     pub fn update(&mut self, viewport: Viewport, cursor_position: Point) {
-        if !mem::take(&mut self.damaged) {
+        /*if !mem::take(&mut self.damaged) {
             return;
-        }
+        }*/
 
         let theme = Theme::Dark;
         let style = renderer::Style {

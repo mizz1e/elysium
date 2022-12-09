@@ -4,14 +4,29 @@ use bevy::prelude::*;
 use iced_glow::glow;
 use iced_glow::glow::HasContext;
 
+pub use hud::Hud;
 pub use menu::Menu;
 pub use program::IcedProgram;
 
+mod hud;
 mod menu;
 mod program;
 
 pub fn render() {
     unsafe {
+        global::with_app_mut(|app| {
+            let context = app.world.resource::<gl::GlContext>();
+            let context = &context.0;
+            let viewport = app.world.resource::<sdl::WindowViewport>();
+            let viewport = viewport.0.clone();
+
+            if !app.world.contains_resource::<IcedProgram<Hud>>() {
+                let program = IcedProgram::from_context(context, viewport, Hud);
+
+                app.insert_resource(program);
+            }
+        });
+
         global::with_app_mut(|app| {
             let context = app.world.resource::<gl::GlContext>();
             let context = &context.0;
@@ -31,10 +46,11 @@ pub fn render() {
                 Res<gl::GlContext>,
                 Res<sdl::WindowViewport>,
                 Option<Res<sdl::CursorPosition>>,
+                ResMut<IcedProgram<Hud>>,
                 ResMut<IcedProgram<Menu>>,
             )> = SystemState::new(&mut app.world);
 
-            let (config, context, viewport, cursor_position, mut program) =
+            let (config, context, viewport, cursor_position, mut hud, mut menu) =
                 system_state.get_mut(&mut app.world);
 
             let context = &context.0;
@@ -42,10 +58,6 @@ pub fn render() {
             let cursor_position = cursor_position
                 .map(|position| position.0)
                 .unwrap_or_default();
-
-            if !config.menu_open {
-                return;
-            }
 
             // enable auto-conversion from/to sRGB
             context.enable(glow::FRAMEBUFFER_SRGB);
@@ -61,8 +73,13 @@ pub fn render() {
                 viewport.physical_height() as i32,
             );
 
-            program.update(viewport.clone(), cursor_position);
-            program.render(context, viewport.clone());
+            hud.update(viewport.clone(), cursor_position);
+            hud.render(context, viewport.clone());
+
+            if config.menu_open {
+                menu.update(viewport.clone(), cursor_position);
+                menu.render(context, viewport.clone());
+            }
 
             // disable auto-conversion from/to sRGB
             context.disable(glow::FRAMEBUFFER_SRGB);

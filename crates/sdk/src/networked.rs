@@ -84,6 +84,13 @@ networked! {
         velocity: Vec3 = b"m_vecVelocity[0]",
         eye_offset: Vec3 = b"m_vecViewOffset[0]",
     },
+    (CSGameRulesProxy, cs_game_rules_proxy): b"DT_CSGameRulesProxy" {
+        freeze_period: i32 = b"m_bFreezePeriod",
+        warmup_period: i32 = b"m_bWarmupPeriod",
+        round_time: i32 = b"m_iRoundTime",
+        terrorist_time_out: i32 = b"m_flTerroristTimeOutRemaining",
+        counter_terrorist_time_out: i32 = b"m_flCTTimeOutRemaining",
+    },
     (CSPlayer, cs_player): b"DT_CSPlayer" {
         aim_punch: Vec3 = b"m_aimPunchAngle",
         armor_value: i32 = b"m_ArmorValue",
