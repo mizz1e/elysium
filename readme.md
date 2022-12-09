@@ -5,7 +5,7 @@
 ### how use!?!??!
 
 install libSDL2
-install rust from [rustup.rs](https://rustup.rs).
+install rust from [rustup.rs](https://rustup.rs) **requires nightly**
 
 in the directory of where you cloned this:
 
