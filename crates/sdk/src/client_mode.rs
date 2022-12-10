@@ -167,20 +167,19 @@ unsafe extern "C" fn create_move(
             command.buttons.remove(remove);
         }
 
-        config.pitch.apply(&mut command.view_angle.x);
-        command.view_angle.y += config.yaw_offset;
-        command.view_angle.z = config.roll;
-
-        if config.desync_enabled {
+        if config.anti_aim.enabled {
             let max_desync_angle = local_player.max_desync_angle();
-            let is_lby_updating = local_player.is_lby_updating();
 
-            *send_packet = flip;
+            *send_packet = command.tick_count % (config.fake_lag + 2).max(2) == 0;
 
-            if is_lby_updating {
-                *send_packet = false;
-            } else if !*send_packet {
-                command.view_angle.y += max_desync_angle * 2.0;
+            if !*send_packet {
+                config.anti_aim.pitch.apply(&mut command.view_angle.x);
+                command.view_angle.y += config.anti_aim.yaw_offset;
+                command.view_angle.z = config.anti_aim.roll;
+            } else {
+                config.anti_aim.fake_pitch.apply(&mut command.view_angle.x);
+                command.view_angle.y += config.anti_aim.fake_yaw_offset;
+                command.view_angle.z = config.anti_aim.fake_roll;
             }
 
             if command.movement.y.abs() < 5.0 {

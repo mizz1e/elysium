@@ -37,24 +37,34 @@ impl fmt::Display for Pitch {
     }
 }
 
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+pub struct AntiAim {
+    pub enabled: bool,
+    pub fake_pitch: Pitch,
+    pub fake_roll: f32,
+    pub fake_yaw_offset: f32,
+    pub pitch: Pitch,
+    pub roll: f32,
+    pub yaw_offset: f32,
+}
+
 #[derive(Debug, Default, Deserialize, Resource, Serialize)]
 #[serde(default)]
 pub struct Config {
     #[serde(skip_serializing)]
     pub active_tab: usize,
+    pub anti_aim: AntiAim,
     pub auto_shoot: bool,
-    pub desync_enabled: bool,
-    #[serde(skip_serializing)]
-    pub desync_delta: f32,
+    pub fake_lag: i32,
     pub in_thirdperson: bool,
     #[serde(skip_serializing)]
     pub menu_open: bool,
-    pub pitch: Pitch,
-    pub roll: f32,
     pub thirdperson_enabled: bool,
     pub walking_animation: WalkingAnimation,
-    pub yaw_offset: f32,
     pub cham_color: Color,
+    #[serde(skip_serializing)]
+    pub command: String,
 }
 
 pub fn config_dir() -> PathBuf {

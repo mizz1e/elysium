@@ -1,8 +1,9 @@
 use crate::assets;
 use bevy::prelude::Resource;
-use iced_glow::{glow, Backend, Renderer, Settings, Theme, Viewport};
+use iced_glow::{glow, Backend, Renderer, Settings, Viewport};
 use iced_native::program::State;
-use iced_native::{clipboard, renderer, Color, Debug, Event, Point, Program};
+use iced_native::theme::{Palette, Theme};
+use iced_native::{clipboard, color, renderer, Color, Debug, Event, Point, Program};
 use std::{fmt, mem};
 
 #[derive(Resource)]
@@ -54,7 +55,11 @@ where
             return;
         }*/
 
-        let theme = Theme::Dark;
+        let theme = Theme::custom(Palette {
+            primary: color!(0xa00000),
+            ..Palette::DARK
+        });
+
         let style = renderer::Style {
             text_color: Color::WHITE,
         };

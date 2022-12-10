@@ -1,6 +1,6 @@
 use crate::{global, intrinsics, pattern, IClientEntity, INetChannel, Ptr};
 use bevy::prelude::*;
-use std::ffi::{CStr, OsStr};
+use std::ffi::{CStr, CString, OsStr};
 use std::os::unix::ffi::OsStrExt;
 use std::{ffi, mem};
 
@@ -77,6 +77,17 @@ impl IVEngineClient {
         let ptr = Ptr::new("BSPTreeQuery", ptr)?;
 
         Some(BSPTreeQuery { ptr })
+    }
+
+    pub fn run_command(&self, command: &str) {
+        let method: unsafe extern "C" fn(this: *mut u8, command: *const ffi::c_char) =
+            unsafe { self.ptr.vtable_entry(113) };
+
+        let Ok(command) = CString::new(command) else {
+            return;
+        };
+
+        unsafe { (method)(self.ptr.as_ptr(), command.as_ptr()) }
     }
 }
 

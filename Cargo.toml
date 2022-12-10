@@ -43,7 +43,6 @@ strip = "symbols"
 [workspace]
 members = [
     "crates/dismal",
-    "crates/input",
     "crates/mem",
     "crates/sdk",
 ]

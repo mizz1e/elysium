@@ -19,20 +19,14 @@ version = "4.0"
 [dependencies.csgo-friendcode]
 git = "https://github.com/not-wlan/csgo-friendcode"
 
-[dependencies.elysium-input]
-path = "../input"
-
 [dependencies.elysium-mem]
 path = "../mem"
 
 [dependencies.iced_glow]
-version = "0.4"
-
-[dependencies.iced_lazy]
-version = "0.2"
+version = "0.5"
 
 [dependencies.iced_native]
-version = "0.6"
+version = "0.7"
 
 [dependencies.libc]
 version = "0.2"
@@ -68,8 +62,9 @@ version = "1.0"
 [dependencies.serde_json]
 version = "1.0"
 
-[dependencies.sdl2-sys]
-version = "0.35"
+[dependencies.sdl2]
+git = "https://github.com/rust-sdl2/rust-sdl2"
+rev = "a1473886b8e9ca5c6fda4e9c3c04fec01328a688"
 
 [dependencies.thiserror]
 version = "1.0"

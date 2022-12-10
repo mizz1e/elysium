@@ -7,15 +7,17 @@ use iced_native::keyboard::KeyCode;
 use iced_native::mouse::Button::Other;
 use iced_native::mouse::Event::ButtonPressed;
 use iced_native::{mouse, window, Event, Point, Size};
-use sdl2_sys::{SDL_Event, SDL_GL_SwapWindow, SDL_GetWindowSize, SDL_PollEvent, SDL_Window};
+use sdl2::sys;
 use std::collections::HashSet;
 use std::{ffi, ptr};
 
-#[derive(Resource)]
-pub struct PollEvent(pub unsafe extern "C" fn(event: *mut SDL_Event) -> ffi::c_int);
+pub mod conversion;
 
 #[derive(Resource)]
-pub struct SwapWindow(pub unsafe extern "C" fn(event: *mut SDL_Window));
+pub struct PollEvent(pub unsafe extern "C" fn(event: *mut sys::SDL_Event) -> ffi::c_int);
+
+#[derive(Resource)]
+pub struct SwapWindow(pub unsafe extern "C" fn(event: *mut sys::SDL_Window));
 
 #[derive(Resource)]
 pub struct WindowViewport(pub Viewport);
@@ -24,24 +26,25 @@ pub struct WindowViewport(pub Viewport);
 pub struct CursorPosition(pub Point);
 
 pub unsafe fn setup() -> (PollEvent, SwapWindow) {
-    let method = unsafe { elysium_mem::next_abs_addr_mut_ptr(SDL_PollEvent as *mut u8).unwrap() };
+    let method =
+        unsafe { elysium_mem::next_abs_addr_mut_ptr(sys::SDL_PollEvent as *mut u8).unwrap() };
 
     let poll_event = PollEvent(ptr::replace(method, poll_event));
 
     let method =
-        unsafe { elysium_mem::next_abs_addr_mut_ptr(SDL_GL_SwapWindow as *mut u8).unwrap() };
+        unsafe { elysium_mem::next_abs_addr_mut_ptr(sys::SDL_GL_SwapWindow as *mut u8).unwrap() };
 
     let swap_window = SwapWindow(ptr::replace(method, swap_window));
 
     (poll_event, swap_window)
 }
 
-unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
+unsafe extern "C" fn poll_event(event: *mut sys::SDL_Event) -> ffi::c_int {
     let method = global::with_app(|app| app.world.resource::<PollEvent>().0);
     let result = (method)(event);
 
     global::with_app_mut(|app| {
-        elysium_input::map_event(*event, |event| {
+        conversion::map_event(*event, |event| {
             let mut system_state: SystemState<(
                 ResMut<Config>,
                 ResMut<CursorPosition>,
@@ -82,11 +85,11 @@ unsafe extern "C" fn poll_event(event: *mut SDL_Event) -> ffi::c_int {
     result
 }
 
-unsafe extern "C" fn swap_window(window: *mut SDL_Window) {
+unsafe extern "C" fn swap_window(window: *mut sys::SDL_Window) {
     let method = global::with_app(|app| app.world.resource::<SwapWindow>().0);
     let (mut width, mut height) = (0, 0);
 
-    SDL_GetWindowSize(window, &mut width, &mut height);
+    sys::SDL_GetWindowSize(window, &mut width, &mut height);
 
     let width = width as u32;
     let height = height as u32;
