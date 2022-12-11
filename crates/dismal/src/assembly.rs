@@ -24,7 +24,7 @@ impl FormatterOutput for Output {
 
 #[derive(Debug)]
 pub struct FlowInfo {
-    pub displacement: usize,
+    pub rel_addr: usize,
     pub target: usize,
 }
 
@@ -59,6 +59,7 @@ pub fn disassemble(bytes: &[u8]) -> Option<FlowInfo> {
     let mut lines = Vec::new();
     let mut max_len = 0;
     let mut result = None;
+    let mut rel_addr = 0;
 
     while decoder.can_decode() {
         decoder.decode_out(&mut instruction);
@@ -80,6 +81,13 @@ pub fn disassemble(bytes: &[u8]) -> Option<FlowInfo> {
         let pretty_instruction = output.0.to_string();
 
         max_len = max_len.max(len);
+
+        let new_rel_addr = instruction.ip_rel_memory_address() as usize;
+
+        if new_rel_addr != 0 {
+            rel_addr = new_rel_addr;
+        }
+
         lines.push((pretty_ip, (pretty_bytes, len), pretty_instruction));
 
         match instruction.flow_control() {
@@ -87,13 +95,9 @@ pub fn disassemble(bytes: &[u8]) -> Option<FlowInfo> {
             | FlowControl::IndirectCall
             | FlowControl::IndirectBranch
             | FlowControl::UnconditionalBranch => {
-                let displacement = instruction.ip_rel_memory_address() as usize;
-                let target = ip + displacement;
+                let target = ip + rel_addr;
 
-                result = Some(FlowInfo {
-                    displacement,
-                    target,
-                });
+                result = Some(FlowInfo { rel_addr, target });
 
                 break;
             }
@@ -124,3 +128,14 @@ pub fn disassemble(bytes: &[u8]) -> Option<FlowInfo> {
 
     result
 }
+
+/*#[test]
+mod test {
+    #[test]
+}
+
+2022-12-11T11:18:23.024974Z TRACE elysium_mem: 7f8061e409a0 Mov(Rax, Int(355fc1)) [48, 8B, 05, C1, 5F, 35, 00] -> 0x7f8062196968
+2022-12-11T11:18:23.024981Z TRACE elysium_sdk::ui: target = Some(0x7f8062196968)
+2022-12-11T11:18:23.026260Z TRACE dismal::assembly: 00007f8061e409a0 48 8b 05 c1 5f 35 00 mov rax,[rip+0x355fc1]
+2022-12-11T11:18:23.026266Z TRACE dismal::assembly: 00007f8061e409a7 ff e0                jmp rax -> 0x7f8061e409a7
+2022-12-11T11:18:23.026271Z TRACE elysium_sdk::ui: target = FlowInfo { displacement: 0, target: 140189374876071 }*/

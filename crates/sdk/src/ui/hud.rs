@@ -1,31 +1,28 @@
-use crate::config::Pitch;
-use crate::{config, engine, global, Color, Config, IClientEntity, WalkingAnimation};
-use iced_native::alignment::{Alignment, Horizontal, Vertical};
-use iced_native::{column, row, widget, Command, Element, Length, Program};
+use super::{Element, Layer, Message};
+use crate::{
+    config, config::Pitch, engine, global, Color, Config, IClientEntity, WalkingAnimation,
+};
+use iced_glow::Renderer as GlowRenderer;
+use iced_native::{
+    alignment::{Alignment, Horizontal, Vertical},
+    column, row, widget, Command, Length, Program,
+};
 
 pub struct Hud;
 
-#[derive(Clone, Debug)]
-pub enum Message {
-    None,
-}
-
-impl Program for Hud {
-    type Renderer = iced_glow::Renderer;
-    type Message = Message;
-
+impl Layer for Hud {
     fn update(&mut self, message: Message) -> Command<Message> {
         Command::none()
     }
 
-    fn view(&self) -> Element<'_, Message, iced_glow::Renderer> {
+    fn view(&self) -> Element<'_> {
         view()
     }
 }
 
-fn cell<'a, E>(element: E) -> widget::Container<'a, Message, iced_glow::Renderer>
+fn cell<'a, E>(element: E) -> widget::Container<'a, Message, GlowRenderer>
 where
-    E: Into<Element<'a, Message, iced_glow::Renderer>>,
+    E: Into<Element<'a>>,
 {
     widget::container(element)
         .height(Length::Fill)
@@ -37,11 +34,11 @@ fn row<'a, L, C, R>(
     left: L,
     center: C,
     right: R,
-) -> widget::Row<'a, Message, iced_glow::Renderer>
+) -> widget::Row<'a, Message, GlowRenderer>
 where
-    L: Into<Element<'a, Message, iced_glow::Renderer>>,
-    C: Into<Element<'a, Message, iced_glow::Renderer>>,
-    R: Into<Element<'a, Message, iced_glow::Renderer>>,
+    L: Into<Element<'a>>,
+    C: Into<Element<'a>>,
+    R: Into<Element<'a>>,
 {
     let left = cell(left).align_x(Horizontal::Left).align_y(vertical);
     let center = cell(center).align_x(Horizontal::Center).align_y(vertical);
@@ -52,7 +49,7 @@ where
         .width(Length::Fill)
 }
 
-fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
+fn view<'a>() -> Element<'a> {
     global::with_app(|app| {
         let (living_status, location_name) =
             if let Some(local_player) = IClientEntity::local_player() {

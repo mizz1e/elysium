@@ -89,6 +89,13 @@ impl IVEngineClient {
 
         unsafe { (method)(self.ptr.as_ptr(), command.as_ptr()) }
     }
+
+    pub fn is_in_game(&self) -> bool {
+        let method: unsafe extern "C" fn(this: *mut u8) -> bool =
+            unsafe { self.ptr.vtable_entry(26) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
 }
 
 pub struct BSPTreeQuery {

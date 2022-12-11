@@ -4,6 +4,9 @@ use thiserror::Error;
 /// An error.
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("expected jump, got nothing")]
+    NoJmp,
+
     #[error("interface not found: {0:?}")]
     Interface(Box<str>),
 

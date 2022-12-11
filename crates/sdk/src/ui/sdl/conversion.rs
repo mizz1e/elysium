@@ -16,9 +16,9 @@ use sdl2::{
 pub fn map_event(raw: RawSdlEvent, mut emit: impl FnMut(IcedEvent)) {
     let event = SdlEvent::from_ll(raw);
 
-    if !matches!(event, SdlEvent::Unknown { .. }) {
+    /*if !matches!(event, SdlEvent::Unknown { .. }) {
         tracing::debug!("{event:?}");
-    }
+    }*/
 
     match event {
         SdlEvent::DropFile { filename, .. } => emit(IcedEvent::Window(

@@ -1,8 +1,8 @@
 use crate::entity::AnimState;
 use crate::{
-    config, engine, global, ptr, sdl, Args, Config, EngineVGui, Error, GlLoader, IBaseClientDLL,
+    config, engine, global, ptr, ui, Args, Config, EngineVGui, Error, IBaseClientDLL,
     IClientEntityList, IEngineTrace, IMaterialSystem, IPhysicsSurfaceProps, IVEngineClient,
-    IVModelRender, KeyValues, ModuleMap, OnceLoaded, SourceSettings, WindowMode,
+    IVModelRender, KeyValues, ModuleMap, OnceLoaded, SourceSettings, Surface, Ui, WindowMode,
 };
 use bevy::prelude::{App, Plugin};
 
@@ -89,12 +89,10 @@ unsafe extern "C" fn fc_noop() {
 
 unsafe fn source_setup() -> Result<(), Error> {
     let launcher_main = global::with_app_mut::<Result<_, Error>>(|app| {
+        app.insert_resource(Ui::new()?);
+
         app.world
             .resource_scope::<ModuleMap, _>(|world, mut module_map| {
-                let loader = GlLoader::setup();
-
-                world.insert_resource(loader);
-
                 let client_module = module_map.open("client_client.so")?;
 
                 AnimState::setup();
@@ -132,7 +130,6 @@ unsafe fn source_setup() -> Result<(), Error> {
                 let engine_vgui = EngineVGui { ptr };
 
                 engine_vgui.setup();
-
                 world.insert_resource(engine_vgui);
 
                 let _tier0_module = module_map.open("libtier0_client.so")?;
@@ -144,6 +141,7 @@ unsafe fn source_setup() -> Result<(), Error> {
                 world.insert_resource(IMaterialSystem { ptr });
 
                 let _module = module_map.open("vphysics_client.so").unwrap();
+                let _module = module_map.open("vgui2_client.so").unwrap();
                 let _module = module_map.open("vguimatsurface_client.so").unwrap();
 
                 //fix_vguimatsurface();
@@ -155,43 +153,8 @@ unsafe fn source_setup() -> Result<(), Error> {
             })
     })?;
 
-    global::with_app(|app| {
-        let settings = app.world.resource::<SourceSettings>();
-        let mut args = Args::default();
-
-        args.push("csgo_linux64");
-
-        if !settings.no_vac {
-            args.push("-steam");
-        }
-
-        args.push(settings.renderer.arg());
-
-        if let Some(ref max_fps) = settings.max_fps {
-            args.push("+fps_max").push(max_fps.to_string());
-        }
-
-        match settings.once_loaded {
-            OnceLoaded::ConnectTo(ref address) => {
-                args.push("+connect").push(address.to_string());
-            }
-            OnceLoaded::LoadMap(ref map) => {
-                args.push("+map").push(map);
-            }
-            _ => {}
-        }
-
-        match settings.window_mode {
-            WindowMode::Windowed => {
-                args.push("-windowed");
-            }
-            WindowMode::Fullscreen => {
-                args.push("-fullscreen");
-            }
-            _ => {}
-        }
-
-        args.exec(launcher_main);
+    global::with_resource::<SourceSettings, _>(move |settings| {
+        Args::from(settings).exec(launcher_main);
     });
 
     Ok(())
@@ -201,6 +164,9 @@ fn source_runner(app: App) {
     global::set_app(app);
 
     unsafe {
-        let _ = source_setup();
+        if let Err(error) = source_setup() {
+            tracing::error!("{error:?}");
+            std::process::exit(1);
+        }
     }
 }

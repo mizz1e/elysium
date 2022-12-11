@@ -1,8 +1,11 @@
-use crate::config::{AntiAim, Pitch};
-use crate::{config, global, Color, Config, IVEngineClient, WalkingAnimation};
-use bevy::ecs::system::SystemState;
-use bevy::prelude::*;
-use iced_native::{column, row, widget, Command, Element, Length, Program};
+use super::{Element, Layer, Message};
+use crate::{
+    config,
+    config::{AntiAim, Pitch},
+    global, Color, Config, IVEngineClient, WalkingAnimation,
+};
+use bevy::{ecs::system::SystemState, prelude::*};
+use iced_native::{column, row, widget, Command, Length, Program};
 use std::mem;
 
 const PITCH_LIST: &[Pitch] = &[Pitch::Default, Pitch::Up, Pitch::Down];
@@ -11,47 +14,17 @@ const WALKING_ANIMATION_LIST: &[WalkingAnimation] =
 
 pub struct Menu;
 
-#[derive(Clone, Debug)]
-pub enum Message {
-    None,
-
-    AntiAim(bool),
-    Pitch(Pitch),
-    Roll(f32),
-    YawOffset(f32),
-    FakePitch(Pitch),
-    FakeRoll(f32),
-    FakeYawOffset(f32),
-    FakeLag(i32),
-
-    AutoShoot(bool),
-    WalkingAnimation(WalkingAnimation),
-    AntiAimTab,
-    RageBotTab,
-    VisualsTab,
-    Thirdperson(bool),
-    ChamColor(String),
-    Load,
-    Save,
-
-    Command(String),
-    RunCommand,
-}
-
-impl Program for Menu {
-    type Renderer = iced_glow::Renderer;
-    type Message = Message;
-
+impl Layer for Menu {
     fn update(&mut self, message: Message) -> Command<Message> {
         unsafe { update(message) }
     }
 
-    fn view(&self) -> Element<'_, Message, iced_glow::Renderer> {
+    fn view(&self) -> Element<'_> {
         unsafe { view() }
     }
 }
 
-unsafe fn update(message: Message) -> Command<Message> {
+fn update(message: Message) -> Command<Message> {
     global::with_app_mut(move |app| {
         let message = message;
 
@@ -59,6 +32,10 @@ unsafe fn update(message: Message) -> Command<Message> {
             SystemState::new(&mut app.world);
 
         let (mut config, engine) = system_state.get_mut(&mut app.world);
+
+        if !config.menu_open {
+            return Command::none();
+        }
 
         match message {
             Message::AutoShoot(enabled) => config.auto_shoot = enabled,
@@ -103,7 +80,7 @@ fn view_modifiers<'a>(
     on_change_pitch: impl Fn(Pitch) -> Message + 'a,
     on_change_yaw_offset: impl Fn(f32) -> Message + 'a,
     on_change_roll: impl Fn(f32) -> Message + 'a,
-) -> Element<'a, Message, iced_glow::Renderer> {
+) -> Element<'a> {
     let label = widget::text(label);
 
     let pitch_list = row![
@@ -128,7 +105,7 @@ fn view_modifiers<'a>(
     column![label, pitch_list, yaw_offset_slider, roll_slider,].into()
 }
 
-fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
+fn view_anti_aim<'a>(config: &Config) -> Element<'a> {
     let aa = &config.anti_aim;
     let enabled_checkbox = widget::checkbox("enabled", aa.enabled, Message::AntiAim);
 
@@ -194,7 +171,7 @@ fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::Rendere
     content.into()
 }
 
-unsafe fn view_rage_bot<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
+fn view_rage_bot<'a>(config: &Config) -> Element<'a> {
     let auto_shoot_checkbox = widget::checkbox("auto shoot", config.auto_shoot, Message::AutoShoot);
     let options = column![auto_shoot_checkbox];
 
@@ -203,16 +180,20 @@ unsafe fn view_rage_bot<'a>(config: &Config) -> Element<'a, Message, iced_glow::
     content.into()
 }
 
-unsafe fn view_visuals<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
+fn view_visuals<'a>(config: &Config) -> Element<'a> {
     let color = config.cham_color.to_hex_string();
     let cham_color_input = widget::text_input("cham color", &color, Message::ChamColor);
 
     cham_color_input.into()
 }
 
-unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
+fn view<'a>() -> Element<'a> {
     global::with_app(|app| {
         let config = app.world.resource::<Config>();
+
+        if !config.menu_open {
+            return widget::Space::new(Length::Fill, Length::Fill).into();
+        }
 
         let aa_button = widget::button("anti aim").on_press(Message::AntiAimTab);
         let ragebot_button = widget::button("ragebot").on_press(Message::RageBotTab);

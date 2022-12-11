@@ -3,6 +3,12 @@ use std::ffi;
 use std::net::SocketAddrV4;
 use std::path::PathBuf;
 
+pub struct RendererParams {
+    pub display: &'static str,
+    pub option: &'static str,
+    pub value: ffi::c_int,
+}
+
 /// The renderer backend to use (Shader API).
 #[derive(Debug, Default)]
 pub enum Renderer {
@@ -25,30 +31,23 @@ pub enum Renderer {
 }
 
 impl Renderer {
-    /// Returns the argument passed to tier0's command line.
-    pub(crate) fn arg(&self) -> &'static str {
+    pub(crate) fn params(&self) -> RendererParams {
         match self {
-            Renderer::OpenGl => "-opengl",
-            Renderer::Vulkan => "-vulkan",
-            Renderer::Headless => "-noshaderapi",
-        }
-    }
-
-    /// Returns a display string for this renderer.
-    pub(crate) fn display(&self) -> &'static str {
-        match self {
-            Renderer::OpenGl => "DX9 (OpenGL)",
-            Renderer::Vulkan => "Vulkan",
-            Renderer::Headless => "Headless",
-        }
-    }
-
-    /// Returns the value returned by *pMaterialSystem + 164 (GetShaderAPI).
-    pub(crate) fn value(&self) -> ffi::c_int {
-        match self {
-            Renderer::OpenGl => 2,
-            Renderer::Vulkan => 3,
-            Renderer::Headless => 1,
+            Renderer::OpenGl => RendererParams {
+                display: "DX9 (OpenGL)",
+                option: "-opengl",
+                value: 2,
+            },
+            Renderer::Vulkan => RendererParams {
+                display: "Vulkan",
+                option: "-vulkan",
+                value: 3,
+            },
+            Renderer::Headless => RendererParams {
+                display: "Headless",
+                option: "-noshaderapi",
+                value: 1,
+            },
         }
     }
 }

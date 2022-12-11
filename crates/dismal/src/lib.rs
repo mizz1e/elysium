@@ -5,6 +5,7 @@
 use goblin::elf::Elf;
 use std::{fs, result};
 
+pub use assembly::disassemble;
 pub use error::Error;
 pub use module::{Code, Module, Search};
 pub use pattern::Pattern;
@@ -92,4 +93,18 @@ pub fn modules() -> Vec<Module> {
     }
 
     modules
+}
+
+pub fn get_module(name: &str) -> Option<Module> {
+    for module in modules() {
+        let Some(file_name) = module.path.file_name() else {
+            continue;
+        };
+
+        if file_name == name {
+            return Some(module);
+        }
+    }
+
+    None
 }
