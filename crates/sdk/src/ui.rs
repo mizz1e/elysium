@@ -43,12 +43,6 @@ const DEBUG_OVERLAY: &[&str] = &[];
 
 /// Replace the target address, if present.
 pub unsafe fn replace_target<T: Copy>(dst: *mut u8, src: T) -> Result<T> {
-    {
-        let dst: Option<*mut u8> = elysium_mem::next_abs_addr_mut_ptr(dst);
-
-        tracing::trace!("target = {dst:?}");
-    }
-
     let code = slice::from_raw_parts_mut(dst, 128);
     let info = dismal::disassemble(code).ok_or(Error::NoJmp)?;
 

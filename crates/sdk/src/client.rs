@@ -1,7 +1,7 @@
 use crate::{
     convar, global, material, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
     Config, IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps,
-    IVEngineClient, KeyValues, ModuleMap, Ptr, Surface, Ui,
+    IVEngineClient, InputStackSystem, KeyValues, ModuleMap, Ptr, Surface, Ui,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
@@ -148,6 +148,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
             let module_map = app.world.resource::<ModuleMap>();
 
+            let engine_module = module_map.get_module("inputsystem_client.so").unwrap();
+            let input_stack_system = engine_module
+                .create_interface("InputStackSystemVersion001")
+                .unwrap();
+
             let material_system_module = module_map.get_module("materialsystem_client.so").unwrap();
             let cvar = material_system_module
                 .create_interface("VEngineCvar007")
@@ -164,6 +169,13 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             let panorama_disable_blur =
                 convar::PanoramaDisableBlur(cvar.find_var("@panorama_disable_blur").unwrap());
             let recoil_scale = convar::RecoilScale(cvar.find_var("weapon_recoil_scale").unwrap());
+
+            let input_stack_system = InputStackSystem {
+                ptr: input_stack_system,
+            };
+
+            input_stack_system.setup();
+            app.insert_resource(input_stack_system);
 
             app.insert_resource(cvar);
 

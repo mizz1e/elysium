@@ -143,8 +143,7 @@ unsafe fn source_setup() -> Result<(), Error> {
                 let _module = module_map.open("vphysics_client.so").unwrap();
                 let _module = module_map.open("vgui2_client.so").unwrap();
                 let _module = module_map.open("vguimatsurface_client.so").unwrap();
-
-                //fix_vguimatsurface();
+                let _module = module_map.open("inputsystem_client.so").unwrap();
 
                 let launcher_module = module_map.open("launcher_client.so")?;
                 let launcher_main = launcher_module.symbol("LauncherMain\0")?;
