@@ -65,6 +65,8 @@ pub struct Config {
     pub cham_color: Color,
     #[serde(skip_serializing)]
     pub command: String,
+    #[serde(skip_serializing)]
+    pub is_cursor_locked: bool,
 }
 
 pub fn config_dir() -> PathBuf {

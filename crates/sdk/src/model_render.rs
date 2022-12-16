@@ -78,6 +78,27 @@ unsafe extern "C" fn draw_model_execute(
         let model_render = app.world.resource::<IVModelRender>();
         let glow = app.world.resource::<material::Glow>();
         let glow = &glow.0;
+        let flat = app.world.resource::<material::Flat>();
+        let flat = &flat.0;
+
+        flat.set_flag(MaterialFlag::IGNORE_Z, true);
+        flat.set_color(Color {
+            red: 0.0,
+            green: 0.0,
+            blue: 0.0,
+            alpha: 1.0,
+        });
+
+        glow.set_flag(MaterialFlag::WIREFRAME, true);
+        //glow.set_flag(MaterialFlag::IGNORE_Z, true);
+        glow.set_color(Color {
+            red: 1.0,
+            green: 1.0,
+            blue: 1.0,
+            alpha: 0.1,
+        });
+
+        model_render.override_material(Some(flat));
 
         model_render.draw_model_execute(
             render_context,
@@ -85,9 +106,6 @@ unsafe extern "C" fn draw_model_execute(
             model_render_info,
             custom_bone_to_world,
         );
-
-        glow.set_flag(MaterialFlag::IGNORE_Z, true);
-        glow.set_color(config.cham_color);
 
         model_render.override_material(Some(glow));
 

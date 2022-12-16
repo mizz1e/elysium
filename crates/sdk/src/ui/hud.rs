@@ -7,6 +7,7 @@ use iced_native::{
     alignment::{Alignment, Horizontal, Vertical},
     column, row, widget, Command, Length, Program,
 };
+use std::borrow::Cow;
 
 pub struct Hud;
 
@@ -51,27 +52,35 @@ where
 
 fn view<'a>() -> Element<'a> {
     global::with_app(|app| {
-        let (living_status, location_name) =
-            if let Some(local_player) = IClientEntity::local_player() {
-                let armor = local_player.armor_value();
-                let health = local_player.health();
-                let location_name = local_player.location_name();
+        let mut top_left = String::new();
+        let mut bottom_left = String::new();
 
-                let living_status = widget::text(format!("health {health} armor {armor}"));
-                let location_name = if let Some(location_name) = location_name {
-                    widget::text(location_name.to_string_lossy())
-                } else {
-                    widget::text(" ")
-                };
+        if let Some(client_state) = crate::ClientState::get() {
+            top_left += &format!("{:?}\n\n", client_state.sign_on_state());
 
-                (living_status, location_name)
-            } else {
-                (widget::text(" "), widget::text(" "))
-            };
+            if let Some(net_channel) = client_state.net_channel() {
+                let info = net_channel.info();
+
+                top_left += &format!("{}\n", info.display());
+            }
+
+            top_left += &format!("FL = {}", client_state.choked_commands());
+        }
+
+        if let Some(local_player) = IClientEntity::local_player() {
+            if let Some(location_name) = local_player.location_name() {
+                top_left.insert_str(0, &format!("{}\n", location_name.to_string_lossy()));
+            }
+
+            let armor = local_player.armor_value();
+            let health = local_player.health();
+
+            bottom_left = format!("health {health} armor {armor}");
+        };
 
         let first = row(
             Vertical::Top,
-            location_name,
+            widget::text(top_left),
             column![widget::text("2:45 left"), widget::text("8 to 0")]
                 .align_items(Alignment::Center),
             widget::text("bot sample killed bot sample"),
@@ -86,7 +95,7 @@ fn view<'a>() -> Element<'a> {
 
         let third = row(
             Vertical::Bottom,
-            living_status,
+            widget::text(bottom_left),
             widget::text(" "),
             widget::text("10/60 bullets"),
         );

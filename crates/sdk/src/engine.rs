@@ -1,4 +1,6 @@
-use crate::{global, intrinsics, pattern, IClientEntity, INetChannel, Ptr};
+use crate::{
+    client_state, global, intrinsics, pattern, ClientState, IClientEntity, INetChannel, Ptr,
+};
 use bevy::prelude::*;
 use std::ffi::{CStr, CString, OsStr};
 use std::os::unix::ffi::OsStrExt;
@@ -122,8 +124,56 @@ pub unsafe fn setup() {
 
     tracing::trace!("CClientLeafSystem::InsertIntoTree = {addr:?}");
 
+    let engine = link::load_module("engine_client.so").unwrap();
+    let bytes = engine.bytes();
+    let host_runframe_input = pattern::HOST_RUNFRAME_INPUT.find(bytes).unwrap().1;
+
+    elysium_mem::next_abs_addr::<u8>(host_runframe_input);
+
+    let addr = host_runframe_input.as_ptr().byte_add(196) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let cl_move_ptr = addr.byte_add(4).byte_offset(rel);
+
+    //let [a, b, c, d, e, f, g, h] = (cl_move as *mut u8).addr().to_ne_bytes();
+
+    //let code = [
+    //    0x48, 0xB8, a, b, c, d, e, f, g, h, // mov rax, addr
+    //    0xFF, 0xE0, // jmp rax
+    //];
+
+    //ptr::replace_protected(cl_move_ptr.cast(), code);
+
+    let cl_move = cl_move_ptr;
+
+    tracing::trace!("CL_Move = {cl_move:?}");
+
+    let addr = cl_move.byte_add(64) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let host_should_run = addr.byte_add(4).byte_offset(rel);
+
+    tracing::trace!("obtain GetBaseLocalClient");
+
+    let addr = cl_move.byte_add(47) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let get_base_local_client = addr.byte_add(4).byte_offset(rel);
+
+    tracing::trace!("GetBaseLocalClient = {get_base_local_client:?}");
+    tracing::trace!("obtain CL_SendMove");
+
+    let addr = cl_move.byte_add(913) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let cl_sendmove = addr.byte_add(4).byte_offset(rel);
+
+    tracing::trace!("CL_SendMove = {cl_sendmove:?}");
+
     global::with_app_mut(|app| {
         app.insert_resource(InsertIntoTree(addr));
+
+        //.insert_resource(HostShouldRun(mem::transmute(host_should_run)))
+        app.insert_resource(client_state::GetBaseLocalClient(mem::transmute(
+            get_base_local_client,
+        )));
+        //.insert_resource(ClSendMove(mem::transmute(cl_sendmove)))
     });
 }
 

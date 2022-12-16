@@ -184,20 +184,38 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(recoil_scale);
 
             let material_system = app.world.resource::<IMaterialSystem>();
+
+            // $envmapfresnelminmaxexp [0 1] is broken
             let keyvalues = KeyValues::from_str(
                 "VertexLitGeneric",
                 "
                     $additive 1
+                    $alpha 0.8
                     $envmap models/effects/cube_white
                     $envmapfresnel 1
-                    $alpha 0.8
+                    $envmapanisotropy 1
+                    $envmapanisotropyscale 5
+                    $envtintmap [1 1 1]
+
+                    
+	  $envmapcontrast 1
+	  $nofog 1
+	  $model 1
+	  $nocull 0
+	  $selfillum 1
+	  $halflambert 1
+	  $znearer 0
+	  $flat 1
                 ",
             )
             .unwrap();
 
-            let material = material_system.create("elysium/glow", &keyvalues).unwrap();
+            let glow = material_system.create("elysium/glow", &keyvalues).unwrap();
+            let keyvalues = KeyValues::from_str("UnlitGeneric", "").unwrap();
+            let flat = material_system.create("elysium/flat", &keyvalues).unwrap();
 
-            app.insert_resource(material::Glow(material));
+            app.insert_resource(material::Glow(glow));
+            app.insert_resource(material::Flat(flat));
 
             let engine = app.world.resource::<IVEngineClient>();
             let bsp_tree_query = engine.bsp_tree_query().unwrap();

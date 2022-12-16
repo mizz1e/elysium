@@ -1,12 +1,13 @@
 use crate::{
-    global, math, trace, Button, CUserCmd, CViewSetup, Config, EntityFlag, IClientEntity,
-    IClientEntityList, IEngineTrace, IPhysicsSurfaceProps, IVEngineClient, Mat4x3, Ptr,
-    SurfaceKind, Time, TraceResult, WeaponInfo,
+    global, math, trace, Button, CUserCmd, CViewSetup, ClientState, Config, EntityFlag,
+    IClientEntity, IClientEntityList, IEngineTrace, IPhysicsSurfaceProps, IVEngineClient, Mat4x3,
+    Ptr, SurfaceKind, Time, TraceResult, WeaponInfo,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::{Res, ResMut, Resource, Vec3};
 use rand::Rng;
 use std::arch::asm;
+use std::cmp::Ordering;
 use std::ptr;
 
 #[derive(Resource)]
@@ -18,6 +19,9 @@ type CreateMoveFn =
 
 #[derive(Resource)]
 pub struct CreateMove(pub(crate) CreateMoveFn);
+
+#[derive(Resource)]
+pub struct LastYaw(pub f32);
 
 /// `game/client/iclientmode.h`.
 #[derive(Resource)]
@@ -35,6 +39,8 @@ impl IClientMode {
             // rustc apparently is a little too overzealous with it's optimization, and
             // deletes this hook if the result is unused?
             app.insert_resource(CreateMove(self.ptr.vtable_replace(25, create_move)));
+
+            app.insert_resource::<LastYaw>(LastYaw(0.0));
         });
     }
 }
@@ -62,9 +68,6 @@ unsafe extern "C" fn override_view(this: *mut u8, setup: *mut CViewSetup) {
     (method)(this, setup)
 }
 
-#[derive(Resource)]
-pub struct LastYaw(pub f32);
-
 unsafe extern "C" fn create_move(
     this: *mut u8,
     input_sample_time: f32,
@@ -90,10 +93,6 @@ unsafe extern "C" fn create_move(
     }
 
     global::with_app_mut(|app| {
-        if !app.world.contains_resource::<LastYaw>() {
-            app.insert_resource::<LastYaw>(LastYaw(0.0));
-        }
-
         let mut system_state: SystemState<(
             Res<Config>,
             Res<IVEngineClient>,
@@ -111,8 +110,11 @@ unsafe extern "C" fn create_move(
         let last_yaw = &mut last_yaw.0;
         let flip = command.tick_count % 2 == 0;
         let side = if flip { 1.0 } else { -1.0 };
+        let movement = command.movement;
 
         if local_flags.contains(EntityFlag::IN_AIR) {
+            command.buttons.remove(Button::JUMP);
+
             let velocity = local_player.velocity();
             let hypot = velocity.truncate().length();
             let ideal_strafe = (15.0 / hypot).atan().to_degrees().clamp(0.0, 90.0);
@@ -157,29 +159,65 @@ unsafe extern "C" fn create_move(
             command.movement = math::fix_movement(command.movement, command.view_angle, wish_angle);
         }
 
-        if command.buttons.contains(Button::JUMP) {
-            let remove = if local_flags.contains(EntityFlag::IN_AIR) {
-                Button::JUMP
-            } else {
-                Button::DUCK
+        let now = Time::now();
+        let eye_origin = local_player.eye_origin();
+        let mut enemies = Vec::new();
+
+        for i in 1..=64 {
+            let Some(player) = entity_list.get(i) else {
+                continue;
             };
 
-            command.buttons.remove(remove);
+            let flags = player.flags();
+
+            if !flags.contains(EntityFlag::ENEMY) {
+                continue;
+            }
+
+            enemies.push(player);
         }
 
-        if config.anti_aim.enabled {
-            let max_desync_angle = local_player.max_desync_angle();
+        if enemies.is_empty() {
+            command.view_angle.y += 37.0
+                * match command.tick_count % 4 {
+                    0 => 1.0,
+                    1 => 1.0,
+                    2 => -1.0,
+                    3 => -1.0,
+                    _ => unreachable!(),
+                };
+        } else {
+            for player in enemies {
+                const BONE_USED_BY_HITBOX: i32 = 0x100;
 
-            *send_packet = command.tick_count % (config.fake_lag + 2).max(2) == 0;
+                let mut bones = [Mat4x3::ZERO; 256];
+
+                player.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
+
+                let head_bone = bones[8];
+                let head_origin = head_bone.to_affine().translation.into();
+
+                command.view_angle = math::calculate_angle(eye_origin, head_origin);
+            }
+        }
+
+        config.anti_aim.pitch.apply(&mut command.view_angle.x);
+        command.view_angle.y += config.anti_aim.yaw_offset;
+        command.view_angle.z = config.anti_aim.roll;
+
+        if config.anti_aim.enabled {
+            if let Some(client_state) = crate::ClientState::get() {
+                let fake_lag = if local_flags.contains(EntityFlag::IN_AIR) {
+                    14
+                } else {
+                    config.fake_lag
+                };
+
+                *send_packet = client_state.choked_commands() >= fake_lag;
+            }
 
             if !*send_packet {
-                config.anti_aim.pitch.apply(&mut command.view_angle.x);
-                command.view_angle.y += config.anti_aim.yaw_offset;
-                command.view_angle.z = config.anti_aim.roll;
-            } else {
-                config.anti_aim.fake_pitch.apply(&mut command.view_angle.x);
-                command.view_angle.y += config.anti_aim.fake_yaw_offset;
-                command.view_angle.z = config.anti_aim.fake_roll;
+                command.view_angle.y += 89.0;
             }
 
             if command.movement.y.abs() < 5.0 {
