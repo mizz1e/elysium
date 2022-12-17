@@ -236,6 +236,7 @@ pub unsafe extern "C" fn list_leaves_in_box(
         return (method)(this, min, max, list, list_max);
     };
 
+    // Only apply to players.
     if !entity.is_player() {
         return (method)(this, min, max, list, list_max);
     }
@@ -246,6 +247,7 @@ pub unsafe extern "C" fn list_leaves_in_box(
     info.flags.remove(RenderFlags::FORCE_OPAQUE_PASS);
     info.flags2.insert(RenderFlags::BOUNDS_ALWAYS_RECOMPUTE);
 
+    // Force render bounding box to maximum world coordinates.
     let max_coord = Vec3::splat(16_384.0);
     let min_coord = Vec3::splat(-16_384.0);
 
