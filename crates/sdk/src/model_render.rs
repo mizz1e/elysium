@@ -4,6 +4,7 @@ use std::mem::MaybeUninit;
 use std::{ffi, ptr};
 
 bitflags::bitflags! {
+    /// `game/client/clientleafsystem.cpp`.
     #[repr(transparent)]
     pub struct RenderFlags: u16 {
         const DISABLE_RENDERING = 1 << 0;
@@ -18,6 +19,7 @@ bitflags::bitflags! {
     }
 }
 
+/// `game/client/clientleafsystem.cpp`.
 #[repr(C)]
 pub struct RenderableInfo_t {
     pub renderable: *mut u8,
