@@ -63,6 +63,24 @@ impl Module {
     /// - Invokes a foreign function (`CreateInterface`).
     /// - See [`Library::get`](libloading::Library::get).
     pub unsafe fn create_interface(&self, name: impl AsRef<str>) -> Result<Ptr, Error> {
+        {
+            #[repr(C)]
+            pub struct Interface {
+                pub new: unsafe extern "C" fn() -> *mut ffi::c_void,
+                pub name: *const ffi::c_char,
+                pub next: *const Interface,
+            }
+
+            let interface_list: *const *const Interface = self.symbol("s_pInterfaceRegs\0")?;
+            let mut interface_list: *const Interface = *interface_list;
+
+            while let Some(interface) = interface_list.as_ref() {
+                interface_list = interface.next;
+
+                println!("{:?}", ffi::CStr::from_ptr(interface.name));
+            }
+        }
+
         // Explicit nul-termination saves the need to allocate.
         let create_interface: unsafe extern "C" fn(
             *const ffi::c_char,

@@ -14,18 +14,41 @@ pub struct Time(pub Duration);
 #[derive(Clone, Copy, Debug, Deref, DerefMut, PartialEq, PartialOrd)]
 pub struct Tick(pub u32);
 
+impl CGlobalVarsBase {
+    unsafe fn internal(&self) -> &internal::CGlobalVarsBase {
+        &*self.ptr.as_ptr().cast::<internal::CGlobalVarsBase>()
+    }
+
+    fn current_time(&self) -> f32 {
+        unsafe { self.internal().current_time }
+    }
+
+    pub fn interval_per_tick(&self) -> f32 {
+        unsafe { self.internal().interval_per_tick }
+    }
+}
+
 impl Time {
     pub fn now() -> Self {
-        let current_time = unsafe { current_time() };
+        let current_time = global::with_resource::<CGlobalVarsBase, _>(|vars| vars.current_time());
 
-        Time(Duration::from_secs_f32(current_time))
+        Time::from_secs_f32(current_time)
+    }
+
+    pub fn from_secs_f32(secs: f32) -> Self {
+        Time(Duration::from_secs_f32(secs))
+    }
+
+    pub fn as_secs_f32(self) -> f32 {
+        self.0.as_secs_f32()
     }
 
     /// `TIME_TO_TICKS` in `game/shared/shareddefs.h`.
-
     pub fn to_tick(self) -> Tick {
-        let interval_per_tick = unsafe { interval_per_tick() };
-        let tick = ((self.0.as_secs_f32() + 0.5) / interval_per_tick) as u32;
+        let interval_per_tick =
+            global::with_resource::<CGlobalVarsBase, _>(|vars| vars.interval_per_tick());
+
+        let tick = ((self.as_secs_f32() + 0.5) / interval_per_tick) as u32;
 
         Tick(tick)
     }
@@ -33,31 +56,12 @@ impl Time {
 
 impl Tick {
     /// `TICKS_TO_TIME` in `game/shared/shareddefs.h`.
-
     pub fn to_time(self) -> Time {
-        let interval_per_tick = unsafe { interval_per_tick() };
-        let time = Duration::from_secs_f32((self.0 as f32) * interval_per_tick);
+        let interval_per_tick =
+            global::with_resource::<CGlobalVarsBase, _>(|vars| vars.interval_per_tick());
 
-        Time(time)
+        Time::from_secs_f32((self.0 as f32) * interval_per_tick)
     }
-}
-
-unsafe fn current_time() -> f32 {
-    global::with_app(|app| {
-        let global_vars = app.world.resource::<CGlobalVarsBase>();
-        let global_vars = &*global_vars.ptr.as_ptr().cast::<internal::CGlobalVarsBase>();
-
-        global_vars.current_time
-    })
-}
-
-unsafe fn interval_per_tick() -> f32 {
-    global::with_app(|app| {
-        let global_vars = app.world.resource::<CGlobalVarsBase>();
-        let global_vars = &*global_vars.ptr.as_ptr().cast::<internal::CGlobalVarsBase>();
-
-        global_vars.interval_per_tick
-    })
 }
 
 mod internal {

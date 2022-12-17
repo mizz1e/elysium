@@ -1,7 +1,7 @@
 use crate::{
-    convar, gl, global, material, networked, ptr, sdl, CGlobalVarsBase, CInput, CUserCmd,
-    ClientClass, Config, IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps,
-    IVEngineClient, KeyValues, ModuleMap, Ptr,
+    convar, global, material, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
+    Config, IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps,
+    IVEngineClient, InputStackSystem, KeyValues, ModuleMap, Ptr, Surface, Ui,
 };
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
@@ -139,16 +139,6 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
     let method = global::with_app_mut(|app| {
         if !app.world.contains_resource::<IClientMode>() {
-            let context = gl::setup();
-
-            app.insert_resource(context);
-
-            let (poll_event, swap_window) = sdl::setup();
-
-            app.insert_resource(poll_event);
-            app.insert_resource(swap_window);
-            app.insert_resource(sdl::CursorPosition(Point::ORIGIN));
-
             let client = app.world.resource::<IBaseClientDLL>();
             let client_mode = client.setup_client_mode();
             let global_vars = client.setup_global_vars();
@@ -157,6 +147,12 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(global_vars);
 
             let module_map = app.world.resource::<ModuleMap>();
+
+            let engine_module = module_map.get_module("inputsystem_client.so").unwrap();
+            let input_stack_system = engine_module
+                .create_interface("InputStackSystemVersion001")
+                .unwrap();
+
             let material_system_module = module_map.get_module("materialsystem_client.so").unwrap();
             let cvar = material_system_module
                 .create_interface("VEngineCvar007")
@@ -174,6 +170,13 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 convar::PanoramaDisableBlur(cvar.find_var("@panorama_disable_blur").unwrap());
             let recoil_scale = convar::RecoilScale(cvar.find_var("weapon_recoil_scale").unwrap());
 
+            let input_stack_system = InputStackSystem {
+                ptr: input_stack_system,
+            };
+
+            input_stack_system.setup();
+            app.insert_resource(input_stack_system);
+
             app.insert_resource(cvar);
 
             app.insert_resource(ffa);
@@ -181,20 +184,38 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(recoil_scale);
 
             let material_system = app.world.resource::<IMaterialSystem>();
+
+            // $envmapfresnelminmaxexp [0 1] is broken
             let keyvalues = KeyValues::from_str(
                 "VertexLitGeneric",
                 "
                     $additive 1
+                    $alpha 0.8
                     $envmap models/effects/cube_white
                     $envmapfresnel 1
-                    $alpha 0.8
+                    $envmapanisotropy 1
+                    $envmapanisotropyscale 5
+                    $envtintmap [1 1 1]
+
+                    
+	  $envmapcontrast 1
+	  $nofog 1
+	  $model 1
+	  $nocull 0
+	  $selfillum 1
+	  $halflambert 1
+	  $znearer 0
+	  $flat 1
                 ",
             )
             .unwrap();
 
-            let material = material_system.create("elysium/glow", &keyvalues).unwrap();
+            let glow = material_system.create("elysium/glow", &keyvalues).unwrap();
+            let keyvalues = KeyValues::from_str("UnlitGeneric", "").unwrap();
+            let flat = material_system.create("elysium/flat", &keyvalues).unwrap();
 
-            app.insert_resource(material::Glow(material));
+            app.insert_resource(material::Glow(glow));
+            app.insert_resource(material::Flat(flat));
 
             let engine = app.world.resource::<IVEngineClient>();
             let bsp_tree_query = engine.bsp_tree_query().unwrap();
@@ -204,20 +225,39 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             app.insert_resource(IPhysicsSurfaceProps { ptr });
         }
 
+        if !app.world.contains_resource::<Surface>() {
+            let module_map = app.world.resource::<ModuleMap>();
+            let engine_module = module_map.get_module("vguimatsurface_client.so").unwrap();
+
+            if let Ok(ptr) = engine_module.create_interface("VGUI_Surface031") {
+                let surface = Surface { ptr };
+
+                surface.setup();
+                app.insert_resource(surface);
+            } else {
+                tracing::trace!("fuck you");
+            }
+        }
+
         let mut system_state: SystemState<(
             Res<Config>,
             Res<IBaseClientDLL>,
             Res<IVEngineClient>,
             Res<CInput>,
+            Res<convar::PanoramaDisableBlur>,
+            ResMut<Ui>,
         )> = SystemState::new(&mut app.world);
 
-        let (config, client, engine, input) = system_state.get(&app.world);
+        let (config, client, engine, input, panorama_disable_blur, mut ui) =
+            system_state.get_mut(&mut app.world);
         let view_angle = engine.view_angle();
+
+        ui.setup_hooks().unwrap_or_else(|error| {
+            panic!("unable to setup SDL hooks: {error:?}");
+        });
 
         match frame {
             FRAME_RENDER_START => {
-                let panorama_disable_blur = app.world.resource::<convar::PanoramaDisableBlur>();
-
                 panorama_disable_blur.write(true);
 
                 // for the eventual UI replacement

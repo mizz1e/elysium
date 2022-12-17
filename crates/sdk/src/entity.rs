@@ -3,6 +3,7 @@ use crate::{
     Ptr, Tick, Time,
 };
 use bevy::prelude::{Resource, Vec3};
+use std::ffi::OsStr;
 use std::time::Duration;
 use std::{ffi, mem};
 
@@ -432,6 +433,11 @@ impl IClientEntity {
     }
 
     /// Whether the player is scoped.
+    pub fn armor_value(&self) -> i32 {
+        networked::read!(self.ptr.as_ptr(), cs_player.armor_value)
+    }
+
+    /// Whether the player is scoped.
     pub fn is_scoped(&self) -> bool {
         networked::read!(self.ptr.as_ptr(), cs_player.is_scoped)
     }
@@ -443,6 +449,10 @@ impl IClientEntity {
 
     pub fn velocity(&self) -> Vec3 {
         networked::read!(self.ptr.as_ptr(), base_player.velocity)
+    }
+
+    pub fn location_name(&self) -> Option<Box<OsStr>> {
+        networked::read!(self.ptr.as_ptr(), base_player.location_name)
     }
 
     /// Determine whether this entity is a player.

@@ -1,6 +1,12 @@
-use crate::config::Pitch;
-use crate::{config, global, Color, Config, WalkingAnimation};
-use iced_native::{column, row, widget, Command, Element, Length, Program};
+use super::{Element, Layer, Message};
+use crate::{
+    config,
+    config::{AntiAim, Pitch},
+    global, Color, Config, IVEngineClient, WalkingAnimation,
+};
+use bevy::{ecs::system::SystemState, prelude::*};
+use iced_native::{column, row, widget, Command, Length, Program};
+use std::mem;
 
 const PITCH_LIST: &[Pitch] = &[Pitch::Default, Pitch::Up, Pitch::Down];
 const WALKING_ANIMATION_LIST: &[WalkingAnimation] =
@@ -8,50 +14,44 @@ const WALKING_ANIMATION_LIST: &[WalkingAnimation] =
 
 pub struct Menu;
 
-#[derive(Clone, Debug)]
-pub enum Message {
-    None,
-    AutoShoot(bool),
-    Desync(bool),
-    DesyncDelta(i32),
-    Pitch(Pitch),
-    Roll(i32),
-    YawOffset(i32),
-    WalkingAnimation(WalkingAnimation),
-    AntiAimTab,
-    RageBotTab,
-    VisualsTab,
-    Thirdperson(bool),
-    ChamColor(String),
-    Load,
-    Save,
-}
-
-impl Program for Menu {
-    type Renderer = iced_glow::Renderer;
-    type Message = Message;
-
+impl Layer for Menu {
     fn update(&mut self, message: Message) -> Command<Message> {
         unsafe { update(message) }
     }
 
-    fn view(&self) -> Element<'_, Message, iced_glow::Renderer> {
+    fn view(&self) -> Element<'_> {
         unsafe { view() }
     }
 }
 
-unsafe fn update(message: Message) -> Command<Message> {
+fn update(message: Message) -> Command<Message> {
     global::with_app_mut(move |app| {
         let message = message;
-        let mut config = app.world.resource_mut::<Config>();
+
+        let mut system_state: SystemState<(ResMut<Config>, Res<IVEngineClient>)> =
+            SystemState::new(&mut app.world);
+
+        let (mut config, engine) = system_state.get_mut(&mut app.world);
+
+        if !config.menu_open {
+            return Command::none();
+        }
 
         match message {
             Message::AutoShoot(enabled) => config.auto_shoot = enabled,
-            Message::Desync(enabled) => config.desync_enabled = enabled,
-            Message::DesyncDelta(delta) => config.desync_delta = delta as f32,
-            Message::Pitch(pitch) => config.pitch = pitch,
-            Message::YawOffset(offset) => config.yaw_offset = offset as f32,
-            Message::Roll(roll) => config.roll = roll as f32,
+
+            Message::AntiAim(enabled) => config.anti_aim.enabled = enabled,
+
+            Message::Pitch(pitch) => config.anti_aim.pitch = pitch,
+            Message::YawOffset(offset) => config.anti_aim.yaw_offset = offset,
+            Message::Roll(roll) => config.anti_aim.roll = roll,
+
+            Message::FakePitch(pitch) => config.anti_aim.fake_pitch = pitch,
+            Message::FakeYawOffset(offset) => config.anti_aim.fake_yaw_offset = offset,
+            Message::FakeRoll(roll) => config.anti_aim.fake_roll = roll,
+
+            Message::FakeLag(value) => config.fake_lag = value,
+
             Message::WalkingAnimation(animation) => config.walking_animation = animation,
             Message::AntiAimTab => config.active_tab = 0,
             Message::RageBotTab => config.active_tab = 1,
@@ -61,37 +61,78 @@ unsafe fn update(message: Message) -> Command<Message> {
             Message::Load => *config = config::load(),
             Message::Save => config::save(&config),
             Message::None => {}
+
+            Message::Command(command) => config.command = command,
+            Message::RunCommand => {
+                engine.run_command(&mem::take(&mut config.command));
+            }
         }
 
         Command::none()
     })
 }
 
-unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
-    let desync_checkbox = widget::checkbox("desync", config.desync_enabled, Message::Desync);
-
-    // debug desync
-    // let desync_delta = config.desync_delta.trunc() as i32;
-    // let desync_delta_slider = row![
-    //     widget::text(format!("desync_delta ({desync_delta}) ")),
-    //     widget::slider(-180..=180, desync_delta, Message::DesyncDelta),
-    // ];
+fn view_modifiers<'a>(
+    label: &'static str,
+    pitch: Pitch,
+    yaw_offset: f32,
+    roll: f32,
+    on_change_pitch: impl Fn(Pitch) -> Message + 'a,
+    on_change_yaw_offset: impl Fn(f32) -> Message + 'a,
+    on_change_roll: impl Fn(f32) -> Message + 'a,
+) -> Element<'a> {
+    let label = widget::text(label);
 
     let pitch_list = row![
         widget::text("pitch "),
-        widget::pick_list(PITCH_LIST, Some(config.pitch), Message::Pitch),
+        widget::pick_list(PITCH_LIST, Some(pitch), on_change_pitch),
     ];
 
-    let yaw_offset = config.yaw_offset.trunc() as i32;
+    let yaw_offset = yaw_offset.trunc() as i32;
     let yaw_offset_slider = row![
         widget::text(format!("yaw offset ({yaw_offset}) ")),
-        widget::slider(-180..=180, yaw_offset, Message::YawOffset),
+        widget::slider(-180..=180, yaw_offset, move |offset| on_change_yaw_offset(
+            offset as f32
+        )),
     ];
 
-    let roll = config.roll.trunc() as i32;
+    let roll = roll.trunc() as i32;
     let roll_slider = row![
         widget::text(format!("roll ({roll}) ")),
-        widget::slider(-50..=50, roll, Message::Roll),
+        widget::slider(-50..=50, roll, move |value| on_change_roll(value as f32)),
+    ];
+
+    column![label, pitch_list, yaw_offset_slider, roll_slider,].into()
+}
+
+fn view_anti_aim<'a>(config: &Config) -> Element<'a> {
+    let aa = &config.anti_aim;
+    let enabled_checkbox = widget::checkbox("enabled", aa.enabled, Message::AntiAim);
+
+    let real = view_modifiers(
+        "real",
+        aa.pitch,
+        aa.yaw_offset,
+        aa.roll,
+        Message::Pitch,
+        Message::YawOffset,
+        Message::Roll,
+    );
+
+    let fake = view_modifiers(
+        "fake",
+        aa.fake_pitch,
+        aa.fake_yaw_offset,
+        aa.fake_roll,
+        Message::FakePitch,
+        Message::FakeYawOffset,
+        Message::FakeRoll,
+    );
+
+    let fake_lag = config.fake_lag;
+    let fake_lag_slider = row![
+        widget::text(format!("fake lag ({fake_lag}) ")),
+        widget::slider(0..=14, fake_lag, Message::FakeLag),
     ];
 
     let walking_animation_list = row![
@@ -110,15 +151,19 @@ unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::
     let save_button = widget::button("save").on_press(Message::Save);
     let buttons = row![load_button, save_button].spacing(15);
 
+    let command_input = widget::text_input("command", &config.command, Message::Command);
+    let run_command_button = widget::button("run command").on_press(Message::RunCommand);
+
     let options = column![
-        desync_checkbox,
-        //desync_delta_slider,
-        pitch_list,
-        yaw_offset_slider,
-        roll_slider,
+        enabled_checkbox,
+        real,
+        fake,
+        fake_lag_slider,
         walking_animation_list,
         thirdperson_checkbox,
         buttons,
+        command_input,
+        run_command_button,
     ];
 
     let content = widget::scrollable(options.spacing(15));
@@ -126,7 +171,7 @@ unsafe fn view_anti_aim<'a>(config: &Config) -> Element<'a, Message, iced_glow::
     content.into()
 }
 
-unsafe fn view_rage_bot<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
+fn view_rage_bot<'a>(config: &Config) -> Element<'a> {
     let auto_shoot_checkbox = widget::checkbox("auto shoot", config.auto_shoot, Message::AutoShoot);
     let options = column![auto_shoot_checkbox];
 
@@ -135,16 +180,20 @@ unsafe fn view_rage_bot<'a>(config: &Config) -> Element<'a, Message, iced_glow::
     content.into()
 }
 
-unsafe fn view_visuals<'a>(config: &Config) -> Element<'a, Message, iced_glow::Renderer> {
+fn view_visuals<'a>(config: &Config) -> Element<'a> {
     let color = config.cham_color.to_hex_string();
     let cham_color_input = widget::text_input("cham color", &color, Message::ChamColor);
 
     cham_color_input.into()
 }
 
-unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
+fn view<'a>() -> Element<'a> {
     global::with_app(|app| {
         let config = app.world.resource::<Config>();
+
+        if !config.menu_open {
+            return widget::Space::new(Length::Fill, Length::Fill).into();
+        }
 
         let aa_button = widget::button("anti aim").on_press(Message::AntiAimTab);
         let ragebot_button = widget::button("ragebot").on_press(Message::RageBotTab);
@@ -157,7 +206,7 @@ unsafe fn view<'a>() -> Element<'a, Message, iced_glow::Renderer> {
             _ => unreachable!(),
         };
 
-        let content = column![tab_bar, content];
+        let content = column![tab_bar, content].spacing(20);
         let content = widget::container(content)
             .width(Length::Units(800))
             .height(Length::Units(640))

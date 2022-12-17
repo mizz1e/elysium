@@ -1,6 +1,40 @@
 use crate::{global, material, Color, Config, IMaterial, Mat4x3, MaterialFlag, Ptr};
 use bevy::prelude::*;
+use std::mem::MaybeUninit;
 use std::{ffi, ptr};
+
+bitflags::bitflags! {
+    #[repr(transparent)]
+    pub struct RenderFlags: u16 {
+        const DISABLE_RENDERING = 1 << 0;
+        const HAS_CHANGED = 1 << 1;
+        const ALTERNATIVE_SORTING = 1 << 2;
+        const RENDER_WITH_VIEWMODELS = 1 << 3;
+        const BLOAT_BOUNDS = 1 << 4;
+        const BOUNDS_VALID = 1 << 5;
+        const BOUNDS_ALWAYS_RECOMPUTE = 1 << 6;
+        const IS_SPRITE = 1 << 7;
+        const FORCE_OPAQUE_PASS = 1 << 8;
+    }
+}
+
+#[repr(C)]
+pub struct RenderableInfo_t {
+    pub renderable: *mut u8,
+    pub alpha_property: *mut u8,
+    pub enum_count: i32,
+    pub render_frame: i32,
+    pub first_shadow: u16,
+    pub leaf_list: u16,
+    pub area: i16,
+    pub flags: RenderFlags,
+    pub flags2: RenderFlags,
+    pub bloated_abs_mins: Vec3,
+    pub bloated_abs_maxs: Vec3,
+    pub abs_mins: Vec3,
+    pub abs_maxs: Vec3,
+    _pad0: [MaybeUninit<u8>; 4],
+}
 
 #[derive(Resource)]
 pub struct DrawModelExecute(
@@ -78,6 +112,27 @@ unsafe extern "C" fn draw_model_execute(
         let model_render = app.world.resource::<IVModelRender>();
         let glow = app.world.resource::<material::Glow>();
         let glow = &glow.0;
+        let flat = app.world.resource::<material::Flat>();
+        let flat = &flat.0;
+
+        flat.set_flag(MaterialFlag::IGNORE_Z, true);
+        flat.set_color(Color {
+            red: 0.0,
+            green: 0.0,
+            blue: 0.0,
+            alpha: 1.0,
+        });
+
+        glow.set_flag(MaterialFlag::WIREFRAME, true);
+        glow.set_flag(MaterialFlag::IGNORE_Z, true);
+        glow.set_color(Color {
+            red: 1.0,
+            green: 1.0,
+            blue: 1.0,
+            alpha: 0.1,
+        });
+
+        model_render.override_material(Some(flat));
 
         model_render.draw_model_execute(
             render_context,
@@ -85,9 +140,6 @@ unsafe extern "C" fn draw_model_execute(
             model_render_info,
             custom_bone_to_world,
         );
-
-        glow.set_flag(MaterialFlag::IGNORE_Z, true);
-        glow.set_color(config.cham_color);
 
         model_render.override_material(Some(glow));
 

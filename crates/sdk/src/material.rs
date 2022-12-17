@@ -20,6 +20,9 @@ pub struct IMaterialVar {
 }
 
 #[derive(Resource)]
+pub struct Flat(pub IMaterial);
+
+#[derive(Resource)]
 pub struct Glow(pub IMaterial);
 
 bitflags::bitflags! {
@@ -134,18 +137,14 @@ impl IMaterial {
         let method: unsafe extern "C" fn(this: *mut u8, alpha: f32) =
             unsafe { self.ptr.vtable_entry(27) };
 
-        unsafe {
-            (method)(self.ptr.as_ptr(), alpha);
-        }
+        unsafe { (method)(self.ptr.as_ptr(), alpha) }
     }
 
     fn color_modulate(&self, red: f32, green: f32, blue: f32) {
         let method: unsafe extern "C" fn(this: *mut u8, red: f32, green: f32, blue: f32) =
             unsafe { self.ptr.vtable_entry(28) };
 
-        unsafe {
-            (method)(self.ptr.as_ptr(), 1.0, 0.0, 0.0);
-        }
+        unsafe { (method)(self.ptr.as_ptr(), red, green, blue) }
     }
 
     pub fn set_color(&self, color: Color) {

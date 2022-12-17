@@ -1,4 +1,4 @@
-#![deny(warnings)]
+//#![deny(warnings)]
 
 use bevy::prelude::*;
 use bevy_log::LogPlugin;

@@ -1,6 +1,11 @@
-use crate::{global, intrinsics, pattern, IClientEntity, INetChannel, Ptr};
+use crate::{
+    client_state, global, intrinsics,
+    model_render::{self, RenderFlags},
+    pattern, ClientState, IClientEntity, INetChannel, Ptr,
+};
+
 use bevy::prelude::*;
-use std::ffi::{CStr, OsStr};
+use std::ffi::{CStr, CString, OsStr};
 use std::os::unix::ffi::OsStrExt;
 use std::{ffi, mem};
 
@@ -78,6 +83,24 @@ impl IVEngineClient {
 
         Some(BSPTreeQuery { ptr })
     }
+
+    pub fn run_command(&self, command: &str) {
+        let method: unsafe extern "C" fn(this: *mut u8, command: *const ffi::c_char) =
+            unsafe { self.ptr.vtable_entry(113) };
+
+        let Ok(command) = CString::new(command) else {
+            return;
+        };
+
+        unsafe { (method)(self.ptr.as_ptr(), command.as_ptr()) }
+    }
+
+    pub fn is_in_game(&self) -> bool {
+        let method: unsafe extern "C" fn(this: *mut u8) -> bool =
+            unsafe { self.ptr.vtable_entry(26) };
+
+        unsafe { (method)(self.ptr.as_ptr()) }
+    }
 }
 
 pub struct BSPTreeQuery {
@@ -104,8 +127,56 @@ pub unsafe fn setup() {
 
     tracing::trace!("CClientLeafSystem::InsertIntoTree = {addr:?}");
 
+    let engine = link::load_module("engine_client.so").unwrap();
+    let bytes = engine.bytes();
+    let host_runframe_input = pattern::HOST_RUNFRAME_INPUT.find(bytes).unwrap().1;
+
+    elysium_mem::next_abs_addr::<u8>(host_runframe_input);
+
+    let addr = host_runframe_input.as_ptr().byte_add(196) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let cl_move_ptr = addr.byte_add(4).byte_offset(rel);
+
+    //let [a, b, c, d, e, f, g, h] = (cl_move as *mut u8).addr().to_ne_bytes();
+
+    //let code = [
+    //    0x48, 0xB8, a, b, c, d, e, f, g, h, // mov rax, addr
+    //    0xFF, 0xE0, // jmp rax
+    //];
+
+    //ptr::replace_protected(cl_move_ptr.cast(), code);
+
+    let cl_move = cl_move_ptr;
+
+    tracing::trace!("CL_Move = {cl_move:?}");
+
+    let addr = cl_move.byte_add(64) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let host_should_run = addr.byte_add(4).byte_offset(rel);
+
+    tracing::trace!("obtain GetBaseLocalClient");
+
+    let addr = cl_move.byte_add(47) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let get_base_local_client = addr.byte_add(4).byte_offset(rel);
+
+    tracing::trace!("GetBaseLocalClient = {get_base_local_client:?}");
+    tracing::trace!("obtain CL_SendMove");
+
+    let addr = cl_move.byte_add(913) as *mut u8;
+    let rel = addr.cast::<i32>().read() as isize;
+    let cl_sendmove = addr.byte_add(4).byte_offset(rel);
+
+    tracing::trace!("CL_SendMove = {cl_sendmove:?}");
+
     global::with_app_mut(|app| {
         app.insert_resource(InsertIntoTree(addr));
+
+        //.insert_resource(HostShouldRun(mem::transmute(host_should_run)))
+        app.insert_resource(client_state::GetBaseLocalClient(mem::transmute(
+            get_base_local_client,
+        )));
+        //.insert_resource(ClSendMove(mem::transmute(cl_sendmove)))
     });
 }
 
@@ -126,7 +197,8 @@ pub struct ListLeavesInBox(
     ) -> ffi::c_int,
 );
 
-unsafe extern "C" fn list_leaves_in_box(
+/// See [disable model occlusion](https://www.unknowncheats.me/forum/counterstrike-global-offensive/330483-disable-model-occulusion.html).
+pub unsafe extern "C" fn list_leaves_in_box(
     this: *mut u8,
     min: *const Vec3,
     max: *const Vec3,
@@ -143,52 +215,41 @@ unsafe extern "C" fn list_leaves_in_box(
         (insert_into_tree, list_leaves_in_box)
     });
 
-    // `CClientLeafSystem::InsertIntoTree` @ `game/client/clientleafsystem.cpp`
-    if return_addr == insert_into_tree {
-        let info = &**(frame_addr.byte_add(2392) as *const *const internal::RenderableInfo_t);
-        let ptr = info.renderable.byte_sub(mem::size_of::<*mut u8>()) as *mut u8;
-        let renderable = Ptr::new("IClientRenderable", ptr).unwrap();
-        let index: unsafe extern "C" fn(this: *mut u8) -> ffi::c_int =
-            unsafe { renderable.vtable_entry(8) };
-        let index = (index)(renderable.as_ptr());
-
-        if let Some(entity) = IClientEntity::from_index(index) {
-            let is_player = entity.is_player();
-
-            if entity.is_player() {
-                let max = Vec3::splat(16384.0);
-                let min = -max;
-
-                return (method)(this, &min, &max, list, list_max);
-            }
-        }
+    // `CClientLeafSystem::InsertIntoTree` in `game/client/clientleafsystem.cpp`.
+    if return_addr != insert_into_tree {
+        return (method)(this, min, max, list, list_max);
     }
 
-    (method)(this, min, max, list, list_max)
-}
+    // Get RenderableInfo_t from stack.
+    let info = &mut **(frame_addr.byte_add(2392) as *const *mut model_render::RenderableInfo_t);
 
-mod internal {
-    use std::ffi;
+    // Get IClientRenderable from RenderableInfo_t.
+    let ptr = info.renderable.byte_sub(mem::size_of::<*mut u8>()) as *mut u8;
+    let renderable = Ptr::new("IClientRenderable", ptr).unwrap();
 
-    #[repr(C)]
-    pub struct IClientRenderable;
+    // Get IClientEntity from IClientRenderable.
+    let index: unsafe extern "C" fn(this: *mut u8) -> ffi::c_int =
+        unsafe { renderable.vtable_entry(8) };
+    let index = (index)(renderable.as_ptr());
 
-    #[repr(C)]
-    pub struct CClientAlphaProperty;
+    let Some(entity) = IClientEntity::from_index(index) else {
+        return (method)(this, min, max, list, list_max);
+    };
 
-    /// `struct RenderableInfo_t` @ `game/client/clientleafsystem.cpp`
-    #[repr(C)]
-    pub struct RenderableInfo_t {
-        pub renderable: *const IClientRenderable,
-        pub alpha_property: *const CClientAlphaProperty,
-        pub enum_count: ffi::c_int,
-        pub render_frame: ffi::c_int,
-        pub first_shadow: ffi::c_ushort,
-        pub leaf_list: ffi::c_ushort,
-        pub area: ffi::c_short,
-        pub flags: u16,
-        // TODO: Add the rest of the fields. Reason I haven't is due to the fact I cannot be
-        // bothered with figuring out the layout of C bitfields. Besides, these fields are not very
-        // important.
+    // Only apply to players.
+    if !entity.is_player() {
+        return (method)(this, min, max, list, list_max);
     }
+
+    // Fix render order, force translucent group.
+    //
+    // See `CClientLeafSystem::AddRenderablesToRenderLists` in `game/client/clientleafsystem.cpp`.
+    info.flags.remove(RenderFlags::FORCE_OPAQUE_PASS);
+    info.flags2.insert(RenderFlags::BOUNDS_ALWAYS_RECOMPUTE);
+
+    // Force render bounding box to maximum world coordinates.
+    let max_coord = Vec3::splat(16_384.0);
+    let min_coord = Vec3::splat(-16_384.0);
+
+    (method)(this, &min_coord, &max_coord, list, list_max)
 }
