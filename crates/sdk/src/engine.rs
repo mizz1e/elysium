@@ -1,6 +1,9 @@
 use crate::{
-    client_state, global, intrinsics, pattern, ClientState, IClientEntity, INetChannel, Ptr,
+    client_state, global, intrinsics,
+    model_render::{self, RenderFlags},
+    pattern, ClientState, IClientEntity, INetChannel, Ptr,
 };
+
 use bevy::prelude::*;
 use std::ffi::{CStr, CString, OsStr};
 use std::os::unix::ffi::OsStrExt;
@@ -194,7 +197,8 @@ pub struct ListLeavesInBox(
     ) -> ffi::c_int,
 );
 
-unsafe extern "C" fn list_leaves_in_box(
+/// See [disable model occlusion](https://www.unknowncheats.me/forum/counterstrike-global-offensive/330483-disable-model-occulusion.html).
+pub unsafe extern "C" fn list_leaves_in_box(
     this: *mut u8,
     min: *const Vec3,
     max: *const Vec3,
@@ -211,52 +215,39 @@ unsafe extern "C" fn list_leaves_in_box(
         (insert_into_tree, list_leaves_in_box)
     });
 
-    // `CClientLeafSystem::InsertIntoTree` @ `game/client/clientleafsystem.cpp`
-    if return_addr == insert_into_tree {
-        let info = &**(frame_addr.byte_add(2392) as *const *const internal::RenderableInfo_t);
-        let ptr = info.renderable.byte_sub(mem::size_of::<*mut u8>()) as *mut u8;
-        let renderable = Ptr::new("IClientRenderable", ptr).unwrap();
-        let index: unsafe extern "C" fn(this: *mut u8) -> ffi::c_int =
-            unsafe { renderable.vtable_entry(8) };
-        let index = (index)(renderable.as_ptr());
-
-        if let Some(entity) = IClientEntity::from_index(index) {
-            let is_player = entity.is_player();
-
-            if entity.is_player() {
-                let max = Vec3::splat(16384.0);
-                let min = -max;
-
-                return (method)(this, &min, &max, list, list_max);
-            }
-        }
+    // `CClientLeafSystem::InsertIntoTree` in `game/client/clientleafsystem.cpp`.
+    if return_addr != insert_into_tree {
+        return (method)(this, min, max, list, list_max);
     }
 
-    (method)(this, min, max, list, list_max)
-}
+    // Get RenderableInfo_t from stack.
+    let info = &mut **(frame_addr.byte_add(2392) as *const *mut model_render::RenderableInfo_t);
 
-mod internal {
-    use std::ffi;
+    // Get IClientRenderable from RenderableInfo_t.
+    let ptr = info.renderable.byte_sub(mem::size_of::<*mut u8>()) as *mut u8;
+    let renderable = Ptr::new("IClientRenderable", ptr).unwrap();
 
-    #[repr(C)]
-    pub struct IClientRenderable;
+    // Get IClientEntity from IClientRenderable.
+    let index: unsafe extern "C" fn(this: *mut u8) -> ffi::c_int =
+        unsafe { renderable.vtable_entry(8) };
+    let index = (index)(renderable.as_ptr());
 
-    #[repr(C)]
-    pub struct CClientAlphaProperty;
+    let Some(entity) = IClientEntity::from_index(index) else {
+        return (method)(this, min, max, list, list_max);
+    };
 
-    /// `struct RenderableInfo_t` @ `game/client/clientleafsystem.cpp`
-    #[repr(C)]
-    pub struct RenderableInfo_t {
-        pub renderable: *const IClientRenderable,
-        pub alpha_property: *const CClientAlphaProperty,
-        pub enum_count: ffi::c_int,
-        pub render_frame: ffi::c_int,
-        pub first_shadow: ffi::c_ushort,
-        pub leaf_list: ffi::c_ushort,
-        pub area: ffi::c_short,
-        pub flags: u16,
-        // TODO: Add the rest of the fields. Reason I haven't is due to the fact I cannot be
-        // bothered with figuring out the layout of C bitfields. Besides, these fields are not very
-        // important.
+    if !entity.is_player() {
+        return (method)(this, min, max, list, list_max);
     }
+
+    // Fix render order, force translucent group.
+    //
+    // See `CClientLeafSystem::AddRenderablesToRenderLists` in `game/client/clientleafsystem.cpp`.
+    info.flags.remove(RenderFlags::FORCE_OPAQUE_PASS);
+    info.flags2.insert(RenderFlags::BOUNDS_ALWAYS_RECOMPUTE);
+
+    let max_coord = Vec3::splat(16_384.0);
+    let min_coord = Vec3::splat(-16_384.0);
+
+    (method)(this, &min_coord, &max_coord, list, list_max)
 }

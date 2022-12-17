@@ -208,7 +208,7 @@ unsafe extern "C" fn create_move(
         if config.anti_aim.enabled {
             if let Some(client_state) = crate::ClientState::get() {
                 let fake_lag = if local_flags.contains(EntityFlag::IN_AIR) {
-                    14
+                    6
                 } else {
                     config.fake_lag
                 };
