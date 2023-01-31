@@ -1,9 +1,6 @@
 use crate::{global, IClientEntity, Ptr};
 use bevy::prelude::*;
-use std::collections::HashMap;
-use std::ffi;
-
-type SourceIndex = ffi::c_int;
+use std::{ffi, ops};
 
 #[derive(Resource)]
 pub struct IClientEntityList {
@@ -11,8 +8,8 @@ pub struct IClientEntityList {
 }
 
 impl IClientEntityList {
-    pub fn get(&self, index: SourceIndex) -> Option<IClientEntity> {
-        let method: unsafe extern "C" fn(this: *mut u8, index: SourceIndex) -> *mut u8 =
+    pub fn get(&self, index: ffi::c_int) -> Option<IClientEntity> {
+        let method: unsafe extern "C" fn(this: *mut u8, index: ffi::c_int) -> *mut u8 =
             unsafe { self.ptr.vtable_entry(3) };
 
         let ptr = unsafe { (method)(self.ptr.as_ptr(), index) };
@@ -21,33 +18,41 @@ impl IClientEntityList {
         Some(IClientEntity { ptr })
     }
 
-    pub fn highest_index(&self) -> SourceIndex {
-        let method: unsafe extern "C" fn(this: *mut u8) -> SourceIndex =
+    pub fn highest_index(&self) -> ffi::c_int {
+        let method: unsafe extern "C" fn(this: *mut u8) -> ffi::c_int =
             unsafe { self.ptr.vtable_entry(6) };
 
         unsafe { (method)(self.ptr.as_ptr()) }
     }
+
+    pub fn players(&self) -> Entities<'_> {
+        let mut entities = Vec::with_capacity(63);
+
+        // 1 is the world
+        for i in 1..=self.highest_index().max(64) {
+            let Some(player) = self.get(i) else {
+                continue;
+            };
+
+            entities.push(player);
+        }
+
+        Entities {
+            _entity_list: self,
+            entities,
+        }
+    }
 }
 
-#[derive(Resource)]
-pub struct EntityMap(pub(crate) HashMap<ffi::c_int, *mut u8>);
+pub struct Entities<'a> {
+    _entity_list: &'a IClientEntityList,
+    entities: Vec<IClientEntity>,
+}
 
-unsafe impl Send for EntityMap {}
-unsafe impl Sync for EntityMap {}
+impl<'a> ops::Deref for Entities<'a> {
+    type Target = [IClientEntity];
 
-pub unsafe fn sync_entity_list() {
-    global::with_app_mut(|app| {
-        let world = app.world.cell();
-        let entity_list = world.resource::<IClientEntityList>();
-        let mut entity_map = world.resource_mut::<EntityMap>();
-        let highest_index = entity_list.highest_index();
-
-        for index in 0..=highest_index {
-            if let Some(entity) = entity_list.get(index) {
-                entity_map.0.insert(index, entity.ptr.as_ptr());
-            } else {
-                entity_map.0.remove_entry(&index);
-            }
-        }
-    });
+    fn deref(&self) -> &Self::Target {
+        &self.entities
+    }
 }

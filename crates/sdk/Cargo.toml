@@ -16,17 +16,14 @@ path = "../dismal"
 [dependencies.dirs]
 version = "4.0"
 
-[dependencies.csgo-friendcode]
-git = "https://github.com/not-wlan/csgo-friendcode"
-
 [dependencies.elysium-mem]
 path = "../mem"
 
 [dependencies.iced_glow]
-version = "0.5"
+version = "0.6"
 
 [dependencies.iced_native]
-version = "0.7"
+version = "0.8"
 
 [dependencies.libc]
 version = "0.2"
@@ -43,10 +40,10 @@ rev = "0c54d56d5472a996a59f6e2bf18e603340ddf48f"
 version = "0.7"
 
 [dependencies.once_cell]
-version = "1.16"
+version = "1.17"
 
 [dependencies.regex]
-version = "1.6"
+version = "1.7"
 
 [dependencies.phf]
 features = ["macros"]
@@ -76,6 +73,3 @@ version = "0.1"
 
 [dependencies.ubyte]
 version = "0.10"
-
-[dependencies.yeslogic-fontconfig-sys]
-version = "4.0"

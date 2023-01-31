@@ -134,10 +134,33 @@ unsafe extern "C" fn level_shutdown(this: *mut u8) {
     (method)(this)
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, StageLabel)]
+pub enum FrameStage {
+    Start,
+    NetUpdateStart,
+    NetUpdatePostDataUpdate,
+    NetUpdateEnd,
+    RenderStart,
+    RenderEnd,
+}
+
 unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
     debug_assert!(!this.is_null());
 
     let method = global::with_app_mut(|app| {
+        /*let mut app = App::empty();
+
+        app.add_stage(FrameStage::Start);
+
+        app.add_sub_app(RenderApp, render_app, move |app_world, render_app| {
+            let phase_sort = render_app
+                .schedule
+                .get_stage_mut::<SystemStage>(RenderStage::PhaseSort)
+                .unwrap();
+
+            phase_sort.run(&mut render_app.world);
+        });*/
+
         if !app.world.contains_resource::<IClientMode>() {
             let client = app.world.resource::<IBaseClientDLL>();
             let client_mode = client.setup_client_mode();

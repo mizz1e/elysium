@@ -111,6 +111,8 @@ unsafe extern "C" fn create_move(
         let flip = command.tick_count % 2 == 0;
         let side = if flip { 1.0 } else { -1.0 };
         let movement = command.movement;
+        let now = Time::now();
+        let eye_origin = local_player.eye_origin();
 
         if local_flags.contains(EntityFlag::IN_AIR) {
             command.buttons.remove(Button::JUMP);
@@ -159,25 +161,34 @@ unsafe extern "C" fn create_move(
             command.movement = math::fix_movement(command.movement, command.view_angle, wish_angle);
         }
 
-        let now = Time::now();
-        let eye_origin = local_player.eye_origin();
-        let mut enemies = Vec::new();
+        let entities = entity_list.players();
+        let mut entities = entities
+            .iter()
+            .filter(|entity| entity.flags().contains(EntityFlag::ENEMY))
+            .map(|entity| {
+                const BONE_USED_BY_HITBOX: i32 = 0x100;
 
-        for i in 1..=64 {
-            let Some(player) = entity_list.get(i) else {
-                continue;
-            };
+                let mut bones = [Mat4x3::ZERO; 256];
 
-            let flags = player.flags();
+                entity.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
 
-            if !flags.contains(EntityFlag::ENEMY) {
-                continue;
-            }
+                let head_bone = bones[8];
+                let head_origin = head_bone.to_affine().translation.into();
+                let view_angle = math::calculate_angle(eye_origin, head_origin);
+                let distance = engine_view_angle.distance(view_angle);
 
-            enemies.push(player);
-        }
+                (entity, view_angle, distance)
+            })
+            .collect::<Vec<_>>();
 
-        if enemies.is_empty() {
+        // sort by distance
+        entities.sort_unstable_by(|a, b| a.2.total_cmp(&b.2));
+
+        let target_entity = entities.first();
+
+        if let Some((_enemy, view_angle, _distance)) = target_entity {
+            command.view_angle = *view_angle;
+        } else {
             command.view_angle.y += 37.0
                 * match command.tick_count % 4 {
                     0 => 1.0,
@@ -186,19 +197,6 @@ unsafe extern "C" fn create_move(
                     3 => -1.0,
                     _ => unreachable!(),
                 };
-        } else {
-            for player in enemies {
-                const BONE_USED_BY_HITBOX: i32 = 0x100;
-
-                let mut bones = [Mat4x3::ZERO; 256];
-
-                player.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
-
-                let head_bone = bones[8];
-                let head_origin = head_bone.to_affine().translation.into();
-
-                command.view_angle = math::calculate_angle(eye_origin, head_origin);
-            }
         }
 
         config.anti_aim.pitch.apply(&mut command.view_angle.x);
@@ -242,49 +240,8 @@ unsafe extern "C" fn create_move(
             if weapon_cant_fire || switching_weapons || no_ammo {
                 command.buttons.remove(Button::ATTACK);
             } else if command.buttons.contains(Button::ATTACK) {
-                command.view_angle = engine_view_angle;
-            } else {
-                let now = Time::now();
-                let eye_origin = local_player.eye_origin();
-                let mut enemies = Vec::new();
-
-                for i in 1..=64 {
-                    let Some(player) = entity_list.get(i) else {
-                        continue;
-                    };
-
-                    let flags = player.flags();
-
-                    if !flags.contains(EntityFlag::ENEMY) {
-                        continue;
-                    }
-
-                    enemies.push(player);
-                }
-
-                let mut random = rand::thread_rng();
-                let skip = random.gen_range(0..=enemies.len());
-                let enemies = enemies.into_iter().cycle().skip(skip);
-
-                for enemy in enemies {
-                    let mut bones = [Mat4x3::ZERO; 256];
-
-                    const BONE_USED_BY_HITBOX: i32 = 0x100;
-                    enemy.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
-
-                    let head_bone = bones[8];
-                    let head_origin: Vec3 = head_bone.to_affine().translation.into();
-                    let view_angle = math::calculate_angle(eye_origin, head_origin);
-                    let direction = view_angle.normalize_or_zero();
-                    let info = weapon.weapon_info();
-                    let data = simulate_shot(eye_origin, direction, info);
-
-                    if config.auto_shoot {
-                        command.view_angle = view_angle;
-                        command.buttons.insert(Button::ATTACK);
-                    }
-
-                    break;
+                if let Some((_enemy, view_angle, _distance)) = target_entity {
+                    command.view_angle = *view_angle;
                 }
             }
         }
