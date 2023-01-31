@@ -176,6 +176,7 @@ unsafe extern "C" fn create_move(
                 let head_origin = head_bone.to_affine().translation.into();
                 let view_angle = math::calculate_angle(eye_origin, head_origin);
                 let distance = engine_view_angle.distance(view_angle);
+                //+ eye_origin.distance(head_origin);
 
                 (entity, view_angle, distance)
             })
@@ -186,32 +187,17 @@ unsafe extern "C" fn create_move(
 
         let target_entity = entities.first();
 
-        if let Some((_enemy, view_angle, _distance)) = target_entity {
-            command.view_angle = *view_angle;
-        } else {
-            command.view_angle.y += 37.0
-                * match command.tick_count % 4 {
-                    0 => 1.0,
-                    1 => 1.0,
-                    2 => -1.0,
-                    3 => -1.0,
-                    _ => unreachable!(),
-                };
-        }
-
-        config.anti_aim.pitch.apply(&mut command.view_angle.x);
-        command.view_angle.y += config.anti_aim.yaw_offset;
-        command.view_angle.z = config.anti_aim.roll;
-
         if config.anti_aim.enabled {
-            if let Some(client_state) = crate::ClientState::get() {
-                let fake_lag = if local_flags.contains(EntityFlag::IN_AIR) {
-                    6
-                } else {
-                    config.fake_lag
-                };
+            if let Some((_enemy, view_angle, _distance)) = target_entity {
+                command.view_angle = *view_angle;
+            }
 
-                *send_packet = client_state.choked_commands() >= fake_lag;
+            config.anti_aim.pitch.apply(&mut command.view_angle.x);
+            command.view_angle.y += config.anti_aim.yaw_offset;
+            command.view_angle.z = config.anti_aim.roll;
+
+            if let Some(client_state) = crate::ClientState::get() {
+                *send_packet = client_state.choked_commands() >= config.fake_lag;
             }
 
             if !*send_packet {
@@ -246,7 +232,12 @@ unsafe extern "C" fn create_move(
             }
         }
 
-        command.view_angle -= local_player.aim_punch();
+        if command.buttons.contains(Button::ATTACK) {
+            command.view_angle -= local_player.aim_punch();
+        } else if command.buttons.contains(Button::USE) {
+            command.view_angle = engine_view_angle;
+        }
+
         command.view_angle = math::sanitize_angle(command.view_angle);
         command.movement =
             math::fix_movement(command.movement, command.view_angle, engine_view_angle);

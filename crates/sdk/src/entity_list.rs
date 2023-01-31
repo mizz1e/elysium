@@ -29,7 +29,7 @@ impl IClientEntityList {
         let mut entities = Vec::with_capacity(63);
 
         // 1 is the world
-        for i in 1..=self.highest_index().max(64) {
+        for i in 1..=64 {
             let Some(player) = self.get(i) else {
                 continue;
             };

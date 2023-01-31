@@ -1,4 +1,8 @@
-use crate::{global, material, Color, Config, IMaterial, Mat4x3, MaterialFlag, Ptr};
+use crate::{
+    global, material, Color, Config, EntityFlag, IClientEntityList, IMaterial, Mat4x3,
+    MaterialFlag, Ptr,
+};
+use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
 use std::mem::MaybeUninit;
 use std::{ffi, ptr};
@@ -108,33 +112,74 @@ unsafe extern "C" fn draw_model_execute(
     custom_bone_to_world: *const [Mat4x3; 256],
 ) {
     debug_assert!(!this.is_null());
+    debug_assert!(!model_render_info.is_null());
 
-    global::with_app(|app| {
-        let config = app.world.resource::<Config>();
-        let model_render = app.world.resource::<IVModelRender>();
-        let glow = app.world.resource::<material::Glow>();
-        let glow = &glow.0;
-        let flat = app.world.resource::<material::Flat>();
-        let flat = &flat.0;
+    global::with_app_mut(|app| {
+        let mut system_state: SystemState<(
+            Res<Config>,
+            Res<IClientEntityList>,
+            Res<IVModelRender>,
+            Res<material::Glow>,
+            Res<material::Flat>,
+        )> = SystemState::new(&mut app.world);
 
-        flat.set_flag(MaterialFlag::IGNORE_Z, true);
-        flat.set_color(Color {
-            red: 0.0,
-            green: 0.0,
-            blue: 0.0,
-            alpha: 1.0,
-        });
+        let (config, entity_list, model_render, glow, flat) = system_state.get_mut(&mut app.world);
 
-        glow.set_flag(MaterialFlag::WIREFRAME, true);
-        glow.set_flag(MaterialFlag::IGNORE_Z, true);
-        glow.set_color(Color {
-            red: 1.0,
-            green: 1.0,
-            blue: 1.0,
-            alpha: 0.1,
-        });
+        if let Some(entity) = entity_list.get((*model_render_info).entity_index) {
+            if matches!(entity.index(), 1..=64) {
+                flat.set_flag(MaterialFlag::IGNORE_Z, true);
+                glow.set_flag(MaterialFlag::WIREFRAME, true);
+                glow.set_flag(MaterialFlag::IGNORE_Z, true);
 
-        model_render.override_material(Some(flat));
+                let flat_color = Color {
+                    red: 0.0,
+                    green: 0.0,
+                    blue: 0.0,
+                    alpha: 1.0,
+                };
+
+                let mut glow_color = Color {
+                    red: 1.0,
+                    green: 1.0,
+                    blue: 1.0,
+                    alpha: 1.0,
+                };
+
+                if entity.flags().contains(EntityFlag::ENEMY) {
+                    glow_color = Color {
+                        red: 1.0,
+                        green: 0.0,
+                        blue: 0.0,
+                        alpha: 1.0,
+                    };
+                }
+
+                flat.set_color(flat_color);
+                glow.set_color(glow_color);
+
+                model_render.override_material(Some(&flat));
+
+                model_render.draw_model_execute(
+                    render_context,
+                    draw_model_state,
+                    model_render_info,
+                    custom_bone_to_world,
+                );
+
+                model_render.override_material(Some(&glow));
+
+                model_render.draw_model_execute(
+                    render_context,
+                    draw_model_state,
+                    model_render_info,
+                    custom_bone_to_world,
+                );
+
+                model_render.override_material(None);
+
+                return;
+            }
+        }
 
         model_render.draw_model_execute(
             render_context,
@@ -142,21 +187,12 @@ unsafe extern "C" fn draw_model_execute(
             model_render_info,
             custom_bone_to_world,
         );
-
-        model_render.override_material(Some(glow));
-
-        model_render.draw_model_execute(
-            render_context,
-            draw_model_state,
-            model_render_info,
-            custom_bone_to_world,
-        );
-
-        model_render.override_material(None);
     });
 }
 
 mod internal {
+    use bevy::math::Vec3;
+
     #[repr(C)]
     pub struct IMatRenderContext;
 
@@ -164,5 +200,20 @@ mod internal {
     pub struct DrawModelState_t;
 
     #[repr(C)]
-    pub struct ModelRenderInfo_t;
+    pub struct ModelRenderInfo_t {
+        pub origin: Vec3,
+        pub angles: Vec3,
+        _pad0: [u8; 4],
+        pub renderable: *const u8,
+        pub model: *const u8,
+        pub model_to_world: *const u8,
+        pub lighting_offset: *const u8,
+        pub lighting_origin: *const Vec3,
+        pub flags: i32,
+        pub entity_index: i32,
+        pub skin: i32,
+        pub body: i32,
+        pub hitbox_set: i32,
+        pub instance: *const u8,
+    }
 }

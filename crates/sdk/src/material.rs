@@ -19,10 +19,10 @@ pub struct IMaterialVar {
     pub(crate) ptr: Ptr,
 }
 
-#[derive(Resource)]
+#[derive(Deref, Resource)]
 pub struct Flat(pub IMaterial);
 
-#[derive(Resource)]
+#[derive(Deref, Resource)]
 pub struct Glow(pub IMaterial);
 
 bitflags::bitflags! {
