@@ -86,12 +86,14 @@ pub fn check_display() -> Result<(), Error> {
 /// segmentation fault!!
 pub fn check_linker_path() -> Result<(), Error> {
     const LD_LIBRARY_PATH: &str = "LD_LIBRARY_PATH";
+
     const BIN_LINUX64: &str = "bin/linux64";
     const CSGO_BIN_LINUX64: &str = "csgo/bin/linux64";
+
+    const STEAM_RT_PINNED: &str = "ubuntu12_32/steam-runtime/pinned_libs_64";
+
     const STEAM_RT_LIB: &str = "ubuntu12_32/steam-runtime/lib/x86_64-linux-gnu";
     const STEAM_RT_USR_LIB: &str = "ubuntu12_32/steam-runtime/usr/lib/x86_64-linux-gnu";
-    const STEAM_RT_PINNED: &str = "ubuntu12_32/steam-runtime/pinned_libs_64";
-    const STEAM_RT_PANORAMA: &str = "ubuntu12_32/panorama";
 
     if env::var_os(HAS_CSGO_LINKER_PATH).is_some() {
         return Ok(());
@@ -104,17 +106,16 @@ pub fn check_linker_path() -> Result<(), Error> {
     tracing::info!("found csgo at {csgo_dir:?}");
     tracing::info!("appending csgo linker path");
 
-    linker_path.insert(0, csgo_dir.join(BIN_LINUX64));
-    linker_path.insert(0, csgo_dir.join(CSGO_BIN_LINUX64));
-
     if !env::var_os(HAS_STEAM_LINKER_PATH).is_some() {
         tracing::info!("appending steamrt linker path");
 
-        linker_path.insert(0, steam_dir.join(STEAM_RT_LIB));
         linker_path.insert(0, steam_dir.join(STEAM_RT_USR_LIB));
+        linker_path.insert(0, steam_dir.join(STEAM_RT_LIB));
         linker_path.insert(0, steam_dir.join(STEAM_RT_PINNED));
-        linker_path.insert(0, steam_dir.join(STEAM_RT_PANORAMA));
     }
+
+    linker_path.insert(0, csgo_dir.join(CSGO_BIN_LINUX64));
+    linker_path.insert(0, csgo_dir.join(BIN_LINUX64));
 
     let linker_path = env::join_paths(linker_path).unwrap_or_default();
 
@@ -136,6 +137,10 @@ pub fn check_linker_path() -> Result<(), Error> {
 }
 
 pub fn pre_launch() -> Result<(), Error> {
+    // steam_appid.txt isn't needed when you set these.
+    env::set_var("SteamAppId", "730");
+    env::set_var("SteamGameId", "730");
+
     check_display()?;
     check_linker_path()?;
 
