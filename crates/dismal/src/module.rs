@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::{env, ffi, ptr, slice};
 
 #[cfg(target_env = "gnu")]
-pub unsafe fn determine_path(path: *const ffi::c_char) -> Result<PathBuf> {
+pub(crate) unsafe fn determine_path(path: *const ffi::c_char) -> Result<PathBuf> {
     let bytes = CStr::from_ptr(path).to_bytes();
 
     // Empty string indicates the current process.
@@ -19,7 +19,7 @@ pub unsafe fn determine_path(path: *const ffi::c_char) -> Result<PathBuf> {
 }
 
 #[cfg(target_env = "musl")]
-pub unsafe fn determine_path(path: *const ffi::c_char) -> Result<PathBuf> {
+pub(crate) unsafe fn determine_path(path: *const ffi::c_char) -> Result<PathBuf> {
     let bytes = CStr::from_ptr(path).to_bytes();
 
     // Empty string indicates the vDSO.
@@ -41,12 +41,18 @@ pub struct Code {
 }
 
 impl Code {
+    /// # Safety
+    ///
+    /// Accessing arbitary memory is never safe.
     pub unsafe fn memory(&self) -> &[u8] {
         let ptr = ptr::from_exposed_addr::<u8>(self.base_addr + self.offset);
 
         slice::from_raw_parts(ptr, self.len)
     }
 
+    /// # Safety
+    ///
+    /// Accessing arbitary memory is never safe.
     pub unsafe fn memory_mut(&mut self) -> &mut [u8] {
         let ptr = ptr::from_exposed_addr_mut::<u8>(self.base_addr + self.offset);
 
@@ -66,6 +72,9 @@ pub struct Search<'a> {
 }
 
 impl Module {
+    /// # Safety
+    ///
+    /// Accessing arbitary memory is never safe.
     pub unsafe fn search(&self, pattern: &Pattern) -> Option<Search<'_>> {
         for code in &self.code {
             if let Some(bytes) = pattern.find(code.memory()) {
