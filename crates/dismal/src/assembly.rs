@@ -2,6 +2,7 @@ use iced_x86::{
     Decoder, DecoderOptions, FlowControl, Formatter, FormatterOutput, FormatterTextKind,
     Instruction, IntelFormatter,
 };
+
 use std::fmt::Write;
 use yansi::Paint;
 
@@ -31,7 +32,7 @@ pub struct FlowInfo {
 pub fn disassemble(bytes: &[u8]) -> Option<FlowInfo> {
     const BITNESS: u32 = 64;
 
-    let base_ip = bytes.as_ptr().addr() as usize;
+    let base_ip = bytes.as_ptr().addr();
     let mut decoder = Decoder::with_ip(BITNESS, bytes, base_ip as u64, DecoderOptions::NONE);
     let mut formatter = IntelFormatter::with_options(None, None);
     let mut instruction = Instruction::default();
