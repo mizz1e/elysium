@@ -110,15 +110,15 @@ pub struct BSPTreeQuery {
 impl BSPTreeQuery {
     pub unsafe fn setup(&self) {
         global::with_app_mut(|app| {
-            app.insert_resource(ListLeavesInBox(
+            /*app.insert_resource(ListLeavesInBox(
                 self.ptr.vtable_replace(6, list_leaves_in_box),
-            ));
+            ));*/
         });
     }
 }
 
 pub unsafe fn setup() {
-    tracing::trace!("obtain CClientLeafSystem::InsertIntoTree");
+    /*tracing::trace!("obtain CClientLeafSystem::InsertIntoTree");
 
     let module = link::load_module("client_client.so").unwrap();
     let bytes = module.bytes();
@@ -167,15 +167,15 @@ pub unsafe fn setup() {
     let rel = addr.cast::<i32>().read() as isize;
     let cl_sendmove = addr.byte_add(4).byte_offset(rel);
 
-    tracing::trace!("CL_SendMove = {cl_sendmove:?}");
+    tracing::trace!("CL_SendMove = {cl_sendmove:?}");*/
 
     global::with_app_mut(|app| {
-        app.insert_resource(InsertIntoTree(addr));
+        //app.insert_resource(InsertIntoTree(addr));
 
         //.insert_resource(HostShouldRun(mem::transmute(host_should_run)))
-        app.insert_resource(client_state::GetBaseLocalClient(mem::transmute(
+        /*app.insert_resource(client_state::GetBaseLocalClient(mem::transmute(
             get_base_local_client,
-        )));
+        )));*/
         //.insert_resource(ClSendMove(mem::transmute(cl_sendmove)))
     });
 }

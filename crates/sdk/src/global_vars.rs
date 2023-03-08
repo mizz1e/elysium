@@ -20,10 +20,12 @@ impl CGlobalVarsBase {
     }
 
     fn current_time(&self) -> f32 {
+        tracing::trace!("get current_time");
         unsafe { self.internal().current_time }
     }
 
     pub fn interval_per_tick(&self) -> f32 {
+        tracing::trace!("get interval_per_tick");
         unsafe { self.internal().interval_per_tick }
     }
 }

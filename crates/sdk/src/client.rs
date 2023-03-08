@@ -53,10 +53,15 @@ impl IBaseClientDLL {
                 self.ptr.vtable_replace(37, frame_stage_notify),
             ));
 
-            let activate_mouse = self.ptr.vtable_entry::<ptr::FnPtr>(16) as *const u8;
-            let ptr = **elysium_mem::next_abs_addr_ptr::<*const *mut u8>(activate_mouse)
-                .unwrap_or_else(|| panic!("unable to find CInput"));
+            unsafe fn abs_addr(ptr: *const u8, offset: isize, size: usize) -> *const u8 {
+                ptr.byte_offset(ptr.byte_offset(offset).cast::<i32>().read_unaligned() as isize)
+                    .byte_add(size)
+            }
 
+            let activate_mouse = self.ptr.vtable_entry::<ptr::FnPtr>(16) as *const u8;
+            let ptr = abs_addr(activate_mouse, 3, 4)
+                .cast::<*mut u8>()
+                .read_unaligned();
             let ptr = Ptr::new("CInput", ptr).unwrap_or_else(|| panic!("unable to find CInput"));
             let cinput = CInput { ptr };
 
@@ -162,6 +167,8 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
         });*/
 
         if !app.world.contains_resource::<IClientMode>() {
+            trace!("client mode doesnt exist, creating");
+
             let client = app.world.resource::<IBaseClientDLL>();
             let client_mode = client.setup_client_mode();
             let global_vars = client.setup_global_vars();
@@ -281,6 +288,7 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
         match frame {
             FRAME_RENDER_START => {
+                trace!("render start");
                 panorama_disable_blur.write(true);
 
                 // for the eventual UI replacement
@@ -293,26 +301,10 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 //     tracing::trace!("{info:?}");
                 // }
 
-                if let Some(local_player) = IClientEntity::local_player() {
-                    let in_thirdperson = input.in_thirdperson();
-
-                    app.insert_resource(OriginalViewAngle(local_player.view_angle()));
-
-                    if in_thirdperson {
-                        if let Some(last_command) = app.world.get_resource::<CUserCmd>() {
-                            local_player.set_view_angle(last_command.view_angle);
-                        }
-                    } else {
-                        let aim_punch = local_player.aim_punch();
-
-                        local_player
-                            .set_view_angle(view_angle - Vec3::new(0.0, 0.0, 15.0) - aim_punch);
-                    }
-                }
-
                 app.update();
             }
             FRAME_RENDER_END => {
+                trace!("render end");
                 if let Some(original_view_angle) = app.world.get_resource::<OriginalViewAngle>() {
                     if let Some(local_player) = IClientEntity::local_player() {
                         local_player.set_view_angle(original_view_angle.0);

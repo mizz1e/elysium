@@ -13,6 +13,8 @@ pub struct ClientState {
 
 impl ClientState {
     pub fn get() -> Option<Self> {
+        return None;
+
         let method = global::with_resource::<GetBaseLocalClient, _>(|method| method.0);
 
         let ptr = unsafe { (method)() };

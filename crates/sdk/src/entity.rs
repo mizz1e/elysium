@@ -113,7 +113,6 @@ pub enum ObserverMode {
 
 impl ObserverMode {
     /// if the observer mode breaks thirdperson
-
     pub const fn breaks_thirdperson(&self) -> bool {
         matches!(
             self,
@@ -573,7 +572,7 @@ impl AnimState {
         tracing::trace!("CSPlayer::Spawn = {opcode:02X?}");
         tracing::trace!("obtain AnimState offset");
 
-        let ip = opcode.as_ptr().byte_add(52);
+        let ip = opcode.as_ptr().byte_add(3);
         let offset = ip.cast::<u32>().read() as usize;
 
         tracing::trace!("AnimState offset = {offset:?}");
