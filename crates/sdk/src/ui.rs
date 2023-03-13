@@ -269,6 +269,8 @@ impl Full {
     }
 
     pub fn queue_event(&mut self, event: Event) {
+        tracing::debug!("{event:?}");
+
         match &event {
             Event::Mouse(CursorMoved { position }) => self.cursor_position = *position,
             _ => {}

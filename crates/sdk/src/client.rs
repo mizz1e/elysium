@@ -139,16 +139,6 @@ unsafe extern "C" fn level_shutdown(this: *mut u8) {
     (method)(this)
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, StageLabel)]
-pub enum FrameStage {
-    Start,
-    NetUpdateStart,
-    NetUpdatePostDataUpdate,
-    NetUpdateEnd,
-    RenderStart,
-    RenderEnd,
-}
-
 unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
     debug_assert!(!this.is_null());
 
@@ -288,7 +278,7 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
         match frame {
             FRAME_RENDER_START => {
-                trace!("render start");
+                //trace!("render start");
                 panorama_disable_blur.write(true);
 
                 // for the eventual UI replacement
@@ -304,7 +294,7 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
                 app.update();
             }
             FRAME_RENDER_END => {
-                trace!("render end");
+                //trace!("render end");
                 if let Some(original_view_angle) = app.world.get_resource::<OriginalViewAngle>() {
                     if let Some(local_player) = IClientEntity::local_player() {
                         local_player.set_view_angle(original_view_angle.0);

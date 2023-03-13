@@ -8,13 +8,6 @@ default-features = false
 features = ["color", "derive", "help", "std", "suggestions", "usage"]
 version = "4.1"
 
-[dependencies.bevy]
-default-features = false
-version = "0.9"
-
-[dependencies.bevy_log]
-version = "0.9"
-
 [dependencies.dirs]
 version = "4.0"
 
@@ -33,6 +26,9 @@ version = "0.1"
 default-features = false
 git = "https://github.com/elysian6969/esteem"
 rev = "3783f7e560e1a601f7e24859ab49526aaf9da113"
+
+[dependencies]
+bevy = { version = "0.10.0", default-features = false }
 
 [profile.dev]
 opt-level = 2

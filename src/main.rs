@@ -1,7 +1,6 @@
 //#![deny(warnings)]
 
 use bevy::prelude::*;
-use bevy_log::LogPlugin;
 use elysium_sdk::{OnceLoaded, SourcePlugin, SourceSettings, WindowMode};
 
 pub use error::Error;
@@ -15,7 +14,7 @@ fn main() {
     let options = Options::parse();
     let mut app = App::new();
 
-    app.add_plugin(LogPlugin::default());
+    app.add_plugins(DefaultPlugins);
 
     if let Err(error) = util::pre_launch() {
         tracing::error!("{error}");

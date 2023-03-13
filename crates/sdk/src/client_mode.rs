@@ -49,7 +49,7 @@ unsafe extern "C" fn override_view(this: *mut u8, setup: *mut CViewSetup) {
     debug_assert!(!this.is_null());
     debug_assert!(!setup.is_null());
 
-    tracing::trace!("override_view");
+    //tracing::trace!("override_view");
     let setup = &mut *setup;
 
     let method = global::with_app(|app| {
@@ -83,7 +83,7 @@ unsafe extern "C" fn create_move(
     debug_assert!(!this.is_null());
     debug_assert!(!command.is_null());
 
-    tracing::trace!("create_move");
+    //tracing::trace!("create_move");
 
     let command = &mut *command;
     let method = global::with_resource::<CreateMove, _>(|method| method.0);
