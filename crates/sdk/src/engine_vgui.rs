@@ -12,6 +12,7 @@ pub struct EngineVGui {
 
 impl EngineVGui {
     pub(crate) unsafe fn setup(&self) {
+        return;
         tracing::trace!("setup EngineVGui");
 
         global::with_app_mut(|app| {
