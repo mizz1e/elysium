@@ -145,6 +145,7 @@ pub struct CamToFirstPerson(pub(crate) unsafe extern "C" fn(this: *mut u8));
 #[derive(Resource)]
 pub struct CamToThirdPerson(pub(crate) unsafe extern "C" fn(this: *mut u8));
 
+/// See `game/client/iinput.h`.
 #[derive(Resource)]
 pub struct CInput {
     pub(crate) ptr: Ptr,
@@ -152,11 +153,10 @@ pub struct CInput {
 
 impl CInput {
     pub(crate) unsafe fn setup(&self) {
-        return;
         tracing::trace!("setup input");
 
         global::with_app_mut(|app| {
-            /*tracing::trace!("cam think");
+            debug!("IInput->CAM_Think");
             app.insert_resource(CamThink(self.ptr.vtable_replace(31, cam_think)));
 
             tracing::trace!("cam to third person");
@@ -167,7 +167,7 @@ impl CInput {
             tracing::trace!("cam to first person");
             app.insert_resource(CamToFirstPerson(
                 self.ptr.vtable_replace(36, cam_to_first_person),
-            ));*/
+            ));
         });
     }
 
@@ -208,6 +208,7 @@ impl CInput {
     }
 }
 
+// xref: "CAM_Think" @ client_client.so
 unsafe extern "C" fn cam_think(this: *mut u8) {
     debug_assert!(!this.is_null());
 
