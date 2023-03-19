@@ -1,8 +1,9 @@
 use crate::entity::AnimState;
 use crate::{
-    config, engine, global, ptr, ui, Args, Config, EngineVGui, Error, IBaseClientDLL,
-    IClientEntityList, IEngineTrace, IMaterialSystem, IPhysicsSurfaceProps, IVEngineClient,
-    IVModelRender, KeyValues, ModuleMap, OnceLoaded, SourceSettings, Surface, Ui, WindowMode,
+    config, engine, event::EventManager, global, ptr, ui, Args, Config, EngineVGui, Error,
+    IBaseClientDLL, IClientEntityList, IEngineTrace, IMaterialSystem, IPhysicsSurfaceProps,
+    IVEngineClient, IVModelRender, KeyValues, ModuleMap, OnceLoaded, SourceSettings, Surface, Ui,
+    WindowMode,
 };
 use bevy::prelude::{App, Plugin};
 
@@ -65,6 +66,12 @@ unsafe fn source_setup() -> Result<(), Error> {
 
                 engine_vgui.setup();
                 world.insert_resource(engine_vgui);
+
+                let ptr = engine_module.create_interface("GAMEEVENTSMANAGER002")?;
+                let event_manager = EventManager { ptr };
+
+                event_manager.setup();
+                world.insert_resource(event_manager);
 
                 let _tier0_module = module_map.open("libtier0_client.so")?;
                 let _studio_render_module = module_map.open("studiorender_client.so")?;

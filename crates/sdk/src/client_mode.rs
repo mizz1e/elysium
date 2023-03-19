@@ -1,3 +1,4 @@
+use crate::entity::{ObserverMode, WeaponKind};
 use crate::{
     global, math, trace, Button, CUserCmd, CViewSetup, ClientState, Config, EntityFlag,
     IClientEntity, IClientEntityList, IEngineTrace, IPhysicsSurfaceProps, IVEngineClient, Mat4x3,
@@ -117,135 +118,154 @@ unsafe extern "C" fn create_move(
         let now = Time::now();
         let eye_origin = local_player.eye_origin();
 
-        if local_flags.contains(EntityFlag::IN_AIR) {
-            command.buttons.remove(Button::JUMP);
+        if local_flags.contains(EntityFlag::ALIVE) {
+            if local_flags.contains(EntityFlag::IN_AIR) {
+                command.buttons.remove(Button::JUMP);
 
-            let velocity = local_player.velocity();
-            let hypot = velocity.truncate().length();
-            let ideal_strafe = (15.0 / hypot).atan().to_degrees().clamp(0.0, 90.0);
-            let mut wish_angle = command.view_angle;
-            let strafe_dir = command.movement.truncate();
-            let strafe_dir_yaw_offset = strafe_dir.y.atan2(strafe_dir.x).to_degrees();
+                let velocity = local_player.velocity();
+                let hypot = velocity.truncate().length();
+                let ideal_strafe = (15.0 / hypot).atan().to_degrees().clamp(0.0, 90.0);
+                let mut wish_angle = command.view_angle;
+                let strafe_dir = command.movement.truncate();
+                let strafe_dir_yaw_offset = strafe_dir.y.atan2(strafe_dir.x).to_degrees();
 
-            wish_angle.y -= strafe_dir_yaw_offset;
+                wish_angle.y -= strafe_dir_yaw_offset;
 
-            let mut wish_angle = math::sanitize_angle(wish_angle);
-            let yaw_delta = math::normalize_component(wish_angle.y - *last_yaw);
-            let abs_yaw_delta = yaw_delta.abs();
+                let mut wish_angle = math::sanitize_angle(wish_angle);
+                let yaw_delta = math::normalize_component(wish_angle.y - *last_yaw);
+                let abs_yaw_delta = yaw_delta.abs();
 
-            *last_yaw = wish_angle.y;
+                *last_yaw = wish_angle.y;
 
-            let horizontal_speed = 450.0; //vars.horizontal_speed.read();
+                let horizontal_speed = 450.0; //vars.horizontal_speed.read();
 
-            if abs_yaw_delta <= ideal_strafe || abs_yaw_delta >= 30.0 {
-                let velocity_dir = math::to_angle(velocity);
-                let velocity_yaw_delta = math::normalize_component(wish_angle.y - velocity_dir.y);
-                let retrack = (30.0 / hypot).atan().to_degrees().clamp(0.0, 90.0) * 2.0;
+                if abs_yaw_delta <= ideal_strafe || abs_yaw_delta >= 30.0 {
+                    let velocity_dir = math::to_angle(velocity);
+                    let velocity_yaw_delta =
+                        math::normalize_component(wish_angle.y - velocity_dir.y);
+                    let retrack = (30.0 / hypot).atan().to_degrees().clamp(0.0, 90.0) * 2.0;
 
-                if velocity_yaw_delta <= retrack || hypot <= 15.0 {
-                    if -retrack <= velocity_yaw_delta || hypot <= 15.0 {
-                        wish_angle.y += side * ideal_strafe;
-                        command.movement.y = horizontal_speed * side;
+                    if velocity_yaw_delta <= retrack || hypot <= 15.0 {
+                        if -retrack <= velocity_yaw_delta || hypot <= 15.0 {
+                            wish_angle.y += side * ideal_strafe;
+                            command.movement.y = horizontal_speed * side;
+                        } else {
+                            wish_angle.y = velocity_dir.y - retrack;
+                            command.movement.y = horizontal_speed;
+                        }
                     } else {
-                        wish_angle.y = velocity_dir.y - retrack;
-                        command.movement.y = horizontal_speed;
+                        wish_angle.y = velocity_dir.y + retrack;
+                        command.movement.y = -horizontal_speed;
                     }
-                } else {
-                    wish_angle.y = velocity_dir.y + retrack;
+                } else if yaw_delta > 0.0 {
                     command.movement.y = -horizontal_speed;
+                } else if yaw_delta < 0.0 {
+                    command.movement.y = horizontal_speed
                 }
-            } else if yaw_delta > 0.0 {
-                command.movement.y = -horizontal_speed;
-            } else if yaw_delta < 0.0 {
-                command.movement.y = horizontal_speed
+
+                command.movement.x = 0.0;
+                command.movement =
+                    math::fix_movement(command.movement, command.view_angle, wish_angle);
             }
 
-            command.movement.x = 0.0;
-            command.movement = math::fix_movement(command.movement, command.view_angle, wish_angle);
-        }
+            let entities = entity_list.players();
+            let mut entities = entities
+                .iter()
+                .filter(|entity| entity.flags().contains(EntityFlag::ENEMY))
+                .map(|entity| {
+                    const BONE_USED_BY_HITBOX: i32 = 0x100;
 
-        let entities = entity_list.players();
-        let mut entities = entities
-            .iter()
-            .filter(|entity| entity.flags().contains(EntityFlag::ENEMY))
-            .map(|entity| {
-                const BONE_USED_BY_HITBOX: i32 = 0x100;
+                    let mut bones = [Mat4x3::ZERO; 256];
 
-                let mut bones = [Mat4x3::ZERO; 256];
+                    entity.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
 
-                entity.setup_bones(&mut bones, BONE_USED_BY_HITBOX, now);
+                    let head_bone = bones[8];
+                    let head_origin = head_bone.to_affine().translation.into();
+                    let view_angle = math::calculate_angle(eye_origin, head_origin);
+                    let distance = engine_view_angle.distance(view_angle);
+                    //+ eye_origin.distance(head_origin);
 
-                let head_bone = bones[8];
-                let head_origin = head_bone.to_affine().translation.into();
-                let view_angle = math::calculate_angle(eye_origin, head_origin);
-                let distance = engine_view_angle.distance(view_angle);
-                //+ eye_origin.distance(head_origin);
+                    (entity, view_angle, distance)
+                })
+                .collect::<Vec<_>>();
 
-                (entity, view_angle, distance)
-            })
-            .collect::<Vec<_>>();
+            // sort by distance
+            entities.sort_unstable_by(|a, b| a.2.total_cmp(&b.2));
 
-        // sort by distance
-        entities.sort_unstable_by(|a, b| a.2.total_cmp(&b.2));
+            let target_entity = entities.first();
 
-        let target_entity = entities.first();
-
-        if config.anti_aim.enabled {
-            if let Some((_enemy, view_angle, _distance)) = target_entity {
-                command.view_angle = *view_angle;
-            }
-
-            config.anti_aim.pitch.apply(&mut command.view_angle.x);
-            command.view_angle.y += config.anti_aim.yaw_offset;
-            command.view_angle.z = config.anti_aim.roll;
-
-            if let Some(client_state) = crate::ClientState::get() {
-                *send_packet = client_state.choked_commands() >= config.fake_lag;
-            }
-
-            if !*send_packet {
-                command.view_angle.y += 89.0;
-            }
-
-            if command.movement.y.abs() < 5.0 {
-                let amount = if command.buttons.contains(Button::DUCK) {
-                    3.25
-                } else {
-                    1.1
-                };
-
-                command.movement.y = amount * side;
-            }
-        }
-
-        if let Some(weapon) = local_player.active_weapon() {
-            let next_primary_attack = weapon.next_primary_attack().0;
-            let server_time = local_player.tick_base().to_time().0;
-
-            let weapon_cant_fire = server_time < next_primary_attack;
-            let switching_weapons = command.weapon_select != 0;
-            let no_ammo = weapon.remaining_ammo() == 0;
-
-            if weapon_cant_fire || switching_weapons || no_ammo {
-                command.buttons.remove(Button::ATTACK);
-            } else if command.buttons.contains(Button::ATTACK) {
+            if config.anti_aim.enabled {
                 if let Some((_enemy, view_angle, _distance)) = target_entity {
                     command.view_angle = *view_angle;
                 }
+
+                config.anti_aim.pitch.apply(&mut command.view_angle.x);
+                command.view_angle.y += config.anti_aim.yaw_offset;
+                command.view_angle.z = config.anti_aim.roll;
+
+                if let Some(client_state) = crate::ClientState::get() {
+                    *send_packet = client_state.choked_commands() >= config.fake_lag;
+                }
+
+                if !*send_packet {
+                    command.view_angle.y += 89.0;
+                }
+
+                if command.movement.y.abs() < 5.0 {
+                    let amount = if command.buttons.contains(Button::DUCK) {
+                        3.25
+                    } else {
+                        1.1
+                    };
+
+                    command.movement.y = amount * side;
+                }
             }
+
+            if let Some(weapon) = local_player.active_weapon() {
+                let weapon_info = weapon.weapon_info();
+                let next_primary_attack = weapon.next_primary_attack().0;
+                let server_time = local_player.tick_base().to_time().0;
+
+                let weapon_cant_fire = server_time < next_primary_attack;
+                let switching_weapons = command.weapon_select != 0;
+                let no_ammo = weapon.remaining_ammo() == 0;
+
+                if weapon_cant_fire || switching_weapons || no_ammo {
+                    command.buttons.remove(Button::ATTACK);
+                } else if command.buttons.contains(Button::ATTACK) {
+                    if let Some((_enemy, view_angle, _distance)) = target_entity {
+                        // you cant scope in the same tick, this is utterly cringe
+                        // if weapon_info.kind == WeaponKind::SniperRifle {
+                        // scope
+                        // command.buttons.insert(Button::ATTACK_SECONDARY);
+                        // }
+
+                        command.view_angle = *view_angle;
+                    }
+                }
+            }
+
+            if command.buttons.contains(Button::ATTACK) {
+                command.view_angle -= local_player.aim_punch();
+            } else if command.buttons.contains(Button::USE) {
+                command.view_angle = engine_view_angle;
+            }
+
+            // always enable (for now).
+            command.buttons.insert(Button::FAST_DUCK);
+            command.view_angle = math::sanitize_angle(command.view_angle);
+            command.movement =
+                math::fix_movement(command.movement, command.view_angle, engine_view_angle);
+
+            config.walking_animation.apply(command);
+        } else if !matches!(
+            local_player.observer_mode(),
+            ObserverMode::Chase | ObserverMode::InEye | ObserverMode::Roaming
+        ) {
+            // ensure a delta is created when you respawn and such
+            command.buttons = Button::empty();
         }
-
-        if command.buttons.contains(Button::ATTACK) {
-            command.view_angle -= local_player.aim_punch();
-        } else if command.buttons.contains(Button::USE) {
-            command.view_angle = engine_view_angle;
-        }
-
-        command.view_angle = math::sanitize_angle(command.view_angle);
-        command.movement =
-            math::fix_movement(command.movement, command.view_angle, engine_view_angle);
-
-        config.walking_animation.apply(command);
 
         if *send_packet || command.buttons.contains(Button::ATTACK) {
             app.insert_resource(ptr::read(command));

@@ -140,7 +140,7 @@ unsafe impl Sync for Ui {}
 
 impl Ui {
     pub unsafe fn new() -> Result<Self> {
-        let glx = libloading::Library::new("libGLX.so")?;
+        let glx = libloading::Library::new("libGL.so")?;
 
         tracing::trace!("glx = {glx:?}");
 
@@ -269,8 +269,6 @@ impl Full {
     }
 
     pub fn queue_event(&mut self, event: Event) {
-        tracing::debug!("{event:?}");
-
         match &event {
             Event::Mouse(CursorMoved { position }) => self.cursor_position = *position,
             _ => {}

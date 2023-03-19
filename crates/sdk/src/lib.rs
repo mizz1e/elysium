@@ -58,6 +58,7 @@ pub mod engine_vgui;
 pub mod entity;
 pub mod entity_list;
 pub mod error;
+pub mod event;
 pub mod global_vars;
 pub mod hit_group;
 pub mod input;
