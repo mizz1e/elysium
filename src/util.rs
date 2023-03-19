@@ -68,11 +68,7 @@ fn try_load_lib_dirs(steam_dir: impl AsRef<Path>) -> Option<PathBuf> {
 
     let path = path.next()?.join(CSGO_DIR);
 
-    if !path.exists() {
-        return None;
-    }
-
-    Some(path)
+    path.exists().then_some(path)
 }
 
 /// X11 `DISPLAY` sanity check as CSGO prefers to segmentation fault.
@@ -150,10 +146,7 @@ pub fn pre_launch() -> Result<(), Error> {
 /// Fetches the environment variable `key` from the current process, parsing it as a `PATH`,
 /// returning an empty `Vec` if the variable isn’t set or there’s another error.
 pub fn var_path<K: AsRef<OsStr>>(key: K) -> Vec<PathBuf> {
-    let path = match env::var_os(key) {
-        Some(path) => path,
-        None => return Vec::new(),
-    };
-
-    env::split_paths(&path).collect()
+    env::var_os(key)
+        .map(|path| env::split_paths(&path).collect())
+        .unwrap_or_default()
 }
