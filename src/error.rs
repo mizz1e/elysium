@@ -1,3 +1,4 @@
+use bevy::utils::thiserror;
 use std::io;
 use thiserror::Error;
 

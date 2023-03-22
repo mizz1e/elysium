@@ -4,6 +4,7 @@ use bevy::{
     prelude::Resource,
 };
 
+use dismal::FnPtr;
 use iced_glow::{
     glow::{self, HasContext},
     Backend as GlowBackend, Renderer as GlowRenderer, Settings as GlowSettings, Viewport,
@@ -26,7 +27,9 @@ use iced_native::{
 use sdl2::sys::{self, SDL_Event as RawSdlEvent, SDL_Window as RawSdlWindow};
 use std::{
     ffi::{self, CString},
-    fmt, ptr, slice,
+    fmt,
+    marker::Tuple,
+    ptr, slice,
 };
 
 pub mod conversion;
@@ -41,18 +44,17 @@ pub type Element<'a> = IcedElement<'a, Message, GlowRenderer>;
 
 const DEBUG_OVERLAY: &[&str] = &[];
 
-/// Replace the target address, if present.
-pub unsafe fn replace_target<T: Copy>(dst: *mut u8, src: T) -> Result<T> {
-    let code = slice::from_raw_parts_mut(dst, 128);
-    let info = dismal::disassemble(code).ok_or(Error::NoJmp)?;
+/// Hook an SDL method.
+unsafe fn sdl_hook<Args: Tuple, T: FnPtr<Args>>(original: T, hook: T) -> Result<T> {
+    let instruction = original.last_instruction().map_err(|_error| Error::NoJmp)?;
 
-    tracing::trace!("target = {info:?}");
+    let target = original
+        .transmute::<*mut T>()
+        .map_addr(|_addr| instruction.ip_rel_memory_address() as usize);
 
-    let dst = dst.map_addr(|_addr| info.rel_addr).cast::<T>();
+    bevy::prelude::debug!("{:?} -> {:?}", original.transmute::<*const u8>(), target);
 
-    tracing::trace!("target = {dst:?}");
-
-    Ok(ptr::replace(dst, src))
+    Ok(target.replace(hook))
 }
 
 #[derive(Clone, Debug)]
@@ -164,12 +166,14 @@ impl Ui {
         };
 
         let poll_event: PollEvent =
-            replace_target(sys::SDL_PollEvent as *mut u8, poll_event as PollEvent)?;
+            sdl_hook(sys::SDL_PollEvent as PollEvent, poll_event as PollEvent)?;
 
         tracing::trace!("poll_event = {poll_event:?}");
 
-        let swap_window: SwapWindow =
-            replace_target(sys::SDL_GL_SwapWindow as *mut u8, swap_window as SwapWindow)?;
+        let swap_window: SwapWindow = sdl_hook(
+            sys::SDL_GL_SwapWindow as SwapWindow,
+            swap_window as SwapWindow,
+        )?;
 
         tracing::trace!("swap_window = {swap_window:?}");
 

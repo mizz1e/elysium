@@ -118,6 +118,8 @@ impl BSPTreeQuery {
 }
 
 pub unsafe fn setup() {
+    return;
+
     /*tracing::trace!("obtain CClientLeafSystem::InsertIntoTree");
 
     let module = link::load_module("client_client.so").unwrap();

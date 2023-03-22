@@ -3,8 +3,8 @@ use crate::{
     Config, IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps,
     IVEngineClient, InputStackSystem, KeyValues, ModuleMap, Ptr, Surface, Ui,
 };
-use bevy::ecs::system::SystemState;
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemState, prelude::*};
+use dismal::{assert_mnemonic, iced_x86, FnPtr, Ptr as _};
 use iced_native::Point;
 use std::{ffi, mem};
 
@@ -36,7 +36,7 @@ pub struct IBaseClientDLL {
 
 impl IBaseClientDLL {
     pub(crate) unsafe fn setup(&self) {
-        tracing::trace!("setup IBaseClientDLL");
+        info!("setup client");
 
         global::with_app_mut(|app| {
             app.insert_resource(LevelInitPreEntity(
@@ -53,14 +53,25 @@ impl IBaseClientDLL {
                 self.ptr.vtable_replace(37, frame_stage_notify),
             ));
 
-            unsafe fn abs_addr(ptr: *const u8, offset: isize, size: usize) -> *const u8 {
-                ptr.byte_offset(ptr.byte_offset(offset).cast::<i32>().read_unaligned() as isize)
-                    .byte_add(size)
-            }
+            info!("obtain cinput");
 
-            let activate_mouse = self.ptr.vtable_entry::<ptr::FnPtr>(16) as *const u8;
-            let ptr = abs_addr(activate_mouse, 3, 7)
-                .cast::<*mut u8>()
+            let activate_mouse = self.ptr.vtable_entry::<ptr::FnPtr>(16);
+            let instruction = activate_mouse
+                .disassemble()
+                .unwrap()
+                .into_iter()
+                .next()
+                .unwrap();
+
+            assert_mnemonic!(
+                instruction,
+                Lea,
+                "client_client.so has updated, unable to obtain cinput."
+            );
+
+            let ptr = activate_mouse
+                .transmute::<*mut *mut u8>()
+                .map_addr(|_addr| instruction.ip_rel_memory_address() as usize)
                 .read_unaligned();
 
             let ptr = Ptr::new("CInput", ptr).unwrap_or_else(|| panic!("unable to find CInput"));
@@ -81,17 +92,29 @@ impl IBaseClientDLL {
     }
 
     unsafe fn setup_client_mode(&self) -> IClientMode {
-        tracing::trace!("obtain IClientMode");
+        info!("obtain iclientmode");
 
-        let hud_process_input = self.ptr.vtable_entry::<ptr::FnPtr>(10) as *const u8;
-        let call_client_mode = hud_process_input.byte_add(11);
-        let client_mode = elysium_mem::next_abs_addr_ptr::<u8>(call_client_mode)
+        let hud_process_input = self.ptr.vtable_entry::<ptr::FnPtr>(10);
+        let instruction = hud_process_input.last_instruction().unwrap();
+
+        assert_mnemonic!(
+            instruction,
+            Call,
+            "client_client.so has updated, unable to obtain iclientmode."
+        );
+
+        let get_client_mode = hud_process_input
+            .transmute::<*const u8>()
+            .map_addr(|_addr| instruction.memory_displacement64() as usize);
+
+        info!("invoking get_client_mode @ {get_client_mode:?}");
+
+        let client_mode = get_client_mode
+            .transmute::<unsafe extern "C" fn() -> *mut u8>()
+            .call(());
+
+        let ptr = Ptr::new("IClientMode", client_mode)
             .unwrap_or_else(|| panic!("unable to find IClientMode"));
-
-        let client_mode: unsafe extern "C" fn() -> *mut u8 = mem::transmute(client_mode);
-        let ptr = client_mode();
-        let ptr =
-            Ptr::new("IClientMode", ptr).unwrap_or_else(|| panic!("unable to find IClientMode"));
 
         let client_mode = IClientMode { ptr };
 
@@ -100,17 +123,29 @@ impl IBaseClientDLL {
     }
 
     unsafe fn setup_global_vars(&self) -> CGlobalVarsBase {
-        tracing::trace!("obtain CGlobalVarsBase");
+        info!("obtain cglobalvarsbase");
 
-        let hud_update = self.ptr.vtable_entry::<ptr::FnPtr>(11) as *const u8;
-        let address = hud_update.byte_add(13);
-        let ptr = *elysium_mem::next_abs_addr_ptr::<*mut u8>(address)
+        let hud_update = self.ptr.vtable_entry::<ptr::FnPtr>(11);
+        let instruction = hud_update
+            .disassemble()
+            .unwrap()
+            .into_iter()
+            .nth(6)
+            .unwrap();
+
+        assert_mnemonic!(
+            instruction,
+            Mov,
+            "client_client.so has updated, unable to obtain cglobalvarsbase."
+        );
+
+        let global_vars = hud_update
+            .transmute::<*mut *mut u8>()
+            .map_addr(|_addr| instruction.memory_displacement64() as usize)
+            .read_unaligned();
+
+        let ptr = Ptr::new("CGlobalVarsBase", global_vars)
             .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
-
-        let ptr = Ptr::new("CGlobalVarsBase", ptr)
-            .unwrap_or_else(|| panic!("unable to find CGlobalVarsBase"));
-
-        tracing::trace!("CGlobalVarsBase = {:?}", ptr.as_ptr());
 
         CGlobalVarsBase { ptr }
     }

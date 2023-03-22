@@ -15,9 +15,6 @@ path = "../dismal"
 [dependencies.dirs]
 version = "4.0"
 
-[dependencies.elysium-mem]
-path = "../mem"
-
 [dependencies.iced_glow]
 version = "0.6"
 

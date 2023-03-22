@@ -5,6 +5,7 @@
 #![feature(link_llvm_intrinsics)]
 #![feature(pointer_byte_offsets)]
 #![feature(strict_provenance)]
+#![feature(tuple_trait)]
 
 pub use client::IBaseClientDLL;
 pub use client_class::ClientClass;

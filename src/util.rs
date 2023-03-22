@@ -1,4 +1,5 @@
 use crate::Error;
+use bevy::prelude::info;
 use std::ffi::OsStr;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -99,11 +100,11 @@ pub fn check_linker_path() -> Result<(), Error> {
     let current_exe = env::current_exe().map_err(|_| Error::NoCsgo)?;
     let mut linker_path = var_path(LD_LIBRARY_PATH);
 
-    tracing::info!("found csgo at {csgo_dir:?}");
-    tracing::info!("appending csgo linker path");
+    info!("found csgo at {csgo_dir:?}");
+    info!("appending csgo linker path");
 
     if !env::var_os(HAS_STEAM_LINKER_PATH).is_some() {
-        tracing::info!("appending steamrt linker path");
+        info!("appending steamrt linker path");
 
         linker_path.insert(0, steam_dir.join(STEAM_RT_USR_LIB));
         linker_path.insert(0, steam_dir.join(STEAM_RT_LIB));
@@ -115,9 +116,9 @@ pub fn check_linker_path() -> Result<(), Error> {
 
     let linker_path = env::join_paths(linker_path).unwrap_or_default();
 
-    tracing::info!("set environment variable {LD_LIBRARY_PATH:?} to {linker_path:?}");
+    info!("set environment variable {LD_LIBRARY_PATH:?} to {linker_path:?}");
 
-    tracing::info!(
+    info!(
         "re-executing self (glibc does not respect chaning {LD_LIBRARY_PATH:?} during program execution)"
     );
 

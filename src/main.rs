@@ -1,6 +1,7 @@
 //#![deny(warnings)]
 
 use bevy::prelude::*;
+//use bevy_source::prelude::*;
 use elysium_sdk::{OnceLoaded, SourcePlugin, SourceSettings, WindowMode};
 
 pub use error::Error;
@@ -17,7 +18,7 @@ fn main() {
     app.add_plugins(DefaultPlugins);
 
     if let Err(error) = util::pre_launch() {
-        tracing::error!("{error}");
+        error!("{error}");
 
         return;
     }

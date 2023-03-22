@@ -112,7 +112,7 @@ bitflags::bitflags! {
     }
 }
 
-#[derive(Resource)]
+#[derive(Clone, Copy, Resource)]
 #[repr(C)]
 pub struct CUserCmd {
     vtable: *const (),
