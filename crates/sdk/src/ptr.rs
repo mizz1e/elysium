@@ -90,7 +90,7 @@ impl Ptr {
     /// - See [`ptr::read`](https://doc.rust-lang.org/std/primitive.pointer.html#method.offset).
     #[must_use]
     pub unsafe fn vtable_ptr(&self) -> *mut VTable {
-        let object = *(self.as_ptr() as *mut Object);
+        let object = (self.as_ptr() as *mut Object).read_unaligned();
 
         object.vtable
     }

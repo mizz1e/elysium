@@ -1,7 +1,6 @@
 #![deny(warnings)]
 #![feature(concat_bytes)]
 #![feature(extern_types)]
-#![feature(once_cell)]
 #![feature(ptr_metadata)]
 #![feature(slice_from_ptr_range)]
 #![feature(strict_provenance)]
