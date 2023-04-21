@@ -1,4 +1,3 @@
-#![feature(cstr_from_bytes_until_nul)]
 #![feature(strict_provenance)]
 
 use std::path::Path;
