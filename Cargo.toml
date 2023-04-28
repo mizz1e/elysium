@@ -21,4 +21,9 @@ lto = "fat"
 strip = "symbols"
 
 [workspace]
-members = ["crates/bevy", "crates/bevy_internal", "crates/sys"]
+members = [
+    "crates/bevy",
+    "crates/bevy_internal",
+    "crates/sdk",
+    "crates/sys",
+]

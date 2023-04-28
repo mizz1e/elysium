@@ -1,5 +1,5 @@
 use {
-    super::SdlContext,
+    super::OverlayContext,
     bevy::{ecs::schedule::ScheduleLabel, prelude::*},
     bevy_source_internal::{app_mut, assert_mnemonic, assert_non_null, inline_mov_jmp, FnPtr, Ptr},
     sdl2::sys,
@@ -15,7 +15,7 @@ pub unsafe extern "C" fn hook(raw_window: *mut sys::SDL_Window) {
     assert_non_null!(raw_window);
 
     let app = app_mut!();
-    let mut context = app.world.resource_mut::<SdlContext>();
+    let mut context = app.world.resource_mut::<OverlayContext>();
     let gl_swap_window = context.gl_swap_window;
 
     if !context.is_initialized {

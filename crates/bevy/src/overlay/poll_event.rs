@@ -1,5 +1,5 @@
 use {
-    super::SdlContext,
+    super::OverlayContext,
     bevy::{ecs::schedule::ScheduleLabel, prelude::*},
     bevy_source_internal::{app_mut, assert_mnemonic, assert_non_null, inline_mov_jmp, FnPtr, Ptr},
     sdl2::{event, sys},
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn hook(raw_event: *mut sys::SDL_Event) -> ffi::c_int {
         app.world.run_schedule_ref(&FnSchedule);
     }
 
-    let context = app.world.resource::<SdlContext>();
+    let context = app.world.resource::<OverlayContext>();
 
     (context.poll_event)(raw_event)
 }

@@ -22,21 +22,21 @@ pub mod poll_event;
 
 /// Source Engine SDL integration.
 #[derive(Default)]
-pub struct SdlPlugin;
+pub struct OverlayPlugin;
 
 #[derive(Resource)]
-pub struct SdlContext {
+pub struct OverlayContext {
     pub gl_swap_window: gl_swap_window::Fn,
     pub poll_event: poll_event::Fn,
     pub is_initialized: bool,
 }
 
-impl Plugin for SdlPlugin {
+impl Plugin for OverlayPlugin {
     fn build(&self, app: &mut App) {
         let poll_event = poll_event::add_schedule(app, poll_event).unwrap();
         let gl_swap_window = gl_swap_window::add_schedule(app, gl_swap_window).unwrap();
 
-        app.insert_resource(SdlContext {
+        app.insert_resource(OverlayContext {
             poll_event,
             gl_swap_window,
             is_initialized: false,

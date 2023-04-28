@@ -6,8 +6,6 @@ version = "0.0.0"
 [dependencies]
 bevy = { version = "0.10.1", default-features = false, features = ["bevy_asset"] }
 bevy_source_internal = { version = "0.0.0", path = "../bevy_internal", default-features = false }
-glutin = { version = "0.30.7", default-features = false, features = ["egl", "glx", "x11", "wayland"] }
-raw-window-handle = { version = "0.5.2", default-features = false }
 sdl2 = { git = "https://github.com/rust-sdl2/rust-sdl2", rev = "27cd1fd67c811e06b9d997a77bb6089a1b65070d", version = "0.35.2", default-features = false, features = ["raw-window-handle"] }
 
 [dependencies.bitflags]

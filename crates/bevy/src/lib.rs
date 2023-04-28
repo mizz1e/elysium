@@ -5,7 +5,7 @@
 #![feature(strict_provenance)]
 
 use {
-    crate::internal::{cstr, inline_mov_jmp, inline_mov_jmp_variadic, set_app, FnPtr},
+    crate::internal::{app_mut, cstr, inline_mov_jmp, inline_mov_jmp_variadic, set_app, FnPtr},
     bevy::prelude::*,
     leafwing_input_manager::prelude::*,
     std::ffi,
@@ -20,8 +20,8 @@ mod macros;
 mod tier0;
 mod traits;
 
+pub mod overlay;
 pub mod prelude;
-pub mod sdl;
 
 pub mod interfaces {
     crate::macros::interfaces! {
@@ -130,10 +130,15 @@ impl Plugin for SourcePlugin {
                     .expect("no launcher main")
                     .unwrap();
 
-                app.add_plugin(sdl::SdlPlugin::default());
+                app.add_plugin(overlay::OverlayPlugin::default());
 
                 // Set the global App. `main` is copy, launcher exists within App, so this is safe.
                 set_app!(app);
+
+                // TODO: Remove.
+                unsafe {
+                    elysium_sdk::init(app_mut!());
+                }
 
                 debug!("invoking LauncherMain");
 
