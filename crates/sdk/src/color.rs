@@ -58,34 +58,3 @@ impl Hash for Color {
         self.alpha.to_ne_bytes().hash(state);
     }
 }
-
-impl From<iced_native::Color> for Color {
-    fn from(color: iced_native::Color) -> Color {
-        let iced_native::Color {
-            r: red,
-            g: green,
-            b: blue,
-            a: alpha,
-        } = color;
-
-        Color {
-            red,
-            green,
-            blue,
-            alpha,
-        }
-    }
-}
-
-impl Into<iced_native::Color> for Color {
-    fn into(self) -> iced_native::Color {
-        let Color {
-            red: r,
-            green: g,
-            blue: b,
-            alpha: a,
-        } = self;
-
-        iced_native::Color { r, g, b, a }
-    }
-}

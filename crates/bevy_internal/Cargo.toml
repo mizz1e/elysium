@@ -1,0 +1,23 @@
+[package]
+name = "bevy_source_internal"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+# frame & return addresses
+backtrace = { version = "0.3.67", default-features = false }
+bevy = { version = "0.10.1", default-features = false }
+# permission flags
+bitflags = { version = "2.1.0", default-features = false }
+# disassemble code
+iced-x86 = { version = "1.18.0", default-features = false, features = ["decoder", "encoder", "instr_info", "intel", "std"] }
+# page size
+libc = { version = "0.2.142", default-features = false }
+# load libs
+libloading = { version = "0.8.0", default-features = false }
+# cross-platform memory maps w/ file names
+proc-maps = { version = "0.3.0", default-features = false }
+# for signatures
+regex = { version = "1.8.0", default-features = false, features = ["perf", "std"] }
+# cross-platform memory protection
+region = { version = "3.0.0", default-features = false }

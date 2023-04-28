@@ -39,7 +39,6 @@ pub use settings::{OnceLoaded, Renderer, SourceSettings, WindowMode};
 pub use surface::Surface;
 pub use texture_group::TextureGroup;
 pub use trace::{IEngineTrace, TraceResult};
-pub use ui::Ui;
 pub use view_setup::CViewSetup;
 pub use walking_animation::WalkingAnimation;
 

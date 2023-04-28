@@ -2,7 +2,7 @@ use crate::entity::AnimState;
 use crate::{
     config, engine, event::EventManager, global, ptr, ui, Args, Config, EngineVGui, Error,
     IBaseClientDLL, IClientEntityList, IEngineTrace, IMaterialSystem, IPhysicsSurfaceProps,
-    IVEngineClient, IVModelRender, KeyValues, ModuleMap, OnceLoaded, SourceSettings, Surface, Ui,
+    IVEngineClient, IVModelRender, KeyValues, ModuleMap, OnceLoaded, SourceSettings, Surface,
     WindowMode,
 };
 use bevy::prelude::{App, Plugin};
@@ -24,7 +24,7 @@ impl Plugin for SourcePlugin {
 
 unsafe fn source_setup() -> Result<(), Error> {
     let launcher_main = global::with_app_mut::<Result<_, Error>>(|app| {
-        app.insert_resource(Ui::new()?);
+        app.insert_non_send_resource(crate::ui::WindowContext::new().unwrap());
 
         app.world
             .resource_scope::<ModuleMap, _>(|world, mut module_map| {

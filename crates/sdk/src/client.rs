@@ -1,11 +1,10 @@
 use crate::{
     convar, global, material, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
     Config, IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps,
-    IVEngineClient, InputStackSystem, KeyValues, ModuleMap, Ptr, Surface, Ui,
+    IVEngineClient, InputStackSystem, KeyValues, ModuleMap, Ptr, Surface,
 };
 use bevy::{ecs::system::SystemState, prelude::*};
 use dismal::{assert_mnemonic, iced_x86, FnPtr, Ptr as _};
-use iced_native::Point;
 use std::{ffi, mem};
 
 const FRAME_NET_UPDATE_END: ffi::c_int = 4;
@@ -288,16 +287,11 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
             Res<IVEngineClient>,
             Res<CInput>,
             Res<convar::PanoramaDisableBlur>,
-            ResMut<Ui>,
         )> = SystemState::new(&mut app.world);
 
-        let (config, client, engine, input, panorama_disable_blur, mut ui) =
+        let (config, client, engine, input, panorama_disable_blur) =
             system_state.get_mut(&mut app.world);
         let view_angle = engine.view_angle();
-
-        ui.setup_hooks().unwrap_or_else(|error| {
-            panic!("unable to setup SDL hooks: {error:?}");
-        });
 
         match frame {
             FRAME_RENDER_START => {

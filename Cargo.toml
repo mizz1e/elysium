@@ -4,17 +4,21 @@ name = "elysium"
 version = "0.0.0"
 
 [dependencies]
-bevy = { version = "0.10.0", default-features = false }
-clap = { version = "4.1.11", default-features = false, features = ["color", "derive", "env", "help", "std", "suggestions", "unicode", "usage", "wrap_help"] }
-dirs = { version = "4.0.0", default-features = false }
-elysium-sdk = { default-features = false, path = "crates/sdk" }
-vdf = { default-features = false, git = "https://github.com/elysian6969/esteem", rev = "3783f7e560e1a601f7e24859ab49526aaf9da113" }
+bevy = { version = "0.10.1", default-features = false }
+bevy_source = { version = "0.0.0", path = "crates/bevy", default-features = false }
+leafwing-input-manager = { version = "0.9.2", default-features = false }
+libm = { version = "0.2.6", default-features = false }
+
+[[bin]]
+name = "csgo_linux64"
+path = "src/main.rs"
 
 [profile.dev]
 opt-level = 2
 
 [profile.release]
+lto = "fat"
 strip = "symbols"
 
 [workspace]
-members = ["crates/dismal", "crates/sdk"]
+members = ["crates/bevy", "crates/bevy_internal", "crates/sys"]
