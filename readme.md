@@ -1,6 +1,6 @@
 <h1 align="center">Elysium</h1>
 
-Counter Strike: Global Offensive Client for Linux
+Counter Strike: Global Offensive Client for Linux.
 
 ### Dependencies
 
