@@ -7,7 +7,8 @@ Counter Strike: Global Offensive Client for Linux.
  - Nightly [Rust](https://rustup.rs).
  - LLVM's Clang, for [bindgen](https://docs.rs/bindgen).
  - SDL 2, to easily hook methods, and map events.
-
+ - Whatever CS:GO needs.
+ 
 ### Usage
 
 Build it like any other Rust program, a `csgo_linux64` binary will be produced. Replace the binary by the same name in CS:GO's directory. (If you didn't back up the original, verify the game files.) Because Source engine, run the client like this, from the game's directory.
