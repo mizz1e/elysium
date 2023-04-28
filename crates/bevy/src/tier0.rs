@@ -1,8 +1,4 @@
-use {
-    crate::{internal::assert_non_null, sys},
-    bevy::prelude::*,
-    std::ffi::{self, CStr},
-};
+use {crate::sys, bevy::prelude::*, std::ffi};
 
 pub use self::command_line::command_line;
 
