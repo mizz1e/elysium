@@ -46,8 +46,6 @@ pub struct Surface {
 
 impl Surface {
     pub(crate) unsafe fn setup(&self) {
-        tracing::trace!("setup Surface");
-
         global::with_app_mut(|app| {
             app.insert_resource(SetCursor(self.ptr.vtable_replace(57, set_cursor)));
             app.insert_resource(UnlockCursor(self.ptr.vtable_replace(66, unlock_cursor)));

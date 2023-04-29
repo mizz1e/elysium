@@ -43,13 +43,16 @@ macro_rules! networked {
             $(pub $struct_field: $struct,)*
         }
 
-        unsafe fn iterate_table(networked: &mut Networked, recv_table: &RecvTable, table: Table, base_offset: usize) {
-            for prop in recv_table.props() {
-                let offset = base_offset + prop.offset as usize;
-                let prop_name = CStr::from_ptr(prop.name).to_bytes();
+        unsafe fn iterate_table(networked: &mut Networked, recv_table: &source_sys::RecvTable, table: Table, base_offset: usize) {
+            let mut index = 0;
 
-                if matches!(prop.kind, PropKind::DataTable) {
-                    iterate_table(networked, &*prop.data_table, table, offset);
+            while index < recv_table.m_nProps {
+                let prop = recv_table.m_pProps.add(index as usize).read_unaligned();
+                let offset = base_offset + prop.m_Offset as usize;
+                let prop_name = CStr::from_ptr(prop.m_pVarName).to_bytes();
+
+                if prop.m_RecvType == source_sys::SendPropType_DPT_DataTable {
+                    iterate_table(networked, &prop.m_pDataTable.read_unaligned(), table, offset);
                 }
 
                 match table {
@@ -62,15 +65,15 @@ macro_rules! networked {
             }
         }
 
-        pub unsafe fn setup(mut class_list: *const ClientClass) {
+        pub unsafe fn setup(mut class_list: *const source_sys::ClientClass) {
             global::with_app_mut(|app| {
                 let mut networked = unsafe { MaybeUninit::zeroed().assume_init() };
 
                 while let Some(class) = class_list.as_ref() {
-                    let recv_table = &*class.recv_table;
-                    let table_name = CStr::from_ptr(recv_table.name).to_bytes();
+                    let recv_table = &class.m_pRecvTable.read_unaligned();
+                    let table_name = CStr::from_ptr(recv_table.m_pNetTableName).to_bytes();
 
-                    class_list = class.next;
+                    class_list = class.m_pNext;
 
                     if let Some(table) = Table::from_bytes(table_name) {
                         iterate_table(&mut networked, recv_table, table, 0);

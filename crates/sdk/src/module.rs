@@ -1,4 +1,5 @@
 use crate::{Error, Ptr};
+use bevy::prelude::trace;
 use bevy::prelude::*;
 use std::collections::HashMap;
 use std::ffi;
@@ -25,7 +26,7 @@ impl Module {
         let name = name.as_ref();
         let handle = libloading::Library::new(name)?;
 
-        tracing::trace!("added module: {name:?}");
+        trace!("added module: {name:?}");
 
         Ok(Module(Arc::new(Mutex::new(ModuleInner {
             name: Box::from(name),
@@ -63,24 +64,6 @@ impl Module {
     /// - Invokes a foreign function (`CreateInterface`).
     /// - See [`Library::get`](libloading::Library::get).
     pub unsafe fn create_interface(&self, name: impl AsRef<str>) -> Result<Ptr, Error> {
-        {
-            #[repr(C)]
-            pub struct Interface {
-                pub new: unsafe extern "C" fn() -> *mut ffi::c_void,
-                pub name: *const ffi::c_char,
-                pub next: *const Interface,
-            }
-
-            let interface_list: *const *const Interface = self.symbol("s_pInterfaceRegs\0")?;
-            let mut interface_list: *const Interface = *interface_list;
-
-            while let Some(interface) = interface_list.as_ref() {
-                interface_list = interface.next;
-
-                println!("{:?}", ffi::CStr::from_ptr(interface.name));
-            }
-        }
-
         // Explicit nul-termination saves the need to allocate.
         let create_interface: unsafe extern "C" fn(
             *const ffi::c_char,
@@ -101,7 +84,7 @@ impl Module {
         let interface =
             Ptr::new("Interface", interface).ok_or_else(|| Error::Interface(Box::from(name)))?;
 
-        tracing::trace!("added interface: {name:?} from module {:?}", self.name());
+        trace!("added interface: {name:?} from module {:?}", self.name());
 
         self.0
             .lock()

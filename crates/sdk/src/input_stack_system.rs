@@ -14,8 +14,6 @@ pub struct InputStackSystem {
 impl InputStackSystem {
     pub unsafe fn setup(&self) {
         return;
-        tracing::trace!("setup InputStackSystem");
-
         global::with_app_mut(|app| {
             app.insert_resource(EnableInputContext(
                 self.ptr.vtable_replace(11, enable_input_context),

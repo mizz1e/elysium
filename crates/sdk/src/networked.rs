@@ -1,8 +1,12 @@
-use crate::{global, ClientClass, PlayerFlag, PropKind, RecvTable, Tick, Time};
-use bevy::prelude::{Resource, Vec3};
-use std::ffi::{CStr, OsStr};
-use std::mem::MaybeUninit;
-use std::time::Duration;
+use {
+    crate::{global, PlayerFlag, Tick, Time},
+    bevy::prelude::{error, Resource, Vec3},
+    std::{
+        ffi::{CStr, OsStr},
+        mem::MaybeUninit,
+        time::Duration,
+    },
+};
 
 pub use var::Var;
 
@@ -11,9 +15,9 @@ mod macros;
 mod var;
 
 fn panic(table: &'static str, var: &'static str) {
-    tracing::error!("networked variable {table}.{var} was not found");
-    tracing::error!("create an issue at https://github.com/elysian6969/elysium");
-    tracing::error!("or join our discord https://discord.gg/4F3x3eaTDn");
+    error!("networked variable {table}.{var} was not found");
+    error!("create an issue at https://github.com/elysian6969/elysium");
+    error!("or join our discord https://discord.gg/4F3x3eaTDn");
 
     std::process::exit(1);
 }

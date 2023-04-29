@@ -6,6 +6,7 @@ bitflags::bitflags! {
     /// Movement state flags.
     ///
     /// [`game/shared/in_buttons.h`](https://github.com/alliedmodders/hl2sdk/blob/csgo/game/shared/in_buttons.h).
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     #[repr(transparent)]
     pub struct Button: i32 {
         /// Attack with the current weapon.
@@ -153,18 +154,13 @@ pub struct CInput {
 
 impl CInput {
     pub(crate) unsafe fn setup(&self) {
-        tracing::trace!("setup input");
-
         global::with_app_mut(|app| {
-            debug!("IInput->CAM_Think");
             app.insert_resource(CamThink(self.ptr.vtable_replace(31, cam_think)));
 
-            tracing::trace!("cam to third person");
             app.insert_resource(CamToThirdPerson(
                 self.ptr.vtable_replace(35, cam_to_third_person),
             ));
 
-            tracing::trace!("cam to first person");
             app.insert_resource(CamToFirstPerson(
                 self.ptr.vtable_replace(36, cam_to_first_person),
             ));

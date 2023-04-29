@@ -67,8 +67,6 @@ impl IPhysicsSurfaceProps {
             index: ffi::c_int,
         ) -> *const internal::surfacedata_t = unsafe { self.ptr.vtable_entry(5) };
 
-        tracing::trace!("obtain surface data");
-
         let ptr = unsafe { (method)(self.ptr.as_ptr(), index) };
         let internal::surfacedata_t {
             game:
@@ -80,8 +78,6 @@ impl IPhysicsSurfaceProps {
                 },
             ..
         } = unsafe { ptr.as_ref()? };
-
-        tracing::trace!("we never make it");
 
         Some(SurfaceData {
             kind: unsafe { std::mem::transmute(*material as u8) },

@@ -1,11 +1,15 @@
-use crate::{
-    convar, global, networked, pattern, ClientClass, IClientEntityList, IVEngineClient, Mat4x3,
-    Ptr, Tick, Time,
+use {
+    crate::{
+        convar, global, networked, IClientEntityList, IVEngineClient, Mat4x3, Ptr, Tick, Time,
+    },
+    bevy::prelude::{Resource, Vec3},
+    bevy_source_internal::pattern,
+    std::{
+        ffi::{self, OsStr},
+        mem,
+        time::Duration,
+    },
 };
-use bevy::prelude::{Resource, Vec3};
-use std::ffi::OsStr;
-use std::time::Duration;
-use std::{ffi, mem};
 
 pub use id::EntityId;
 
@@ -204,9 +208,9 @@ impl IClientEntity {
         ptr.unwrap_unchecked()
     }
 
-    pub fn client_class(&self) -> *const ClientClass {
+    pub fn client_class(&self) -> *const source_sys::ClientClass {
         let networkable = unsafe { self.client_networkable() };
-        let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
+        let method: unsafe extern "C" fn(this: *mut u8) -> *const source_sys::ClientClass =
             unsafe { networkable.vtable_entry(2) };
 
         unsafe { (method)(networkable.as_ptr()) }
@@ -563,19 +567,16 @@ pub struct AnimState {
 
 impl AnimState {
     pub unsafe fn setup() {
-        tracing::trace!("obtain CSPlayer::Spawn");
-
         let module = link::load_module("client_client.so").unwrap();
         let bytes = module.bytes();
-        let opcode = &pattern::CSPLAYER_SPAWN.find(bytes).unwrap().1[..56];
+        let index = pattern!(r"\x48\x8B\xBB....\x48\x85\xFF\x74\x3E\xE8")
+            .find(bytes)
+            .unwrap()
+            .start();
 
-        tracing::trace!("CSPlayer::Spawn = {opcode:02X?}");
-        tracing::trace!("obtain AnimState offset");
-
+        let opcode = &bytes[index..(index + 56)];
         let ip = opcode.as_ptr().byte_add(3);
         let offset = ip.cast::<u32>().read() as usize;
-
-        tracing::trace!("AnimState offset = {offset:?}");
 
         global::with_app_mut(|app| {
             app.insert_resource(AnimStateOffset(offset));

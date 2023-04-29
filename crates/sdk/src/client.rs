@@ -1,11 +1,13 @@
-use crate::{
-    convar, global, material, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, ClientClass,
-    Config, IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps,
-    IVEngineClient, InputStackSystem, KeyValues, ModuleMap, Ptr, Surface,
+use {
+    crate::{
+        convar, global, material, networked, ptr, CGlobalVarsBase, CInput, CUserCmd, Config,
+        IClientEntity, IClientMode, ICvar, IMaterialSystem, IPhysicsSurfaceProps, IVEngineClient,
+        InputStackSystem, KeyValues, ModuleMap, Ptr, Surface,
+    },
+    bevy::{ecs::system::SystemState, prelude::*},
+    bevy_source_internal::{assert_mnemonic, iced_x86, FnPtr, Ptr as _},
+    std::{ffi, mem},
 };
-use bevy::{ecs::system::SystemState, prelude::*};
-use dismal::{assert_mnemonic, iced_x86, FnPtr, Ptr as _};
-use std::{ffi, mem};
 
 const FRAME_NET_UPDATE_END: ffi::c_int = 4;
 const FRAME_RENDER_START: ffi::c_int = 5;
@@ -83,8 +85,8 @@ impl IBaseClientDLL {
         });
     }
 
-    pub(crate) fn all_classes(&self) -> *const ClientClass {
-        let method: unsafe extern "C" fn(this: *mut u8) -> *const ClientClass =
+    pub(crate) fn all_classes(&self) -> *const source_sys::ClientClass {
+        let method: unsafe extern "C" fn(this: *mut u8) -> *const source_sys::ClientClass =
             unsafe { self.ptr.vtable_entry(8) };
 
         unsafe { (method)(self.ptr.as_ptr()) }
@@ -276,8 +278,6 @@ unsafe extern "C" fn frame_stage_notify(this: *mut u8, frame: ffi::c_int) {
 
                 surface.setup();
                 app.insert_resource(surface);
-            } else {
-                tracing::trace!("fuck you");
             }
         }
 

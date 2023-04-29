@@ -6,42 +6,19 @@ version = "0.0.0"
 [dependencies]
 bevy = { version = "0.10.1", default-features = false, features = ["bevy_asset"] }
 bevy_source_internal = { version = "0.0.0", path = "../bevy_internal", default-features = false }
+bitflags = { version = "2.2.1", default-features = false }
+dirs = { version = "5.0.0", default-features = false }
+libc = { version = "0.2.142", default-features = false }
+libloading = { version = "0.8.0", default-features = false }
+libm = { version = "0.2.6", default-features = false }
+phf = { version = "0.11.1", default-features = false, features = ["macros"] }
 sdl2 = { git = "https://github.com/rust-sdl2/rust-sdl2", rev = "27cd1fd67c811e06b9d997a77bb6089a1b65070d", version = "0.35.2", default-features = false, features = ["raw-window-handle"] }
-
-[dependencies.bitflags]
-version = "1.3"
-
-[dependencies.dismal]
-path = "../dismal"
-
-[dependencies.dirs]
-version = "4.0"
-
-[dependencies.libc]
-version = "0.2"
-
-[dependencies.libm]
-version = "0.2"
+source-sys = { version = "0.0.0", path = "../sys", default-features = false }
+ubyte = { version = "0.10.3", default-features = false }
 
 [dependencies.link]
 default-features = false
 path = "../link"
-
-[dependencies.libloading]
-version = "0.7"
-
-[dependencies.once_cell]
-version = "1.17"
-
-[dependencies.regex]
-version = "1.7"
-
-[dependencies.phf]
-features = ["macros"]
-version = "0.11"
-
-[dependencies.rand]
-version = "0.8"
 
 [dependencies.serde]
 features = ["derive"]
@@ -52,11 +29,3 @@ version = "1.0"
 
 [dependencies.thiserror]
 version = "1.0"
-
-[dependencies.tracing]
-default-features = false
-features = ["std"]
-version = "0.1"
-
-[dependencies.ubyte]
-version = "0.10"

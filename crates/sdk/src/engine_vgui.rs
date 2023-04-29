@@ -1,5 +1,7 @@
-use crate::{global, Ptr};
-use bevy::prelude::*;
+use {
+    crate::{global, Ptr},
+    bevy::prelude::*,
+};
 
 #[derive(Resource)]
 pub struct Paint(pub(crate) unsafe extern "C" fn(this: *mut u8, mode: i32));
@@ -13,8 +15,6 @@ pub struct EngineVGui {
 impl EngineVGui {
     pub(crate) unsafe fn setup(&self) {
         return;
-        tracing::trace!("setup EngineVGui");
-
         global::with_app_mut(|app| {
             app.insert_resource(Paint(self.ptr.vtable_replace(15, paint)));
         });

@@ -1,8 +1,14 @@
-use crate::{global, pattern, Ptr};
-use bevy::prelude::*;
-use std::ffi::{CString, OsStr};
-use std::os::unix::ffi::OsStrExt;
-use std::{ffi, mem, ptr};
+use {
+    crate::{global, Ptr},
+    bevy::prelude::*,
+    bevy_source_internal::pattern,
+    std::{
+        ffi::{self, CString, OsStr},
+        mem,
+        os::unix::ffi::OsStrExt,
+        ptr,
+    },
+};
 
 #[derive(Resource)]
 pub struct FromString(
@@ -36,14 +42,15 @@ impl KeyValues {
     }
 
     pub unsafe fn setup() {
-        tracing::trace!("obtain KeyValues::FromString");
-
         let module = link::load_module("client_client.so").unwrap();
         let bytes = module.bytes();
-        let opcode = &pattern::KEY_VALUES_FROM_STRING.find(bytes).unwrap().1[..5];
 
-        tracing::trace!("KeyValues::FromString = {opcode:02X?}");
+        let index = pattern!(r"\xE8....\x48\x89\xDF\x48\x89\x45\xE0")
+            .find(bytes)
+            .unwrap()
+            .start();
 
+        let opcode = &bytes[index..(index + 5)];
         let ip = opcode.as_ptr().byte_add(1);
         let reladdr = ip.cast::<i32>().read() as isize;
         let absaddr = ip.byte_add(4).byte_offset(reladdr);

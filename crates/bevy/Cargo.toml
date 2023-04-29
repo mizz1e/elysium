@@ -4,7 +4,7 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.10.1", default-features = false, features = ["bevy_asset"] }
+bevy = { version = "0.10.1", default-features = false, features = ["bevy_asset", "bevy_core_pipeline", "bevy_gilrs", "bevy_render", "bevy_sprite", "bevy_text"] }
 bevy_source_internal = { version = "0.0.0", path = "../bevy_internal", default-features = false }
 bitflags = { version = "2.2.1", default-features = false }
 elysium-sdk = { version = "0.0.0", path = "../sdk", default-features = false }

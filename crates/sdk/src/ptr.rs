@@ -132,7 +132,7 @@ impl Ptr {
 
         #[cfg(debug_assertions)]
         {
-            tracing::trace!("replaced virtual index {index} for {:?}", self.label);
+            bevy::log::trace!("replaced virtual index {index} for {:?}", self.label);
         }
 
         old

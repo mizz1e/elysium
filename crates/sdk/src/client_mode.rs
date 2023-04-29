@@ -1,18 +1,19 @@
-use crate::entity::{ObserverMode, WeaponKind};
-use crate::{
-    global, math, trace, Button, CUserCmd, CViewSetup, ClientState, Config, EntityFlag,
-    IClientEntity, IClientEntityList, IEngineTrace, IPhysicsSurfaceProps, IVEngineClient, Mat4x3,
-    Ptr, SurfaceKind, Time, TraceResult, WeaponInfo,
+use {
+    crate::{
+        entity::{ObserverMode, WeaponKind},
+        global, math, trace, Button, CUserCmd, CViewSetup, ClientState, Config, EntityFlag,
+        IClientEntity, IClientEntityList, IEngineTrace, IPhysicsSurfaceProps, IVEngineClient,
+        Mat4x3, Ptr, SurfaceKind, Time, TraceResult, WeaponInfo,
+    },
+    bevy::{
+        ecs::{
+            schedule::{Schedule, ScheduleLabel},
+            system::{Commands, In, SystemState},
+        },
+        prelude::{IntoPipeSystem, Res, ResMut, Resource, Vec3},
+    },
+    std::{arch::asm, cmp::Ordering, ptr},
 };
-use bevy::ecs::{
-    schedule::{Schedule, ScheduleLabel},
-    system::{Commands, In, SystemState},
-};
-use bevy::prelude::{IntoPipeSystem, Res, ResMut, Resource, Vec3};
-use rand::Rng;
-use std::arch::asm;
-use std::cmp::Ordering;
-use std::ptr;
 
 #[derive(Resource)]
 pub struct OverrideView(pub(crate) unsafe extern "C" fn(this: *mut u8, setup: *mut CViewSetup));
@@ -38,8 +39,6 @@ pub struct CreateMoveSchedule;
 
 impl IClientMode {
     pub(crate) unsafe fn setup(&self) {
-        tracing::trace!("setup IClientMode");
-
         global::with_app_mut(|app| {
             app.insert_resource(OverrideView(self.ptr.vtable_replace(19, override_view)));
 
@@ -177,7 +176,6 @@ fn create_move_system(
 
             config.anti_aim.pitch.apply(&mut command.view_angle.x);
             command.view_angle.y += config.anti_aim.yaw_offset;
-            command.view_angle.z = config.anti_aim.roll;
 
             if let Some(client_state) = crate::ClientState::get() {
                 *send_packet = client_state.choked_commands() >= config.fake_lag;
@@ -256,7 +254,6 @@ unsafe extern "C" fn override_view(this: *mut u8, setup: *mut CViewSetup) {
     debug_assert!(!this.is_null());
     debug_assert!(!setup.is_null());
 
-    //tracing::trace!("override_view");
     let setup = &mut *setup;
 
     let method = global::with_app(|app| {
@@ -376,7 +373,6 @@ impl ShotData {
 
     fn handle_bullet_penetration(&mut self) -> bool {
         let enter_result = self.result.unwrap();
-        //tracing::trace!("{enter_result:?}");
         return false;
         let enter_surface = global::with_resource::<IPhysicsSurfaceProps, _>(|surface_props| {
             surface_props
