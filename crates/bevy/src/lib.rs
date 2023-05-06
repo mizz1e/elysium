@@ -1,11 +1,12 @@
 //#![deny(warnings)]
+#![feature(c_str_literals)]
 #![feature(c_variadic)]
 #![feature(cstr_is_empty)]
 #![feature(ptr_from_ref)]
 #![feature(strict_provenance)]
 
 use {
-    crate::internal::{app_mut, cstr, inline_mov_jmp, inline_mov_jmp_variadic, set_app, FnPtr},
+    crate::internal::{app_mut, inline_mov_jmp, inline_mov_jmp_variadic, set_app, FnPtr},
     bevy::prelude::*,
     leafwing_input_manager::prelude::*,
     std::ffi,
@@ -93,12 +94,12 @@ impl Plugin for SourcePlugin {
                 let tier0 = app.world.module::<modules::Tier0>();
 
                 let command_line = tier0
-                    .get::<sys::CommandLine>(cstr!("CommandLine\0"))
+                    .get::<sys::CommandLine>(c"CommandLine")
                     .expect("no command line")
                     .unwrap();
 
                 let logging_system_log = tier0
-                    .get::<sys::LoggingSystem_Log>(cstr!("LoggingSystem_Log\0"))
+                    .get::<sys::LoggingSystem_Log>(c"LoggingSystem_Log")
                     .expect("no logging system")
                     .unwrap();
 
@@ -126,7 +127,7 @@ impl Plugin for SourcePlugin {
                 // Finally, run Source engine, as usual.
                 let launcher = app.world.module::<modules::Launcher>();
                 let main = launcher
-                    .get::<sys::LauncherMain_t>(cstr!("LauncherMain\0"))
+                    .get::<sys::LauncherMain_t>(c"LauncherMain")
                     .expect("no launcher main")
                     .unwrap();
 
@@ -145,7 +146,7 @@ impl Plugin for SourcePlugin {
                 unsafe {
                     // In the nigh impossible event, that the above hooks did nothing, and didn't
                     // error, run `LauncherMain` with normal argumemts.
-                    let args = [cstr!("csgo_linux64\0").as_ptr()];
+                    let args = [c"csgo_linux64".as_ptr()];
 
                     main.call((args.len() as ffi::c_int, args.as_ptr().cast_mut().cast()));
                 }

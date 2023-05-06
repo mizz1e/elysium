@@ -49,6 +49,9 @@ macro_rules! networked {
             while index < recv_table.m_nProps {
                 let prop = recv_table.m_pProps.add(index as usize).read_unaligned();
                 let offset = base_offset + prop.m_Offset as usize;
+
+                index += 1;
+
                 let prop_name = CStr::from_ptr(prop.m_pVarName).to_bytes();
 
                 if prop.m_RecvType == source_sys::SendPropType_DPT_DataTable {

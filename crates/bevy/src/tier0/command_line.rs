@@ -1,8 +1,5 @@
 use {
-    crate::{
-        internal::{assert_non_null, cstr},
-        sys,
-    },
+    crate::{internal::assert_non_null, sys},
     bevy::prelude::*,
     std::{
         ffi::{self, CStr},
@@ -16,8 +13,8 @@ const GAME: ffi::c_int = ffi::c_int::from_ne_bytes(*b"GAME");
 const VULKAN: ffi::c_int = ffi::c_int::from_ne_bytes(*b"VKVK");
 
 // Path constants.
-const CURRENT_EXE: &CStr = cstr!("csgo_linux64\0");
-const MOD_DIR: &CStr = cstr!("csgo\0");
+const CURRENT_EXE: &CStr = c"csgo_linux64";
+const MOD_DIR: &CStr = c"csgo";
 
 static COMMAND_LINE: CommandLine = CommandLine(sys::ICommandLine {
     vtable_: &sys::ICommandLine__bindgen_vtable {
@@ -52,13 +49,13 @@ pub fn command_line() -> *mut sys::ICommandLine {
 unsafe fn map_arg(arg: &[u8]) -> Option<&'static CStr> {
     // TODO: use phf
     let result = match arg {
-        b"+fps_max" => cstr!("400\0"),
-        b"-basedir" => cstr!("\0"),
-        b"-defaultgamedir" => cstr!("hl2\0"),
+        b"+fps_max" => c"400",
+        b"-basedir" => c"",
+        b"-defaultgamedir" => c"hl2",
         b"-game" => MOD_DIR,
-        b"-language" => cstr!("english\0"),
-        b"-transmitevents" => cstr!("\0"),
-        b"-window_name_suffix" => cstr!("\0"),
+        b"-language" => c"english",
+        b"-transmitevents" => c"",
+        b"-window_name_suffix" => c"",
         _ => return None,
     };
 
@@ -247,9 +244,9 @@ unsafe extern "C" fn ICommandLine_GetParm(
     let result = match nIndex {
         // The zeroth index is always the program name.
         0 => CURRENT_EXE,
-        BASE_DIR => cstr!("\0"),
+        BASE_DIR => c"",
         GAME => MOD_DIR,
-        VULKAN => cstr!("\0"),
+        VULKAN => c"",
         _ => {
             debug!("ICommandLine_GetParm({nIndex:?}) -> (none)");
 

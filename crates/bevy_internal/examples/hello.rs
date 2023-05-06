@@ -1,3 +1,5 @@
+#![feature(c_str_literals)]
+
 use dismal::{FnPtr, Library};
 use std::io;
 
@@ -19,12 +21,12 @@ fn main() -> io::Result<()> {
     println!("{result:?}");
 
     let library = unsafe { Library::open("/usr/lib64/libGL.so")? };
-    let ptr = library.get::<extern "C" fn()>(dismal::cstr!("glXGetProcAddress\0"))?;
+    let ptr = library.get::<extern "C" fn()>(c"glXGetProcAddress")?;
     let result = ptr.disassemble();
 
     println!("{result:?}");
 
-    let ptr = library.get::<u8>(dismal::cstr!("glXGetProcAddress\0"))?;
+    let ptr = library.get::<u8>(c"glXGetProcAddress")?;
     let result = ptr.disassemble();
 
     println!("{result:?}");
