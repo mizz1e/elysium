@@ -1,7 +1,6 @@
 //#![deny(warnings)]
 #![feature(c_str_literals)]
 #![feature(c_variadic)]
-#![feature(cstr_is_empty)]
 #![feature(ptr_from_ref)]
 #![feature(strict_provenance)]
 
