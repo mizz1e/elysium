@@ -1,6 +1,5 @@
-use regex::bytes::Regex;
-use std::{panic, sync::OnceLock};
-
+use {regex::bytes::Regex, std::{panic, sync::OnceLock, marker::FnPtr}};
+    
 /// A lazily compiled pattern.
 pub struct Pattern(OnceLock<Regex>);
 
@@ -23,6 +22,12 @@ impl Pattern {
             })
         })
     }
+}
+
+/// Obtain the address of a function pointer.
+#[inline(always)]
+pub fn fn_addr<F: FnPtr>(f: F) -> u64 {
+    f.addr().addr() as u64
 }
 
 /// Obtain shared read access to the global application.
@@ -108,7 +113,7 @@ macro_rules! inline_mov_jmp {
                     // coerce to a function pointer
                     let mov_jmp: unsafe extern "C" fn($($argty,)*) -> $($output)? = mov_jmp;
 
-                    mov_jmp as usize as u64
+                    $crate::macros::fn_addr(mov_jmp)
                 }),
             );
         }
@@ -138,7 +143,7 @@ macro_rules! inline_mov_jmp_variadic {
                     // coerce to a function pointer
                     let mov_jmp: unsafe extern "C" fn($($argty,)+ ...) -> $($output)? = mov_jmp;
 
-                    mov_jmp as usize as u64
+                    $crate::macros::fn_addr(mov_jmp)
                 }),
             );
         }
