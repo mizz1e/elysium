@@ -1,5 +1,8 @@
-use {regex::bytes::Regex, std::{panic, sync::OnceLock, marker::FnPtr}};
-    
+use {
+    regex::bytes::Regex,
+    std::{marker::FnPtr, panic, sync::OnceLock},
+};
+
 /// A lazily compiled pattern.
 pub struct Pattern(OnceLock<Regex>);
 

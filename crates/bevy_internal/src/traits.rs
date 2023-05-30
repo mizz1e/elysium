@@ -1,6 +1,8 @@
-use crate::{assembly, Maps, Permissions};
-use iced_x86::Instruction;
-use std::{io, marker::Tuple, mem, ptr::Thin};
+use {
+    crate::{assembly, Maps, Permissions},
+    iced_x86::Instruction,
+    std::{io, marker::Tuple, mem, ptr::Thin},
+};
 
 /// A pointer.
 pub trait Ptr: Copy + Sized + Thin {
