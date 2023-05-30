@@ -6,12 +6,12 @@ use {
 fn main() {
     let bindings = bindgen::Builder::default()
         .array_pointers_in_arguments(true)
+        .default_non_copy_union_style(NonCopyUnionStyle::ManuallyDrop)
         .explicit_padding(true)
         .header("src/bindings.hpp")
         .parse_callbacks(Box::new(CargoCallbacks))
         .sort_semantically(true)
         .use_core()
-        .default_non_copy_union_style(NonCopyUnionStyle::ManuallyDrop)
         .vtable_generation(true)
         .generate()
         .expect("unable to generate bindings");

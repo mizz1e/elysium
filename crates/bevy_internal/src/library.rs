@@ -1,8 +1,10 @@
-use crate::{Maps, Ptr};
-use std::{
-    ffi::{CStr, OsStr},
-    io,
-    path::{Path, PathBuf},
+use {
+    crate::{Maps, Ptr},
+    std::{
+        ffi::{CStr, OsStr},
+        io,
+        path::{Path, PathBuf},
+    },
 };
 
 /// A shared library.
