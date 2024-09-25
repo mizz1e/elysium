@@ -4,6 +4,7 @@
 #![feature(decl_macro)]
 #![feature(link_llvm_intrinsics)]
 #![feature(pointer_byte_offsets)]
+#![feature(exposed_provenance)]
 #![feature(strict_provenance)]
 #![feature(tuple_trait)]
 

@@ -1,7 +1,5 @@
 //#![deny(warnings)]
-#![feature(c_str_literals)]
 #![feature(c_variadic)]
-#![feature(ptr_from_ref)]
 #![feature(strict_provenance)]
 
 use {

@@ -4,6 +4,7 @@
 #![feature(fn_ptr_trait)]
 #![feature(ptr_metadata)]
 #![feature(slice_from_ptr_range)]
+#![feature(exposed_provenance)]
 #![feature(strict_provenance)]
 #![feature(tuple_trait)]
 

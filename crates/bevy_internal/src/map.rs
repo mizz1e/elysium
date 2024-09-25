@@ -73,7 +73,7 @@ impl Maps {
                     return None;
                 }
 
-                let start = ptr::from_exposed_addr_mut(map.start());
+                let start = ptr::with_exposed_provenance_mut(map.start());
                 let bytes = unsafe { slice::from_raw_parts_mut(start, map.size()) };
                 let range = bytes.as_mut_ptr_range();
                 let path = map.filename().map(Into::into);

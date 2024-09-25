@@ -81,7 +81,11 @@ fn create_move_system(
     mut last_yaw: ResMut<LastYaw>,
     mut commands: Commands,
 ) -> bool {
-    let Some(CreateMoveArgs { command, send_packet }) = args.as_deref_mut() else {
+    let Some(CreateMoveArgs {
+        command,
+        send_packet,
+    }) = args.as_deref_mut()
+    else {
         return false;
     };
 

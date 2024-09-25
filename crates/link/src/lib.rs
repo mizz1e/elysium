@@ -1,4 +1,4 @@
-#![feature(strict_provenance)]
+#![feature(exposed_provenance)]
 
 use std::path::Path;
 

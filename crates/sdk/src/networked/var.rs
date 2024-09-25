@@ -108,6 +108,6 @@ impl<T> Copy for Var<T> {}
 
 impl<T> fmt::Debug for Var<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(&ptr::from_exposed_addr::<()>(self.offset), fmt)
+        fmt::Debug::fmt(&ptr::with_exposed_provenance::<()>(self.offset), fmt)
     }
 }

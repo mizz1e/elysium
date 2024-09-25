@@ -137,7 +137,7 @@ unsafe fn callback_inner(
     let info = info.as_ref()?;
 
     // base module address
-    let address: *const u8 = ptr::from_exposed_addr(info.dlpi_addr as usize);
+    let address: *const u8 = ptr::with_exposed_provenance(info.dlpi_addr as usize);
 
     // module length in bytes
     let headers = slice::from_raw_parts(info.dlpi_phdr, info.dlpi_phnum as usize);
